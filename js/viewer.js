@@ -1,0 +1,365 @@
+/* gauge – product viewer (logic taken from Website_Test/Object_01/index.html).
+   Views = the cameras whose stills exist (data/produkte.js). Moves between views are videos
+   (video/Move_CamX_CamY.webm|mp4 – the right direction for each change; narrow windows / phones: video/klein/).
+   A view change:  current still ─0.1 s soft→ first video frame · the move plays · last video frame ─0.1 s soft→ target still.
+   (The moves have fewer samples than the stills, so first and last video frame look a touch different – the short fades hide that.)
+   Without a video (or with reduced motion) a view change is a simple crossfade.
+   Lamp (only products with evening images): soft crossfade day ↔ evening; before a move it first fades back to day.
+   Loading with priority: still of the current view, then the moves starting at the current view (with their target stills),
+   then all other moves. After every view change the moves of the new view move to the front. */
+(function () {
+  'use strict';
+  var G = window.G, C = G.C, V = C.viewer;
+
+  function Viewer(p) {
+    this.p = p;
+    this.n = p.views;
+    this.el = G.el('div', 'viewer');
+    this.el.setAttribute('role', 'img');
+    this.el.setAttribute('aria-label', p.code);
+    this.el.style.setProperty('--a', String(p.verhaeltnis));   // aspect ratio of the pictures
+    this.stills = [];
+    this.abende = [];
+    this.videos = { g: {}, k: {} };   // created on demand: g = video/, k = video/klein/
+    this.perUrl = {};
+    this.jobs = [];
+    this.aktuell = 1;
+    this.ziel = null;
+    this.wartend = null;
+    this.lampe = false;
+    this.belegt = false;   // a lamp fade before a move or a move is running
+
+    for (var v = 1; v <= this.n; v++) {
+      var s = G.platzhalter({ pfad: G.pfade.still(p, v), text: p.code + ' · View ' + v, fuge: true, klasse: 'v-still', alt: p.code + ', view ' + v });
+      this.el.appendChild(s);
+      this.stills[v] = s;
+      if (p.leuchtmittel) {
+        var a = G.platzhalter({ pfad: G.pfade.abend(p, v), text: p.code + ' · View ' + v + ' · evening', fuge: true, abend: true, klasse: 'v-abend', alt: p.code + ', view ' + v + ', evening' });
+        this.el.appendChild(a);
+        this.abende[v] = a;
+      }
+    }
+    this.hinten = G.el('div', 'v-laden');
+    this.hinten.appendChild(G.el('i'));
+    this.el.appendChild(this.hinten);
+    this.stills[1].classList.add('sichtbar');
+  }
+
+  /** Small videos on phones and in narrow windows (decided anew for every move, so resizing switches over). */
+  Viewer.prototype.klein = function () { return window.innerWidth <= V.handyBreite; };
+
+  /** The video element of the move a → b (null if there is no such file). */
+  Viewer.prototype.video = function (a, b, klein) {
+    if (klein == null) klein = this.klein();
+    var satz = this.videos[klein ? 'k' : 'g'], key = a + '-' + b;
+    if (key in satz) return satz[key];
+    var url = C.echteDateienVerwenden ? G.pfade.fahrt(this.p, a, b, klein) : null;
+    if (!url) return (satz[key] = null);
+    if (this.perUrl[url]) return (satz[key] = this.perUrl[url]);   // the other size stood in for a missing file
+    var vid = document.createElement('video');
+    vid.className = 'v-video';
+    vid.muted = true; vid.defaultMuted = true;
+    vid.setAttribute('muted', '');
+    vid.setAttribute('playsinline', ''); vid.setAttribute('webkit-playsinline', '');
+    vid.setAttribute('disablepictureinpicture', '');
+    vid.setAttribute('aria-hidden', 'true');
+    vid.preload = 'none';
+    vid.dataset.url = url;
+    this.el.insertBefore(vid, this.el.firstChild);
+    this.perUrl[url] = vid;
+    return (satz[key] = vid);
+  };
+
+  Viewer.prototype.videoJob = function (a, b, prio) {
+    var v = this.video(a, b);
+    if (!v) return null;
+    var j = G.lader.video(v.dataset.url, v, prio);
+    this.merken(j);
+    return j;
+  };
+  Viewer.prototype.bildJob = function (ph, prio) {
+    var j = ph ? ph.laden(prio) : null;
+    if (j) this.merken(j);
+    return j;
+  };
+  Viewer.prototype.merken = function (j) {
+    if (this.jobs.indexOf(j) >= 0) return;
+    this.jobs.push(j);
+    var self = this;
+    j.dann(function () { self.fortschritt(); });
+    this.fortschritt();
+  };
+  Viewer.prototype.fortschritt = function () {
+    if (!this.jobs.length) { this.hinten.classList.add('fertig'); return; }
+    var f = this.jobs.filter(function (j) { return j.zustand === 'fertig'; }).length;
+    this.hinten.firstChild.style.width = Math.round(100 * f / this.jobs.length) + '%';
+    this.hinten.classList.toggle('fertig', f === this.jobs.length);
+  };
+
+  /** Preload in steps: 'start' (first still), 'fahrten' (moves from view 1), 'hover', 'aktiv' (on the product page:
+      the moves from the current view first, then all others – above everything that other products preload). */
+  Viewer.prototype.vorladen = function (stufe) {
+    if (!this.p.hatBilder || !C.echteDateienVerwenden) return;
+    var basis = { start: 20, fahrten: 10, hover: 40, aktiv: 60 }[stufe] || 5;
+    var von = stufe === 'aktiv' ? this.aktuell : 1;
+    var k = 0;
+    function prio() { return basis + 9 - (k++) * 0.01; }
+    this.bildJob(this.stills[von], prio());
+    if (this.abende[von]) this.bildJob(this.abende[von], prio());
+    if (stufe === 'start') return;
+    for (var b = 1; b <= this.n; b++) {
+      if (b === von) continue;
+      this.videoJob(von, b, prio());
+      this.bildJob(this.stills[b], prio());
+    }
+    if (stufe !== 'aktiv') return;
+    for (var c = 1; c <= this.n; c++) if (this.abende[c] && c !== von) this.bildJob(this.abende[c], 56);
+    for (var a = 1; a <= this.n; a++) for (var d = 1; d <= this.n; d++) {
+      if (a !== d && a !== von) this.videoJob(a, d, 55 - (k++) * 0.01);
+    }
+  };
+
+  Viewer.prototype.info = function () {
+    return { anzahl: this.n, aktuell: this.aktuell, ziel: this.ziel, wartend: this.wartend, lampe: this.lampe,
+      laden: this.laden ? { ziel: this.laden.ziel, anteil: this.laden.anteil } : null };   // the move to "ziel" is still loading
+  };
+  Viewer.prototype.melden = function () { if (this.onwechsel) this.onwechsel(); };
+
+  /** Opened from a tile: show view 1 at once (the image of the tile); lamp as the tile showed it. */
+  Viewer.prototype.zuruecksetzen = function (lampe) {
+    lampe = !!(lampe && this.p.leuchtmittel);
+    if (this.belegt) { this.wartend = this.ziel === 1 ? null : 1; this.lampe = lampe; this.melden(); return; }
+    var self = this;
+    this.stills.forEach(function (s, v) { if (s) { s.classList.remove('raus', 'rein'); s.classList.toggle('sichtbar', v === 1); } });
+    this.abende.forEach(function (a, v) { if (a) { a.classList.add('sofort'); a.classList.toggle('sichtbar', lampe && v === 1); } });
+    if (lampe) this.bildJob(this.abende[1], 100);
+    requestAnimationFrame(function () { self.abende.forEach(function (a) { if (a) a.classList.remove('sofort'); }); });
+    this.aktuell = 1;
+    this.lampe = lampe;
+    this.wartend = null;
+    this.melden();
+  };
+
+  Viewer.prototype.waehlen = function (v) {
+    if (v < 1 || v > this.n) return;
+    if (this.laden && this.ladenAbbrechen) {   // the move is still loading: give it up, go to the new choice instead
+      if (v === this.laden.ziel) return;
+      this.wartend = v === this.aktuell ? null : v;
+      this.ladenAbbrechen();
+      return;
+    }
+    if (this.belegt) {            // move running: remember, run afterwards (the last click counts)
+      this.wartend = v === this.ziel ? null : v;
+      this.melden();
+      return;
+    }
+    if (v === this.aktuell) return;
+    this.fahren(this.aktuell, v);
+  };
+
+  Viewer.prototype.lampeSchalten = function () {
+    if (!this.p.leuchtmittel) return;
+    this.lampe = !this.lampe;
+    if (!this.belegt) {
+      var a = this.abende[this.aktuell];
+      if (this.lampe) this.bildJob(a, 100);
+      a.classList.toggle('sichtbar', this.lampe);
+    }
+    this.melden();
+  };
+
+  Viewer.prototype.fahren = function (von, nach) {
+    var self = this;
+    this.belegt = true;
+    this.ziel = nach;
+    this.melden();
+    var schritt = Promise.resolve();
+    var abendVon = this.abende[von];
+    if (abendVon && abendVon.classList.contains('sichtbar')) {
+      // evening: first fade softly back to day, then the move
+      abendVon.classList.add('vor-fahrt');
+      abendVon.classList.remove('sichtbar');
+      schritt = G.warte(G.blende(V.lampeVorFahrt) + 30).then(function () { abendVon.classList.remove('vor-fahrt'); });
+    }
+    schritt.then(function () { return self.bewegen(von, nach); }).then(function (gefahren) {
+      if (gefahren === false) nach = von;      // another view was chosen while the move was still loading
+      self.aktuell = nach;
+      self.ziel = null;
+      self.belegt = false;
+      if (self.lampe && self.abende[nach]) {
+        if (V.lampeNachFahrtWiederAn) { self.bildJob(self.abende[nach], 100); self.abende[nach].classList.add('sichtbar'); }
+        else self.lampe = false;
+      }
+      self.vorladen('aktiv');
+      var w = self.wartend;
+      self.wartend = null;
+      if (w && w !== self.aktuell) self.fahren(self.aktuell, w);
+      else {
+        self.melden();
+        var cbs = self.ruhig;
+        self.ruhig = null;
+        if (cbs) cbs.forEach(function (f) { f(); });
+      }
+    });
+  };
+  /** fn runs once no move is running any more (at once if none is). */
+  Viewer.prototype.wennRuhig = function (fn) {
+    if (!this.belegt) { fn(); return; }
+    (this.ruhig || (this.ruhig = [])).push(fn);
+  };
+  /** Back to the wall: the tile shows view 1 by day – lamp off, the move back to view 1 starts right away (normal speed;
+      with the lamp on it first fades back to day, as before every move). */
+  Viewer.prototype.heim = function () {
+    if (this.lampe) {
+      this.lampe = false;
+      if (!this.belegt && this.aktuell === 1 && this.abende[1]) this.abende[1].classList.remove('sichtbar');
+    }
+    this.waehlen(1);
+    this.melden();
+  };
+
+  /** Move from view a to view b. Resolves when b's still is shown. */
+  Viewer.prototype.bewegen = function (von, nach) {
+    var self = this;
+    var still = this.stills[von], img = this.stills[nach];
+    var v = G.modus === 'voll' ? this.video(von, nach) : null;     // reduced motion: no camera move, only a fade
+    return new Promise(function (fertig) {
+      var stillJob = self.bildJob(img, 100);
+      function ueberblenden() {
+        function los() {
+          img.classList.remove('raus', 'rein');
+          still.classList.remove('raus', 'rein');
+          img.classList.add('sichtbar');
+          still.classList.remove('sichtbar');
+          setTimeout(fertig, G.blende(V.ueberblenden));
+        }
+        if (!stillJob || stillJob.zustand === 'fertig') los();
+        else { var x = false; var einmal = function () { if (!x) { x = true; los(); } }; stillJob.dann(einmal); setTimeout(einmal, 4000); }
+      }
+      var job = v ? self.videoJob(von, nach, 100) : null;
+      if (!v || !job || v.dataset.fehlt || (job.zustand === 'fertig' && !job.ok)) { ueberblenden(); return; }
+      G.lader.sofort(job);
+      if (job.zustand === 'fertig') { fahrtStarten(); return; }
+
+      // the move is not loaded yet: the current still stays, a small ring fills in the view symbol of the bar
+      // (info().laden); the move starts once the video is there. If it fails: a simple crossfade instead.
+      var aufgegeben = false;
+      self.laden = { ziel: nach, anteil: 0 };
+      self.ladenAbbrechen = function () {          // another view chosen meanwhile: nothing moves, the still stays
+        aufgegeben = true;
+        clearInterval(messuhr);
+        self.laden = null; self.ladenAbbrechen = null;
+        fertig(false);
+      };
+      self.melden();
+      var messuhr = setInterval(function () {
+        var a = 0;
+        try { if (v.duration > 0 && v.buffered.length) a = v.buffered.end(v.buffered.length - 1) / v.duration; } catch (e) {}
+        a = Math.min(0.98, a);
+        if (self.laden && a > self.laden.anteil + 0.01) { self.laden.anteil = a; self.melden(); }
+      }, 150);
+      job.dann(function (ok) {
+        if (aufgegeben) return;
+        clearInterval(messuhr);
+        self.laden.anteil = 1;
+        self.melden();
+        setTimeout(function () {
+          if (aufgegeben) return;
+          self.laden = null; self.ladenAbbrechen = null;
+          self.melden();
+          if (!ok && !(v.readyState >= 2)) ueberblenden();
+          else fahrtStarten();
+        }, G.blende(V.ringVoll));
+      });
+
+      function fahrtStarten() {
+        var tRaus = G.blende(V.standbildRaus), tRein = G.blende(V.standbildRein);
+        var beendet = false, wachhund = null, gestartet = false;
+
+        function abbrechen() {          // cannot play: fade without a move
+          if (beendet) return;
+          beendet = true;
+          clearTimeout(wachhund);
+          v.pause();
+          v.classList.remove('sichtbar');
+          still.classList.remove('raus');
+          if (!still.classList.contains('sichtbar')) still.classList.add('sichtbar');
+          ueberblenden();
+        }
+
+        // 3. end: the target still fades in over the last video frame (both show the same view); wait for it at most 4 s
+        function ende() {
+          if (beendet) return;
+          beendet = true;
+          clearTimeout(wachhund);
+          var gezeigt = false;
+          function zeigen() {
+            if (gezeigt) return;
+            gezeigt = true;
+            img.classList.remove('raus');
+            img.classList.add('rein', 'sichtbar');
+            setTimeout(function () {
+              v.classList.remove('sichtbar');
+              v.pause();
+              try { v.currentTime = 0; } catch (e) {}
+              img.classList.remove('rein');
+              still.classList.remove('raus');
+              fertig();
+            }, tRein + 40);
+          }
+          if (!stillJob || stillJob.zustand === 'fertig') { zeigen(); return; }
+          stillJob.dann(zeigen);
+          setTimeout(zeigen, 4000);
+        }
+
+        // 2. the move plays
+        function abspielen() {
+          if (beendet) return;
+          v.onended = ende;
+          var pr = v.play();
+          if (pr && pr.catch) pr.catch(abbrechen);
+          var dauer = isFinite(v.duration) && v.duration > 0 ? v.duration : 2;
+          wachhund = setTimeout(ende, (dauer + 4) * 1000);   // in case "ended" never comes
+        }
+
+        // 1. start: the current still fades softly (0.1 s) into the first video frame, the video waits on that frame
+        function blenden() {
+          if (gestartet || beendet) return;
+          gestartet = true;
+          still.classList.add('raus');
+          still.classList.remove('sichtbar');
+          setTimeout(abspielen, tRaus + 20);
+        }
+        v.classList.add('sichtbar');   // lies below the still
+        if (v.currentTime !== 0) { try { v.currentTime = 0; } catch (e) {} }
+        if (v.readyState >= 2 && !v.seeking) {
+          // first frame is there (preloaded): show it under the still, then fade
+          requestAnimationFrame(function () { requestAnimationFrame(blenden); });
+          return;
+        }
+        // not loaded yet (or a browser that only delivers frames while playing): start, stop on the first real frame, then fade
+        var erstes = false;
+        function erstesBild() {
+          if (erstes) return;
+          erstes = true;
+          v.pause();
+          try { if (v.currentTime > 0.1) v.currentTime = 0; } catch (e) {}
+          blenden();
+        }
+        if (v.requestVideoFrameCallback) v.requestVideoFrameCallback(function () { erstesBild(); });
+        v.addEventListener('playing', function warte() { v.removeEventListener('playing', warte); setTimeout(erstesBild, 40); });
+        var pr0 = v.play();
+        if (pr0 && pr0.catch) pr0.catch(function () { if (!erstes) abbrechen(); });
+        // nothing arrives at all: give up after the loading timeout and fade instead
+        setTimeout(function () { if (!erstes && !beendet) abbrechen(); }, V.wartenJeDateiMs);
+      }
+    });
+  };
+
+  /* ---- cache: one viewer per product, kept so loaded videos stay loaded ---- */
+  var cache = {};
+  G.viewerFuer = function (p) {
+    if (!cache[p.id]) cache[p.id] = new Viewer(p);
+    return cache[p.id];
+  };
+})();

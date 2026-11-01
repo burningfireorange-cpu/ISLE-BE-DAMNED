@@ -1,263 +1,36 @@
 <!doctype html>
-<html lang="de">
+<html lang="en">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>Table_01</title>
-<style>
-  :root {
-    --grund: #efeeeb;
-    --text: #2a2a2a;
-    --leise: #8a8782;
-    --rand: #d3d0ca;
-    --knopf: #ffffff;
-    --aktiv: #2a2a2a;
-  }
-  * { box-sizing: border-box; }
-  html, body { margin: 0; height: 100%; }
-  body {
-    background: var(--grund);
-    color: var(--text);
-    font-family: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
-    display: flex; flex-direction: column; align-items: center; justify-content: center;
-    min-height: 100%;
-    padding: max(16px, env(safe-area-inset-top)) 16px max(16px, env(safe-area-inset-bottom));
-    -webkit-tap-highlight-color: transparent;
-  }
-  h1 {
-    font-weight: 500; font-size: clamp(15px, 2.2vw, 19px); letter-spacing: 0.08em;
-    margin: 0 0 14px; color: var(--text);
-  }
-  /* Bühne im festen Format 4:3, so groß wie Fenster und Knöpfe es zulassen */
-  .buehne {
-    position: relative;
-    width: min(100%, 1200px, calc((100vh - 170px) * 4 / 3));
-    aspect-ratio: 4 / 3;
-    background: #d9d7d3;
-    overflow: hidden;
-    box-shadow: 0 1px 2px rgba(0,0,0,.06), 0 12px 40px rgba(0,0,0,.08);
-  }
-  @supports not (aspect-ratio: 4 / 3) { .buehne { height: 0; padding-bottom: 75%; } }
-  .buehne img, .buehne video {
-    position: absolute; inset: 0; width: 100%; height: 100%;
-    object-fit: cover; display: block;
-    opacity: 0; pointer-events: none;
-  }
-  .buehne video { z-index: 1; }
-  .buehne img { z-index: 2; transition: opacity .22s linear; }
-  .buehne img.weg { transition-duration: .14s; }
-  .buehne .sichtbar { opacity: 1; }
-
-  .laden {
-    position: absolute; inset: 0; z-index: 3;
-    display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 10px;
-    background: rgba(239,238,235,.55);
-    transition: opacity .3s ease;
-    font-size: 13px; color: var(--leise); letter-spacing: .04em;
-  }
-  .laden.fertig { opacity: 0; pointer-events: none; }
-  .balken { width: 120px; height: 2px; background: rgba(0,0,0,.1); overflow: hidden; }
-  .balken i { display: block; height: 100%; width: 0; background: var(--text); transition: width .2s ease; }
-
-  nav { display: flex; gap: 12px; margin-top: 18px; }
-  nav button {
-    appearance: none; -webkit-appearance: none;
-    width: 52px; height: 44px;
-    border: 1px solid var(--rand); border-radius: 22px;
-    background: var(--knopf); color: var(--text);
-    font: inherit; font-size: 15px; font-weight: 500; letter-spacing: .06em;
-    cursor: pointer;
-    transition: background-color .2s ease, color .2s ease, border-color .2s ease, box-shadow .2s ease;
-  }
-  nav button:hover { border-color: #a9a59e; }
-  nav button:focus-visible { outline: 2px solid var(--text); outline-offset: 2px; }
-  nav button.aktiv { background: var(--aktiv); border-color: var(--aktiv); color: #fff; }
-  nav button.vorgemerkt { box-shadow: 0 0 0 2px var(--grund), 0 0 0 3px #a9a59e; }
-  @media (max-width: 480px) {
-    h1 { margin-bottom: 10px; }
-    nav { gap: 10px; margin-top: 14px; }
-    nav button { width: 56px; height: 46px; }
-    .buehne { width: 100%; }
-  }
-</style>
+<title>gauge</title>
+<meta name="description" content="gauge – stainless steel furniture. Test site.">
+<meta name="theme-color" content="#efeeeb">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Crect x='3' y='3' width='10' height='10' rx='3' fill='%232a2a2a'/%3E%3C/svg%3E">
+<link rel="stylesheet" href="css/style.css">
 </head>
-<body>
-  <h1>Table_01</h1>
-  <div class="buehne" id="buehne">
-    <div class="laden" id="laden"><div class="balken"><i id="balken"></i></div><span id="ladetext">Lädt …</span></div>
-  </div>
-  <nav id="knoepfe" aria-label="Ansicht"></nav>
+<body class="ist-start">
+<div id="seiten"></div>
+<noscript><p style="padding:32px">gauge needs JavaScript.</p></noscript>
 
-<script>
-(function () {
-  'use strict';
-  // Knöpfe A–D = Kameras Cam1–Cam4. Fahrten liegen für beide Richtungen als eigene Datei vor (video/Move_CamX_CamY.*),
-  // das erste Bild jeder Fahrt ist das Standbild der Startkamera, das letzte das der Zielkamera.
-  var ANSICHTEN = [
-    { taste: 'A', cam: 'Cam1' }, { taste: 'B', cam: 'Cam2' },
-    { taste: 'C', cam: 'Cam3' }, { taste: 'D', cam: 'Cam4' }
-  ];
-  var MAX_WARTEN_MS = 12000;   // spätestens dann ist die Seite bedienbar, auch wenn ein Video (z. B. auf dem Handy) nicht vorlädt
-
-  var buehne = document.getElementById('buehne');
-  var nav = document.getElementById('knoepfe');
-  var laden = document.getElementById('laden');
-  var balken = document.getElementById('balken');
-  var ladetext = document.getElementById('ladetext');
-
-  // WebM (AV1) nur, wenn der Browser es sicher abspielt; sonst MP4 (H.264).
-  var probe = document.createElement('video');
-  var endung = probe.canPlayType('video/webm; codecs="av01.0.08M.08"') === 'probably' ? 'webm' : 'mp4';
-
-  var stills = {}, videos = {}, knoepfe = {};
-  var gesamt = 0, geladen = 0;
-
-  function geladenEins() {
-    geladen++;
-    balken.style.width = Math.round(100 * geladen / gesamt) + '%';
-    ladetext.textContent = 'Lädt … ' + geladen + ' / ' + gesamt;
-    if (geladen >= gesamt) fertig();
-  }
-  function fertig() { laden.classList.add('fertig'); }
-  setTimeout(fertig, MAX_WARTEN_MS);
-
-  ANSICHTEN.forEach(function (a) {
-    gesamt++;
-    var img = new Image();
-    img.alt = 'Table_01, Ansicht ' + a.taste;
-    img.decoding = 'async';
-    var einmal = false;
-    function ok() { if (!einmal) { einmal = true; geladenEins(); } }
-    img.onload = ok;
-    img.onerror = ok;
-    img.src = 'bilder/Still_' + a.cam + '.jpg';
-    buehne.appendChild(img);
-    stills[a.taste] = img;
-
-    var b = document.createElement('button');
-    b.type = 'button';
-    b.textContent = a.taste;
-    b.setAttribute('aria-label', 'Ansicht ' + a.taste);
-    b.addEventListener('click', function () { waehlen(a.taste); });
-    nav.appendChild(b);
-    knoepfe[a.taste] = b;
-  });
-
-  ANSICHTEN.forEach(function (von) {
-    ANSICHTEN.forEach(function (nach) {
-      if (von === nach) return;
-      gesamt++;
-      var v = document.createElement('video');
-      v.muted = true; v.defaultMuted = true;
-      v.setAttribute('muted', '');
-      v.setAttribute('playsinline', ''); v.setAttribute('webkit-playsinline', '');
-      v.setAttribute('disablepictureinpicture', '');
-      v.preload = 'auto';
-      var einmal = false;
-      function ok() { if (!einmal) { einmal = true; geladenEins(); } }
-      v.addEventListener('canplaythrough', ok);
-      v.addEventListener('error', function () { v.dataset.fehlt = '1'; ok(); });
-      v.src = 'video/Move_' + von.cam + '_' + nach.cam + '.' + endung;
-      v.load();
-      buehne.insertBefore(v, buehne.firstChild);
-      videos[von.taste + nach.taste] = v;
-    });
-  });
-
-  // ---------- Ablauf ----------
-  var aktuell = 'A';     // gezeigtes Standbild
-  var ziel = null;       // Ziel der laufenden Fahrt
-  var wartend = null;    // während einer Fahrt gemerkter Klick (der letzte zählt)
-
-  stills.A.classList.add('sichtbar');
-  markieren();
-
-  function markieren() {
-    ANSICHTEN.forEach(function (a) {
-      var k = knoepfe[a.taste];
-      var an = (ziel || aktuell) === a.taste;
-      k.classList.toggle('aktiv', an);
-      k.classList.toggle('vorgemerkt', !an && wartend === a.taste);
-      k.setAttribute('aria-pressed', an ? 'true' : 'false');
-    });
-  }
-
-  function waehlen(taste) {
-    if (ziel) {   // Fahrt läuft: merken, nach dem Ende ausführen
-      wartend = taste === ziel ? null : taste;
-      markieren();
-      return;
-    }
-    if (taste === aktuell) return;
-    fahren(aktuell, taste);
-  }
-
-  function fahren(von, nach) {
-    ziel = nach;
-    markieren();
-    var v = videos[von + nach];
-    var still = stills[von];
-    var beendet = false;
-
-    function ende() {
-      if (beendet) return;
-      beendet = true;
-      // Ziel-Standbild über dem letzten Videobild einblenden (beide zeigen dieselbe Ansicht), dann Video zurücksetzen.
-      stills[nach].classList.remove('weg');
-      stills[nach].classList.add('sichtbar');
-      setTimeout(function () {
-        if (v) { v.classList.remove('sichtbar'); v.pause(); try { v.currentTime = 0; } catch (e) {} }
-        aktuell = nach;
-        ziel = null;
-        var w = wartend;
-        wartend = null;
-        if (w && w !== aktuell) fahren(aktuell, w); else markieren();
-      }, 260);
-    }
-
-    if (!v || v.dataset.fehlt) {   // keine Fahrt vorhanden: weich überblenden
-      still.classList.add('weg');
-      still.classList.remove('sichtbar');
-      ende();
-      return;
-    }
-
-    var wachhund = null;
-    v.onended = function () { clearTimeout(wachhund); ende(); };
-    v.classList.add('sichtbar');   // liegt unter dem Standbild
-    try { if (v.currentTime !== 0) v.currentTime = 0; } catch (e) {}
-
-    var losgelaufen = false;
-    function los() {
-      if (losgelaufen) return;
-      losgelaufen = true;
-      still.classList.add('weg');
-      still.classList.remove('sichtbar');
-      var dauer = isFinite(v.duration) && v.duration > 0 ? v.duration : 2;
-      wachhund = setTimeout(ende, (dauer + 4) * 1000);   // falls „ended“ ausbleibt
-    }
-    // Standbild erst ausblenden, wenn das Video wirklich Bilder liefert.
-    if (v.requestVideoFrameCallback) v.requestVideoFrameCallback(function () { los(); });
-    v.addEventListener('playing', function warte() { v.removeEventListener('playing', warte); setTimeout(los, 40); });
-
-    var p = v.play();
-    if (p && p.catch) p.catch(function () {
-      // Abspielen nicht möglich (z. B. Datei fehlt): ohne Fahrt überblenden.
-      v.classList.remove('sichtbar');
-      still.classList.add('weg');
-      still.classList.remove('sichtbar');
-      ende();
-    });
-  }
-
-  // Tastatur: A–D bzw. 1–4
-  document.addEventListener('keydown', function (e) {
-    var k = e.key.toUpperCase();
-    var i = '1234'.indexOf(k);
-    if (i >= 0) k = ANSICHTEN[i].taste;
-    if (stills[k]) waehlen(k);
-  });
-})();
-</script>
+<!-- settings (animations, switches) -->
+<script src="js/config.js"></script>
+<!-- data as JS files, so the site also works by double-click (file://) -->
+<script src="data/produkte.js"></script>
+<script src="data/dummies.js"></script>
+<script src="data/galerie.js"></script>
+<!-- site -->
+<script src="js/kern.js"></script>
+<script src="js/icons.js"></script>
+<script src="js/zeiger.js"></script>
+<script src="js/router.js"></script>
+<script src="js/baum.js"></script>
+<script src="js/leiste.js"></script>
+<script src="js/werkzeuge.js"></script>
+<script src="js/viewer.js"></script>
+<script src="js/seiten.js"></script>
+<script src="js/galerie.js"></script>
+<script src="js/start.js"></script>
+<script src="js/app.js"></script>
 </body>
 </html>

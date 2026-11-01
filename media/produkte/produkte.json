@@ -1,0 +1,26 @@
+{
+  "version": 1,
+  "produkte": [
+    {
+      "produkt": "Object_01",
+      "klasse": "M",
+      "perspektiven": 4,
+      "abendbilder": false,
+      "bilder": ["Object_01/bilder/Still_Cam1.jpg", "Object_01/bilder/Still_Cam2.jpg", "Object_01/bilder/Still_Cam3.jpg", "Object_01/bilder/Still_Cam4.jpg"]
+    },
+    {
+      "produkt": "Object_02",
+      "klasse": "M",
+      "perspektiven": 3,
+      "abendbilder": false,
+      "bilder": ["Object_02/bilder/Still_Cam1.jpg", "Object_02/bilder/Still_Cam2.jpg", "Object_02/bilder/Still_Cam3.jpg"]
+    },
+    {
+      "produkt": "Object_03",
+      "klasse": "M",
+      "perspektiven": 3,
+      "abendbilder": true,
+      "bilder": ["Object_03/bilder/Still_Cam1.jpg", "Object_03/bilder/Still_Cam2.jpg", "Object_03/bilder/Still_Cam3.jpg", "Object_03/bilder/Still_Cam1_abend.jpg", "Object_03/bilder/Still_Cam2_abend.jpg", "Object_03/bilder/Still_Cam3_abend.jpg"]
+    }
+  ]
+}

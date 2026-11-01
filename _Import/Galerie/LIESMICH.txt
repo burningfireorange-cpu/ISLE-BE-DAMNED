@@ -1,0 +1,11 @@
+Hier Fotos von gebauten Projekten ablegen (JPG oder PNG, beliebige Größe).
+
+Danach im Ordner der Website ausführen:
+    powershell -ExecutionPolicy Bypass -File bau\aktualisieren.ps1
+
+Das Skript erzeugt daraus optimierte Bilder in media\galerie\ (Vorschau ca. 800 px, groß ca. 2000 px,
+Metadaten entfernt) und die Liste data\galerie.js. Die Originale hier werden nicht verändert und
+nicht ins Git-Repository übernommen (siehe .gitignore).
+
+Reihenfolge: alphabetisch nach Dateiname (bestimmt die Reihenfolge in der Lightbox).
+Ein Foto entfernen: hier löschen und das Skript erneut ausführen.

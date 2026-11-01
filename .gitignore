@@ -1,0 +1,9 @@
+# Raw gallery photos stay local – only the optimised copies in media/galerie/ are published.
+_Import/Galerie/*
+!_Import/Galerie/LIESMICH.txt
+
+# OS / editor
+Thumbs.db
+desktop.ini
+.DS_Store
+.vscode/

@@ -1,0 +1,17 @@
+Logo-Schrift: fonts/logo/westernic.otf  (Familienname in der Datei: "Westernic")
+
+OFFENER PUNKT – bitte klären, bevor die Seite öffentlich geht:
+
+- Im Ordner fonts/logo/ lag beim Aufbau der Seite KEINE Lizenzdatei, nur westernic.otf.
+- Die Schriftdatei selbst enthält keine Angaben zu Copyright, Lizenz, Hersteller oder Designer.
+- Das Einbettungs-Feld der Schrift (OS/2 fsType) steht auf "Preview & Print" (eingeschränkte
+  Einbettung). Das deutet darauf hin, dass die Nutzung als Webfont (@font-face) eine eigene
+  Web-Lizenz braucht.
+
+Bis das geklärt ist, wird die Schrift nur für diese lokale Test-Seite verwendet.
+Sobald die Lizenzdatei vorliegt: hier ablegen (z. B. lizenzen/WESTERNIC-LICENSE.txt) und diese
+Hinweisdatei löschen.
+
+Die Schrift wird nur für den Schriftzug "gauge" und das kleine "g" (Wurzel des Baums) benutzt.
+Wäre sie nicht erlaubt, ließe sich der Schriftzug als SVG-Pfad (Outline) einbinden – auch das
+hängt aber von der Lizenz ab.

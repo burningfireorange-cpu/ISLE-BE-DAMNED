@@ -1,0 +1,1082 @@
+/* gauge – styles.
+   Colours and type feeling from Website_Test/Object_01. One corner radius for all surfaces: var(--r).
+   All durations/curves come from js/config.js (written as CSS variables at start) – the values here are only fallbacks. */
+
+@font-face {
+  font-family: 'gauge-logo';
+  src: url('../fonts/logo/westernic.otf') format('opentype');
+  font-display: block;
+}
+
+:root {
+  --grund: #efeeeb;
+  --text: #2a2a2a;
+  --leise: #8a8782;
+  --rand: #d3d0ca;
+  --linie: #aaa69f;
+  --knopf: #ffffff;
+  --flaeche: #f6f5f2;
+  --ph: #d9d7d3;
+  --ph-text: #9e9a93;
+  --ph-abend: #6f6b66;
+  --fuge-farbe: rgba(0, 0, 0, .1);
+
+  --r: 3px;
+  --fuge: .18;
+  --kurve: cubic-bezier(.4, 0, .2, 1);
+  --kurve-raus: cubic-bezier(.4, 0, 1, 1);
+  --kurve-rein: cubic-bezier(0, 0, .2, 1);
+  --baum-b: 210px;
+  --baum-schmal: 26px;
+  --luft: 32px;
+  --inhalt-max: 1240px;
+  --t-wachsen: 320ms;
+  --t-klappen: 260ms;
+  --t-verschieben: 300ms;
+  --t-schmal: 220ms;
+  --t-inhalt: 420ms;
+  --t-hover: 600ms;
+  --zoom: 1.03;
+  --t-blende-baum: 320ms;
+  --t-seite: 320ms;
+  --t-filter: 260ms;
+  --t-abend: 700ms;
+  --t-ueberblenden: 260ms;
+  --t-still-rein: 220ms;
+  --t-still-raus: 140ms;
+  --t-lampe: 1000ms;
+  --t-foto: 380ms;
+  --t-lightbox: 320ms;
+  --t-lb-wechsel: 240ms;
+  --t-hand: 280ms;
+  --abblenden: .28;
+
+  --schrift: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+
+  /* glass bar */
+  --leiste-radius: 999px;
+  --feld: 44px;
+  --feld-handy: 40px;
+  --blur: 18px;
+  --hover-zoom: 1.08;
+  --glas: rgba(250, 249, 246, .52);              /* frosted, light, half transparent (config: leiste.glasDeckkraft) */
+  --glas-ruhig: rgba(242, 241, 238, .88);        /* the glass while it moves (no blur – calm and cheap to animate) */
+  --glas-kontur: rgba(0, 0, 0, .1);              /* fine outline */
+  --glas-licht: rgba(255, 255, 255, .7);         /* light inner edge */
+  --platzhalter: #b3afa8;                         /* light grey of the code placeholders */
+  --lade-fuellung: rgba(42, 42, 42, .14);         /* the fill of the bar while the start screen loads */
+}
+
+* { box-sizing: border-box; }
+html, body { margin: 0; height: 100%; overscroll-behavior: none; }
+body {
+  background: var(--grund);
+  color: var(--text);
+  font-family: var(--schrift);
+  font-size: 14px;
+  line-height: 1.5;
+  overflow: hidden;
+  -webkit-font-smoothing: antialiased;
+  -webkit-tap-highlight-color: transparent;
+  -webkit-text-size-adjust: 100%;
+}
+button { font: inherit; color: inherit; }
+a { color: inherit; }
+:focus-visible { outline: 1px solid var(--text); outline-offset: 2px; }
+.icon { display: inline-flex; line-height: 0; }
+.leise-text { color: var(--leise); }
+
+/* ------------------------------------------------------------------
+   Pages: each page is its own scroll area, so every page keeps its scroll position
+   ------------------------------------------------------------------ */
+#seiten { position: fixed; inset: 0; z-index: 1; touch-action: pan-y pinch-zoom; }   /* horizontal swipes belong to the site (swipe = back) */
+.seite {
+  position: absolute; inset: 0;
+  overflow-x: hidden; overflow-y: auto;
+  overscroll-behavior: contain;
+  overscroll-behavior-x: none;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: thin;
+  scrollbar-color: var(--rand) transparent;
+  opacity: 0; visibility: hidden; pointer-events: none;
+  transition: opacity var(--t-seite) var(--kurve), visibility 0s linear var(--t-seite);
+}
+.seite.aktiv {
+  opacity: 1; visibility: visible; pointer-events: auto;
+  transition: opacity var(--t-seite) var(--kurve), visibility 0s;
+}
+
+/* Layout grid: content is centred with a max width. The tree lives in the margin that the content leaves anyway;
+   only where that margin is too small does the content move aside (softly) when the tree appears. */
+.spalte {
+  margin-left: max(var(--luft), calc((100% - var(--inhalt-max)) / 2));
+  margin-right: max(var(--luft), calc((100% - var(--inhalt-max)) / 2));
+  padding: 40px 0 96px;
+  transition: margin var(--t-inhalt) var(--kurve);
+}
+body.baum-an .spalte {
+  margin-left: max(calc(var(--luft) + var(--baum-b)), calc((100% - var(--inhalt-max)) / 2));
+}
+/* pages that need the space: the tree is only a thin line */
+body.baum-an.baum-schmal .seite-produkt .spalte {
+  margin-left: max(calc(var(--luft) + var(--baum-schmal) + 24px), calc((100% - var(--inhalt-max) - 160px) / 2));
+  margin-right: max(var(--luft), calc((100% - var(--inhalt-max) - 160px) / 2));
+}
+.seite-galerie .spalte,
+body.baum-an .seite-galerie .spalte {
+  margin-left: calc(var(--luft) + var(--baum-schmal) + 16px);
+  margin-right: var(--luft);
+  padding: 0;
+  transition: none;
+}
+
+/* rising (js/kern.js G.welle): waiting elements are invisible, the grey surface below them stays */
+.vor-aufstieg { opacity: 0; }
+
+/* ------------------------------------------------------------------
+   Placeholders
+   ------------------------------------------------------------------ */
+.ph {
+  position: relative;
+  background: var(--ph);
+  border-radius: var(--r);
+  overflow: hidden;
+}
+.ph-text {
+  position: absolute; left: 12px; top: 9px;
+  font-size: 11px; letter-spacing: .06em; line-height: 1.3;
+  color: var(--ph-text);
+  white-space: nowrap;
+  pointer-events: none;
+}
+.ph-fuge {
+  position: absolute; left: 0; right: 0;
+  bottom: calc(var(--fuge) * 100%);
+  height: 1px;
+  background: var(--fuge-farbe);
+}
+.ph-abend { background: var(--ph-abend); }
+.ph-abend .ph-text { color: rgba(255, 255, 255, .42); }
+.ph-abend .ph-fuge { background: rgba(0, 0, 0, .2); }
+.ph-licht {
+  position: absolute; inset: 0;
+  background:
+    radial-gradient(circle at 50% 22%, rgba(255, 238, 205, .95) 0, rgba(255, 228, 180, .9) 2.2%, rgba(255, 205, 140, .38) 5%, rgba(255, 196, 125, .12) 22%, transparent 45%);
+}
+.ph-bild {
+  position: absolute; inset: 0;
+  width: 100%; height: 100%;
+  object-fit: cover; display: block;
+  opacity: 0;
+  transition: opacity var(--t-ueberblenden) linear;
+}
+.ph.echt .ph-bild { opacity: 1; }
+/* a real image is on its way: an evening layer stays transparent until it has loaded (the day image shows through) */
+.ph-abend.ph-folgt { background: transparent; }
+.ph.echt .ph-text, .ph.echt .ph-fuge, .ph.echt .ph-licht { visibility: hidden; }
+
+/* ------------------------------------------------------------------
+   Navigation tree (desktop) – no background, no divider: only lines and words
+   ------------------------------------------------------------------ */
+.baum {
+  position: fixed;
+  left: var(--luft); top: 26px;
+  width: var(--baum-b);
+  max-height: calc(100vh - 40px);
+  overflow-x: hidden; overflow-y: auto;
+  scrollbar-width: none;
+  z-index: 10;
+  padding: 0 8px 16px 6px;
+  margin-left: -6px;
+  transition: opacity var(--t-seite) var(--kurve), width var(--t-schmal) var(--kurve), visibility 0s;
+}
+.baum::-webkit-scrollbar { display: none; }
+body.ist-start .baum {
+  opacity: 0; visibility: hidden; pointer-events: none;
+  transition: opacity var(--t-seite) var(--kurve), visibility 0s linear var(--t-seite);
+}
+.baum-liste { position: relative; }
+
+.zeile {
+  display: grid;
+  grid-template-rows: 0fr;
+  opacity: 0;
+  transition: grid-template-rows var(--t-klappen) var(--kurve), opacity var(--t-klappen) var(--kurve);
+}
+.zeile.da {
+  grid-template-rows: 1fr;
+  opacity: 1;
+  transition: grid-template-rows var(--t-wachsen) var(--kurve), opacity var(--t-blende-baum) var(--kurve);
+}
+.zeile.ohne, .zeile.ohne * { transition: none !important; }
+.zeile-innen { position: relative; min-height: 0; overflow: hidden; }
+.zeile-kopf {
+  display: flex; align-items: center; gap: 8px;
+  min-height: 32px;
+  transition: min-height var(--t-verschieben) var(--kurve);
+}
+.ast .zeile-kopf { min-height: 27px; }
+
+/* trunk */
+.stamm {
+  position: absolute; left: 4px; top: 0; bottom: 0;
+  width: 1px; background: var(--linie);
+  transition: opacity var(--t-klappen);
+}
+.wurzel .stamm { top: 36px; }
+.pfad.letzte .stamm { bottom: auto; height: 16px; }
+.ast.letzte .stamm { bottom: auto; height: 13.5px; }
+.wurzel.letzte .stamm, .nachlauf .stamm { opacity: 0; }
+/* branch tick */
+.zweig {
+  position: absolute; left: 4.5px; top: 13px;
+  width: 12px; height: 1px; background: var(--linie);
+  transition: width var(--t-verschieben) var(--kurve), opacity var(--t-verschieben);
+}
+.pfad .zweig, .wurzel .zweig { width: 0; opacity: 0; }
+
+.knopf {
+  appearance: none; -webkit-appearance: none;
+  display: flex; align-items: center; gap: 10px;
+  background: none; border: 0; padding: 0; margin: 0;
+  cursor: pointer; text-align: left;
+  border-radius: var(--r);
+  transform: translateX(0);
+  transition: transform var(--t-verschieben) var(--kurve), color .2s;
+}
+.ast .knopf { transform: translateX(16px); }
+.knopf:focus-visible { outline-offset: 3px; }
+.knoten {
+  flex: 0 0 auto;
+  width: 9px; height: 9px;
+  border-radius: var(--r);
+  background: var(--leise);
+  border: 1px solid transparent;
+  transition: background-color .25s, border-color .25s, transform var(--t-verschieben) var(--kurve);
+}
+.aktuell .knoten { background: var(--text); }
+.ast .knoten { background: var(--grund); border-color: var(--linie); }
+.ast .knopf:hover .knoten, .ast .knopf:focus-visible .knoten { background: var(--text); border-color: var(--text); }
+.wort {
+  font-size: 13.5px; letter-spacing: .04em; white-space: nowrap;
+  color: #55524d;
+  /* invisible halo in the page colour: lines (wall joint, connector) pass behind the words */
+  background: var(--grund);
+  border-radius: var(--r);
+  padding: 0 5px; margin-left: -5px;
+  transition: color .2s, opacity var(--t-schmal), background-color var(--t-schmal);
+}
+.pfad .knopf:hover .wort { color: var(--text); }
+.aktuell .wort { color: var(--text); font-weight: 500; }
+.ast .wort { color: #6d6963; }
+.ast .knopf:hover .wort, .ast .knopf:focus-visible .wort { color: var(--text); }
+.dummy .wort { font-style: italic; }
+.aktuell .knopf { cursor: default; }
+
+.wurzel .zeile-kopf { min-height: 42px; align-items: flex-start; }
+.wurzel-g {
+  display: block;
+  font-family: 'gauge-logo', var(--schrift);
+  font-size: 30px; line-height: 1;
+  color: var(--text);
+  transform: translateX(-4px);
+  padding-top: 2px;
+}
+
+/* tools at nodes */
+.extras { display: inline-flex; align-items: center; gap: 6px; transition: opacity var(--t-schmal); }
+.schalter {
+  appearance: none; -webkit-appearance: none;
+  font-size: 11px; letter-spacing: .04em; line-height: 1.4;
+  color: var(--leise);
+  background: transparent;
+  border: 1px solid var(--rand); border-radius: var(--r);
+  padding: 1px 6px;
+  cursor: pointer;
+  transition: border-color .2s, color .2s;
+}
+.schalter:hover { border-color: var(--linie); color: var(--text); }
+.extras-unten {
+  padding-left: 19px;
+  max-height: 160px;
+  transition: opacity var(--t-schmal), max-height var(--t-schmal) var(--kurve);
+}
+.param .extras-unten { padding-left: 35px; }
+.views { display: inline-flex; align-items: center; gap: 4px; padding: 1px 0 9px; }
+.view, .lampe {
+  appearance: none; -webkit-appearance: none;
+  min-width: 20px; height: 20px; padding: 0 4px;
+  display: inline-flex; align-items: center; justify-content: center;
+  font-size: 10.5px; letter-spacing: 0; line-height: 1;
+  color: var(--leise);
+  background: transparent;
+  border: 1px solid var(--rand); border-radius: var(--r);
+  cursor: pointer;
+  transition: background-color .2s, color .2s, border-color .2s, box-shadow .2s;
+}
+.view:hover, .lampe:hover { border-color: var(--linie); color: var(--text); }
+.view.aktiv { background: var(--text); border-color: var(--text); color: #fff; }
+.view.vorgemerkt { box-shadow: 0 0 0 2px var(--grund), 0 0 0 3px var(--linie); }
+.lampe { margin-left: 6px; width: 24px; }
+.lampe.an { background: var(--text); border-color: var(--text); color: #ffd99a; }
+
+/* parameter slider (placeholder) */
+.regler-huelle {
+  display: grid; grid-template-rows: 0fr;
+  transition: grid-template-rows var(--t-wachsen) var(--kurve);
+}
+.offen > .regler-huelle, .param.offen .regler-huelle { grid-template-rows: 1fr; }
+.regler {
+  min-height: 0; overflow: hidden;
+  display: flex; align-items: center; flex-wrap: wrap; gap: 2px 10px;
+}
+.regler-wert { font-size: 12px; color: var(--text); font-variant-numeric: tabular-nums; min-width: 58px; }
+.regler-hinweis { flex-basis: 100%; font-size: 10.5px; color: var(--leise); letter-spacing: .06em; padding-bottom: 8px; margin-top: -4px; }
+input[type=range] {
+  -webkit-appearance: none; appearance: none;
+  width: 110px; height: 22px; margin: 2px 0;
+  background: transparent; cursor: pointer;
+}
+input[type=range]::-webkit-slider-runnable-track { height: 1px; background: var(--linie); }
+input[type=range]::-webkit-slider-thumb {
+  -webkit-appearance: none; appearance: none;
+  width: 11px; height: 11px; margin-top: -5px;
+  border-radius: var(--r); border: 0; background: var(--text);
+}
+input[type=range]::-moz-range-track { height: 1px; background: var(--linie); }
+input[type=range]::-moz-range-thumb { width: 11px; height: 11px; border-radius: var(--r); border: 0; background: var(--text); }
+
+/* collapsed tree: a fine line with dots, opens on hover */
+.baum.schmal { width: calc(var(--baum-schmal) + 14px); }
+.baum.schmal.offen { width: calc(var(--baum-b) + 40px); }
+.baum.schmal:not(.offen) .wort,
+.baum.schmal:not(.offen) .extras,
+.baum.schmal:not(.offen) .extras-unten { opacity: 0; pointer-events: none; }
+.baum.schmal:not(.offen) .extras-unten { max-height: 0; }
+.baum.schmal:not(.offen) .ast .knopf { transform: translateX(0); }
+.baum.schmal:not(.offen) .zweig { width: 0; }
+.baum.schmal:not(.offen) .knoten { transform: scale(.62); }
+.baum.schmal:not(.offen) .ast .knoten { background: var(--linie); border-color: var(--linie); }
+.baum.schmal:not(.offen) .ast .zeile-kopf { min-height: 20px; }
+.schalter, .views { background: var(--grund); }
+.views { border-radius: var(--r); padding: 2px 5px 2px; margin: 0 0 8px -5px; }
+.baum.schmal.offen .regler { background: var(--grund); border-radius: var(--r); padding: 0 6px; margin-left: -6px; width: fit-content; max-width: 100%; }
+
+/* the active branch continues as a fine line into the content */
+.verbinder {
+  position: fixed; inset: 0;
+  width: 100%; height: 100%;
+  pointer-events: none;
+  z-index: 6;
+  transition: opacity var(--t-seite);
+}
+.verbinder path { fill: none; stroke: var(--linie); stroke-width: 1; }
+.verbinder rect { fill: var(--linie); transition: opacity .2s; }
+
+/* ------------------------------------------------------------------
+   Start screen
+   ------------------------------------------------------------------ */
+.start {
+  position: fixed; inset: 0; z-index: 20;
+  display: flex; align-items: center; justify-content: center;
+  pointer-events: none;
+  padding: 24px;
+}
+.start.aktiv { pointer-events: auto; }
+.start.weg { visibility: hidden; }
+.start-mitte {
+  display: flex; flex-direction: column; align-items: center;
+  gap: clamp(26px, 6vh, 60px);
+  transform: translateY(-2vh);
+}
+.start-logo {
+  font-family: 'gauge-logo', var(--schrift);
+  font-weight: normal;
+  font-size: clamp(76px, 15vw, 200px);
+  line-height: 1;
+  margin: 0;
+  color: var(--text);
+  user-select: none;
+}
+.start-auswahl { display: flex; gap: 20px; }
+.start-feld {
+  position: relative;
+  appearance: none; -webkit-appearance: none;
+  width: 84px; height: 84px;
+  display: flex; align-items: center; justify-content: center;
+  border: 1px solid var(--rand); border-radius: var(--r);
+  background: transparent;
+  color: var(--text);
+  cursor: pointer;
+  transition: border-color .25s, background-color .25s;
+}
+.start-feld:hover, .start-feld:focus-visible { border-color: var(--linie); background: var(--flaeche); }
+.schild {
+  position: absolute; top: calc(100% + 10px); left: 50%;
+  transform: translate(-50%, -3px);
+  font-size: 12px; letter-spacing: .1em;
+  color: var(--leise);
+  white-space: nowrap;
+  opacity: 0;
+  transition: opacity .25s, transform .25s var(--kurve);
+  pointer-events: none;
+}
+.start-feld:hover .schild, .start-feld:focus-visible .schild { opacity: 1; transform: translate(-50%, 0); }
+@media (hover: none) { .schild { opacity: 1; transform: translate(-50%, 0); } }
+
+.start-auswahl { position: relative; isolation: isolate; }
+.start-blech { display: none; }
+.nav-leiste .start-auswahl { display: none; }        /* glass bar: the bar itself sits at the bottom of the start screen */
+.nav-leiste .start.aktiv { pointer-events: none; }   /* (the logo lies above the pages, but the bar must stay clickable) */
+.start:not(.aktiv) .schild { opacity: 0 !important; }
+
+/* ------------------------------------------------------------------
+   Glass bar (navigation: 'leiste') – one long narrow pill of frosted glass.
+   Bottom centre, horizontal (.glas); on the product pages right, vertical (.glas.rechts). Phone: always bottom.
+   The frosted surface is its own layer (.g-hg), so name plates and option bars can be glass too.
+   ------------------------------------------------------------------ */
+.glas, .glas-oben { position: fixed; z-index: 15; }
+.g-hg, .g-geist {
+  position: absolute; inset: 0;
+  border-radius: var(--leiste-radius);
+  background: var(--glas);
+  -webkit-backdrop-filter: blur(var(--blur)) saturate(1.5);
+  backdrop-filter: blur(var(--blur)) saturate(1.5);
+  box-shadow: inset 0 0 0 1px var(--glas-licht), 0 0 0 1px var(--glas-kontur), 0 8px 28px rgba(0, 0, 0, .08);
+  pointer-events: none;
+}
+.g-geist { position: fixed; z-index: 14; inset: auto; }   /* the glass on its way from one place to the other (below the symbols) */
+.glas {
+  left: 50%; bottom: var(--leiste-rand);
+  transform: translateX(-50%);
+}
+.glas.rechts {
+  left: auto; bottom: auto;
+  right: var(--leiste-rand); top: 50%;
+  transform: translateY(-50%);
+}
+.g-reihe {
+  position: relative;
+  display: flex; align-items: center; gap: 2px;
+  padding: 5px;
+  transition: opacity 200ms var(--kurve);
+}
+.glas.rechts .g-reihe { flex-direction: column; }
+.g-haupt, .g-kontext, .w-gruppe { display: flex; flex-direction: inherit; align-items: center; gap: 2px; }
+.glas.ohne-home .g-home { display: none; }
+.g-trenner { display: none; flex: 0 0 auto; width: 1px; height: 22px; margin: 0 7px; background: rgba(0, 0, 0, .16); }
+.glas.mit-kontext .g-trenner { display: block; }
+.glas.rechts .g-trenner { width: 22px; height: 1px; margin: 7px 0; }
+.g-kontext:empty { display: none; }
+/* while the glass travels: the real bar waits invisibly at its new place */
+.glas.im-flug .g-hg, .glas.im-umformen .g-hg { visibility: hidden; }
+.glas.im-flug .g-reihe { opacity: 0; transition: none; }
+.g-klon { position: fixed !important; z-index: 16 !important; transform: none !important; margin: 0 !important; pointer-events: none; }
+.g-klon .schild, .g-klon .g-optionen { display: none !important; }
+/* change of place (bottom <-> right): calm surface without blur while it moves, the old bar shrinks away as .g-alt */
+.glas.im-wechsel .g-hg, .g-alt .g-hg, .g-ruhig-unter {
+  -webkit-backdrop-filter: none; backdrop-filter: none;
+  background: var(--glas-ruhig);
+}
+.g-alt { position: fixed !important; z-index: 16; margin: 0 !important; pointer-events: none; }
+/* loading (start screen): only the empty outline, a fill grows from left to right; no symbols, not clickable */
+.glas.laedt { pointer-events: none; }
+.glas.laedt .g-reihe { opacity: 0; transition: none; }
+.g-fuellung {
+  position: absolute; inset: 0;
+  border-radius: var(--leiste-radius);
+  background: var(--lade-fuellung);
+  pointer-events: none;
+  clip-path: inset(0 100% 0 0);
+}
+.g-alt .schild, .g-alt .g-optionen, .g-alt .g-blase { display: none !important; }
+
+/* the round fields: all symbols the same size, fine lines */
+.g-feld {
+  appearance: none; -webkit-appearance: none;
+  position: relative;
+  flex: 0 0 auto;
+  width: var(--feld); height: var(--feld);
+  display: flex; align-items: center; justify-content: center;
+  padding: 0; margin: 0; border: 0;
+  border-radius: 50%;
+  background: transparent;
+  color: var(--text);
+  cursor: pointer;
+  transition: background-color .2s var(--kurve), color .2s var(--kurve);
+}
+.g-sym { display: flex; align-items: center; justify-content: center; transition: transform .22s var(--kurve); }
+.g-text { font-size: 13.5px; letter-spacing: .02em; font-variant-numeric: tabular-nums; line-height: 1; }
+@media (hover: hover) {
+  .g-feld:hover { background: rgba(255, 255, 255, .7); }
+  .g-feld:hover .g-sym { transform: scale(var(--hover-zoom)); }
+}
+html.eigener-zeiger .g-feld:hover { background: transparent; }   /* the pointer itself becomes the hover field */
+.g-feld:focus-visible { outline: 1px solid var(--text); outline-offset: -3px; }
+.g-feld.aktiv, .g-feld.aktiv:hover { background: var(--text); color: #fff; }
+.g-feld.aktiv .g-sym { transform: none; }
+.g-feld.vorgemerkt { box-shadow: inset 0 0 0 1px rgba(0, 0, 0, .35); }
+.g-feld.g-lampe.an, .g-feld.g-lampe.an:hover { background: var(--text); color: #ffd99a; }
+/* a view clicked before its move has loaded: a fine ring fills around the symbol, then the move starts */
+.g-ring {
+  position: absolute; inset: 2px;
+  width: calc(100% - 4px); height: calc(100% - 4px);
+  transform: rotate(-90deg);
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity .2s var(--kurve);
+}
+.g-feld.laedt .g-ring { opacity: 1; transition-delay: .08s; }
+.g-ring circle { fill: none; stroke-width: 1.4; vector-effect: non-scaling-stroke; }
+.g-ring-spur { stroke: rgba(0, 0, 0, .12); }
+.g-ring-wert { stroke: var(--text); stroke-dasharray: 100 100; stroke-dashoffset: 100; stroke-linecap: round; transition: stroke-dashoffset .2s linear; }
+
+/* name plates on hover – always towards the screen centre: above the symbol (bar at the bottom), left of it (bar right) */
+.glas .schild, .glas-oben .schild, .g-optionen .schild {
+  position: absolute; z-index: 3; top: auto;
+  font-size: 11.5px; letter-spacing: .06em; line-height: 1;
+  color: var(--text);
+  white-space: nowrap;
+  padding: 6px 10px 6px;
+  border-radius: var(--leiste-radius);
+  background: var(--glas);
+  -webkit-backdrop-filter: blur(var(--blur)) saturate(1.5);
+  backdrop-filter: blur(var(--blur)) saturate(1.5);
+  box-shadow: inset 0 0 0 1px var(--glas-licht), 0 0 0 1px var(--glas-kontur);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity .2s var(--kurve), transform .2s var(--kurve);
+}
+.glas .schild, .glas-oben .schild, .g-optionen .schild { bottom: calc(100% + 14px); left: 50%; transform: translate(-50%, 4px); }
+.glas.rechts .schild { bottom: auto; left: auto; right: calc(100% + 14px); top: 50%; transform: translate(4px, -50%); }
+@media (hover: hover) {
+  .g-feld:hover > .schild, .g-feld:focus-visible > .schild, .g-opt:hover > .schild { opacity: 1; transform: translate(-50%, 0); }
+  .glas.rechts .g-feld:hover > .schild, .glas.rechts .g-feld:focus-visible > .schild { transform: translate(0, -50%); }
+}
+@media (hover: none) { .glas .schild, .glas-oben .schild, .g-optionen .schild { display: none; } }
+
+/* Products: the code filter OBJ_TYPE_SIZE_NUMBER behind the divider.
+   Placeholders light grey, chosen values black and bolder. Each segment opens a small glass bar above it. */
+.w-code {
+  gap: 0; height: var(--feld); padding: 0 10px 0 6px;
+  font-size: 13.5px; letter-spacing: .05em; line-height: 1; white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+}
+.c-fest, .c-strich { color: var(--text); }
+.c-fest { padding-right: 4px; }
+.c-seg-huelle { position: relative; display: flex; align-items: center; height: 100%; }
+.g-seg {
+  appearance: none; -webkit-appearance: none;
+  display: inline-flex; align-items: center; gap: 3px;
+  height: calc(var(--feld) - 10px); margin: 0; padding: 0 4px; border: 0;
+  border-radius: var(--leiste-radius);
+  background: transparent;
+  font: inherit; letter-spacing: inherit;
+  color: var(--text); font-weight: 650;
+  cursor: pointer;
+  transition: background-color .2s var(--kurve), color .2s var(--kurve);
+}
+.g-seg.leer { color: var(--platzhalter); font-weight: 400; }
+.g-seg .c-pfeil { flex: 0 0 auto; transition: transform .25s var(--kurve); }
+.c-pfeil.auf { transform: rotate(180deg); }
+@media (hover: hover) { .g-seg:hover { background: rgba(255, 255, 255, .7); } .g-seg.leer:hover { color: #8d8982; } }
+.g-seg.offen { background: rgba(255, 255, 255, .8); }
+.g-seg:focus-visible, .g-opt:focus-visible { outline: 1px solid var(--text); outline-offset: -2px; }
+
+/* the small glass bar with the options (slides up out of the bar, slides back after the choice) */
+.g-optionen {
+  position: absolute; z-index: 4;
+  left: 50%; bottom: calc(100% + 5px + 9px);        /* 5px = padding of the bar: 9px above the glass */
+  transform: translate(calc(-50% + var(--dx, 0px)), 8px);
+  visibility: hidden; pointer-events: none;
+  transition: transform var(--t-klappfeld) var(--kurve), visibility 0s linear var(--t-klappfeld);
+}
+.glas-oben .g-optionen { bottom: calc(100% + 4px + 9px); }
+.g-optionen > .g-hg, .g-optionen > .g-reihe { opacity: 0; transition: opacity var(--t-blende-klapp) var(--kurve); }
+.g-optionen.offen {
+  visibility: visible; pointer-events: auto;
+  transform: translate(calc(-50% + var(--dx, 0px)), 0);
+  transition: transform var(--t-klappfeld) var(--kurve), visibility 0s;
+}
+.g-optionen.offen > .g-hg, .g-optionen.offen > .g-reihe { opacity: 1; }
+.g-optionen .g-reihe { padding: 4px; gap: 2px; flex-wrap: wrap; justify-content: center; width: max-content; max-width: calc(100vw - 16px); }
+.g-opt {
+  appearance: none; -webkit-appearance: none;
+  position: relative;
+  display: inline-flex; align-items: center; justify-content: center; gap: 5px;
+  height: calc(var(--feld) - 8px); min-width: calc(var(--feld) - 8px);
+  margin: 0; padding: 0 12px; border: 0;
+  border-radius: var(--leiste-radius);
+  background: transparent;
+  font: inherit; font-size: 13px; letter-spacing: .05em; line-height: 1; white-space: nowrap;
+  color: var(--text);
+  cursor: pointer;
+  transition: background-color .2s var(--kurve), color .2s var(--kurve);
+}
+@media (hover: hover) { .g-opt:hover { background: rgba(255, 255, 255, .7); } }
+.g-opt.aktiv, .g-opt.aktiv:hover { background: var(--text); color: #fff; }
+.g-opt.g-opt-leer, .g-opt.g-opt-leer:hover { color: var(--platzhalter); background: transparent; cursor: default; }
+
+/* phone: the page tools in their own small glass field above the bar */
+.glas-oben {
+  left: 50%; transform: translateX(-50%);
+  bottom: calc(var(--leiste-rand) + var(--leiste-h, 54px) + 8px);
+  display: none;
+}
+.glas-oben.da { display: block; }
+.glas-oben .g-reihe { padding: 4px; }
+
+/* own mouse pointer (js/zeiger.js): small filled circle, centre = click point, inverts itself on dark ground.
+   Over glass fields a light hover field (.g-blase) grows out of it in the glass below the symbols; the circle itself
+   always stays visible on top. */
+html.eigener-zeiger, html.eigener-zeiger * { cursor: none !important; }
+html.eigener-zeiger :is(input:not([type]), input[type=text], input[type=email], input[type=search], input[type=tel],
+  input[type=url], input[type=number], input[type=password], textarea, [contenteditable=""], [contenteditable=true]) { cursor: text !important; }
+.zeiger {
+  position: fixed; left: 0; top: 0; z-index: 1000;
+  pointer-events: none;
+  mix-blend-mode: difference;               /* white circle: black on light ground, white on dark ground */
+  opacity: 0;
+  transition: opacity var(--t-zeiger, 140ms);
+  will-change: transform;
+}
+.zeiger.da { opacity: 1; }
+.zeiger.text { opacity: 0; }                /* text fields: the normal text cursor instead */
+.zeiger-p {
+  position: absolute; left: 0; top: 0;
+  width: var(--zeiger, 10px); height: var(--zeiger, 10px);
+  transform: translate(-50%, -50%);
+  border-radius: 50%;
+  background: #fff;
+  transition: width var(--t-zeiger, 140ms) var(--kurve), height var(--t-zeiger, 140ms) var(--kurve),
+              transform var(--t-verschmelzen, 200ms) var(--kurve), opacity var(--t-verschmelzen, 200ms) var(--kurve);
+}
+.zeiger.klickbar .zeiger-p { width: var(--zeiger-hover, 16px); height: var(--zeiger-hover, 16px); }
+.zeiger.druck .zeiger-p { width: calc(var(--zeiger, 10px) - 2px); height: calc(var(--zeiger, 10px) - 2px); }
+/* over the bar symbols the circle stays visible on top – only the hover field below reacts */
+
+/* the light hover field the pointer flows into (one per glass piece, moved by js/zeiger.js) */
+.g-blase {
+  position: absolute; left: 0; top: 0; z-index: 0;
+  width: 10px; height: 10px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, .78);
+  box-shadow: 0 1px 6px rgba(0, 0, 0, .06);
+  opacity: 0;
+  pointer-events: none;
+  transition: transform var(--t-verschmelzen-weg, 200ms) var(--kurve), width var(--t-verschmelzen-weg, 200ms) var(--kurve),
+              height var(--t-verschmelzen-weg, 200ms) var(--kurve), border-radius var(--t-verschmelzen-weg, 200ms) var(--kurve),
+              opacity var(--t-verschmelzen, 200ms) var(--kurve);
+}
+.g-blase.an { opacity: 1; }
+.glas.im-flug .g-blase, .g-klon .g-blase { display: none; }
+html.eigener-zeiger .g-seg:hover, html.eigener-zeiger .g-opt:not(.aktiv):hover { background: transparent; }
+
+/* glass bar: the content uses the full width and scrolls behind the bar; at the bottom enough room
+   so that the last row can be scrolled above the bar (--frei-u / --frei-r are measured from the bar) */
+.nav-leiste {
+  --frei-r: 0px;
+  --frei-u: 84px;
+}
+.nav-leiste .seite .spalte {
+  margin-left: var(--inhalt-rand, 20px);
+  margin-right: var(--inhalt-rand, 20px);
+  padding: var(--inhalt-rand, 20px) 0 calc(var(--frei-u) + var(--inhalt-rand, 20px));
+  transition: none;
+}
+.nav-leiste .seite.seite-galerie .spalte { padding: 0; }
+
+/* ------------------------------------------------------------------
+   Products – one grid of separate tiles (4:3, same size, same radius, gaps)
+   ------------------------------------------------------------------ */
+.raster {
+  position: relative;
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 22px var(--raster-abstand);
+}
+.zelle { position: relative; min-width: 0; transition: opacity var(--t-filter) var(--kurve); }
+.zelle.geht { position: absolute; z-index: 0; pointer-events: none; }
+.kachel {
+  position: relative; display: block;
+  aspect-ratio: 4 / 3;
+  border-radius: var(--r);
+  overflow: hidden;
+  isolation: isolate;
+  outline-offset: 2px;
+}
+.kachel .ph { position: absolute; inset: 0; border-radius: 0; }
+.kachel { background: var(--ph); }                 /* calm grey surface until the tile has risen */
+.kachel .ph-bild { transition: none; }             /* the image comes with the rising, not with a fade of its own */
+.kachel .k-tag { transition: transform var(--t-hover) var(--kurve); }
+.kachel:not(.licht):focus-visible .k-tag,
+.kachel:not(.licht).hervor .k-tag { transform: scale(var(--zoom)); }
+.kachel .k-abend { opacity: 0; transition: opacity var(--t-abend) var(--kurve); }
+.kachel.licht:focus-visible .k-abend,
+.kachel.licht.hervor .k-abend { opacity: 1; }
+@media (hover: hover) {
+  .kachel:not(.licht):hover .k-tag { transform: scale(var(--zoom)); }
+  .kachel.licht:hover .k-abend { opacity: 1; }
+}
+.kachel.dummy .ph-text { color: #a8a39b; }
+.name {
+  display: inline-block;
+  margin-top: 7px;
+  font-size: 13px; letter-spacing: .04em;
+  text-decoration: none;
+  color: var(--text);
+}
+.zelle.dummy .name { color: var(--leise); font-style: italic; }
+.raster-leer { color: var(--leise); font-size: 13.5px; letter-spacing: .04em; margin: 8px 0 0; }
+.zelle.gedimmt { opacity: var(--abblenden); }
+.zelle.leise { opacity: .5; }
+/* ------------------------------------------------------------------
+   Product page – everything sits in the FREE area: left screen edge up to the bars (phone: above the bars).
+   produkt: only the image, 4:3, as large as possible, the same distance all round, centred – at every window size.
+   ------------------------------------------------------------------ */
+.seite-produkt { overflow: hidden; }
+.p-frei {
+  --m: var(--inhalt-rand, 20px);                 /* the same distance all round */
+  position: absolute; left: 0; top: 0;
+  right: var(--frei-r, 0px); bottom: var(--frei-u, 0px);
+  container-type: size;
+}
+.nav-baum .p-frei { left: calc(var(--luft) + var(--baum-schmal) + 24px); }
+.p-modus { position: absolute; inset: 0; display: none; }
+.seite-produkt[data-modus=produkt] .p-ansicht,
+.seite-produkt[data-modus=customize] .p-customize,
+.seite-produkt[data-modus=order] .p-order,
+.seite-produkt[data-modus=payment] .p-payment { display: flex; animation: rein var(--t-seite) var(--kurve) both; }
+@keyframes rein { from { opacity: 0; } to { opacity: 1; } }
+.p-ansicht { align-items: center; justify-content: center; }
+.p-buehne { width: min(calc(100cqw - 2 * var(--m)), calc((100cqh - 2 * var(--m)) * 4 / 3)); }
+/* glass bar: the picture fills the WHOLE screen (cover), also behind the bar – but its centre sits in the middle of the
+   FREE area (left edge up to the bar incl. its edge distance; phone: above the bars). Any window shape, any picture
+   aspect ratio (--a, from the stills): width = enough to reach the far edges from that centre. */
+.nav-leiste .p-ansicht {
+  inset: 0 calc(-1 * var(--frei-r, 0px)) calc(-1 * var(--frei-u, 0px)) 0;   /* = the whole screen */
+  container-type: size;
+}
+.nav-leiste .p-buehne {
+  position: absolute;
+  left: calc((100cqw - var(--frei-r, 0px)) / 2);
+  top: calc((100cqh - var(--frei-u, 0px)) / 2);
+  width: max(calc(100cqw + var(--frei-r, 0px)), calc((100cqh + var(--frei-u, 0px)) * var(--a, 1.3333)));
+  transform: translate(-50%, -50%);
+}
+.nav-leiste .p-buehne .viewer { border-radius: 0; }
+.viewer {
+  position: relative;
+  width: 100%;
+  aspect-ratio: var(--a, 4 / 3);
+  border-radius: var(--r);
+  overflow: hidden;
+  background: var(--ph);
+  isolation: isolate;
+}
+.viewer > .ph, .viewer > video {
+  position: absolute; inset: 0;
+  width: 100%; height: 100%;
+  border-radius: 0;
+  opacity: 0;
+  pointer-events: none;
+}
+.viewer > video { z-index: 1; object-fit: cover; display: block; }
+.viewer > .v-still { z-index: 2; transition: opacity var(--t-ueberblenden) linear; }
+.viewer > .v-still.raus { transition-duration: var(--t-still-raus); }
+.viewer > .v-still.rein { transition-duration: var(--t-still-rein); }
+.viewer > .v-abend { z-index: 3; transition: opacity var(--t-lampe) var(--kurve); }
+.viewer > .v-abend.vor-fahrt { transition-duration: var(--t-lampe-vor); }   /* back to day before a move */
+.viewer > .sofort { transition: none; }
+.viewer > .sichtbar { opacity: 1; }
+.v-laden { position: absolute; left: 0; right: 0; bottom: 0; height: 2px; z-index: 4; transition: opacity .4s; }
+.v-laden i { display: block; height: 100%; width: 0; background: rgba(42, 42, 42, .3); transition: width .3s; }
+.v-laden.fertig { opacity: 0; }
+
+/* customize: axonometry large on the left, a separate narrow field next to it (empty frame for now) */
+.p-customize {
+  --panel: 248px;
+  --axo: min(calc(100cqw - 3 * var(--m) - var(--panel)), calc((100cqh - 2 * var(--m)) * 4 / 3));
+  align-items: center; justify-content: center; gap: var(--m);
+}
+.p-axo { position: relative; width: var(--axo); aspect-ratio: 4 / 3; flex: 0 0 auto; }
+.p-axo .ph { position: absolute; inset: 0; }
+.p-optionen {
+  flex: 0 0 auto;
+  width: var(--panel); height: calc(var(--axo) * 3 / 4);
+  padding: 16px 18px;
+  border: 1px solid var(--rand); border-radius: var(--r);
+  overflow: auto;
+}
+.p-optionen-titel { margin: 0 0 8px; font-size: 12px; font-weight: 500; letter-spacing: .14em; text-transform: uppercase; color: var(--leise); }
+
+/* to order / payment: a calm card in the middle of the free area (scrolls if the window is too low) */
+.p-order, .p-payment { overflow-y: auto; padding: var(--m); }
+.p-karte {
+  width: min(100%, 400px);
+  margin: auto;
+  padding: 14px 14px 18px;
+  border: 1px solid var(--rand);
+  border-radius: var(--r);
+}
+.p-karte-schmal { width: min(100%, 340px); padding: 6px 18px 18px; }
+.p-ord-bild { position: relative; aspect-ratio: 4 / 3; border-radius: var(--r); overflow: hidden; }
+.p-ord-bild .ph { position: absolute; inset: 0; border-radius: 0; }
+.p-titel { font-size: 16px; font-weight: 500; letter-spacing: .08em; margin: 14px 0 2px; }
+.p-hinweis { margin: 6px 0 0; font-size: 13px; color: var(--leise); letter-spacing: .02em; }
+.werte {
+  display: grid; grid-template-columns: max-content 1fr;
+  gap: 4px 28px; margin: 12px 0 0;
+  font-size: 13.5px;
+}
+.werte dt { color: var(--leise); }
+.werte dd { margin: 0; font-variant-numeric: tabular-nums; }
+.werte .preis { padding-top: 10px; margin-top: 6px; border-top: 1px solid var(--rand); }
+.werte dt.preis { margin-right: -28px; }      /* one continuous line across both columns */
+.kaufen {
+  appearance: none; -webkit-appearance: none;
+  display: block; width: 100%;
+  margin: 20px 0 4px; padding: 10px 0;
+  font-size: 13px; letter-spacing: .12em;
+  border-radius: var(--r);
+  border: 1px solid var(--rand);
+  background: transparent; color: var(--leise);
+  cursor: not-allowed;
+}
+/* ------------------------------------------------------------------
+   About
+   ------------------------------------------------------------------ */
+/* About Us + Bespoke: the content sits in the middle of the screen as one calm block (text left-aligned inside it).
+   Equal room above and below (as much as the bar takes at the bottom), so the block is centred on the screen. */
+.seite-about .spalte, .seite-bespoke .spalte {
+  box-sizing: border-box;
+  min-height: 100%;
+  display: flex; align-items: center; justify-content: center;
+}
+.nav-leiste .seite-about .spalte, .nav-leiste .seite-bespoke .spalte {
+  padding-top: calc(var(--frei-u) + var(--inhalt-rand, 20px));
+}
+.about-text { width: 100%; max-width: 520px; font-size: 15px; line-height: 1.7; }
+.about-titel { font-size: 12px; font-weight: 500; letter-spacing: .14em; text-transform: uppercase; color: var(--leise); margin: 0 0 14px; }
+.about-text p { margin: 0 0 16px; }
+.about-text p:last-child { margin-bottom: 0; }
+.about-teil + .about-teil { margin-top: 44px; }
+.about-kontakt { scroll-margin: 24px 0 calc(var(--frei-u, 0px) + 24px); }
+.about-kontakt p { margin-bottom: 6px; }
+.about-text a { color: inherit; text-decoration: none; border-bottom: 1px solid var(--rand); transition: border-color .2s; }
+.about-text a:hover { border-color: var(--text); }
+.about-weiter { margin-top: 28px !important; }
+.nur-vorlesen {
+  position: absolute !important; width: 1px; height: 1px; margin: -1px; padding: 0; border: 0;
+  overflow: hidden; clip: rect(0 0 0 0); clip-path: inset(50%); white-space: nowrap;
+}
+
+/* ------------------------------------------------------------------
+   Gallery + lightbox
+   ------------------------------------------------------------------ */
+.galerie-flaeche { position: relative; }
+.g-foto {
+  position: absolute;
+  appearance: none; -webkit-appearance: none;
+  padding: 0; margin: 0; border: 0;
+  border-radius: var(--r);
+  overflow: hidden;
+  background: var(--ph);
+  cursor: zoom-in;
+}
+.g-foto img {
+  display: block; width: 100%; height: 100%;
+  object-fit: cover;
+}
+.g-nr { position: absolute; left: 10px; top: 8px; font-size: 11px; letter-spacing: .06em; color: var(--ph-text); }
+.g-foto:focus-visible { outline-offset: -3px; }
+
+.lightbox {
+  position: fixed; inset: 0; z-index: 40;
+  background: rgba(239, 238, 235, .97);
+  opacity: 0; visibility: hidden;
+  transition: opacity var(--t-lightbox) var(--kurve), visibility 0s linear var(--t-lightbox);
+}
+.lightbox.offen { opacity: 1; visibility: visible; transition: opacity var(--t-lightbox) var(--kurve), visibility 0s; }
+.lb-buehne { position: absolute; inset: 0; }
+.lb-bild {
+  position: absolute;
+  border-radius: var(--r);
+  overflow: hidden;
+  background: var(--ph);
+  transform-origin: 0 0;
+}
+.lb-bild img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; display: block; }
+.lb-bild .lb-gross { opacity: 0; transition: opacity var(--t-foto) linear; }
+.lb-bild.scharf .lb-gross { opacity: 1; }
+.lb-bild .ph-text { font-size: 12px; left: 14px; top: 12px; }
+.lb-knopf {
+  position: absolute;
+  appearance: none; -webkit-appearance: none;
+  width: 48px; height: 48px;
+  display: flex; align-items: center; justify-content: center;
+  background: none; border: 0; border-radius: var(--r);
+  color: var(--text); cursor: pointer;
+  opacity: .7; transition: opacity .2s;
+}
+.lb-knopf:hover { opacity: 1; }
+.lb-zurueck { left: 20px; top: calc(50% - 24px); }
+.lb-vor { right: 20px; top: calc(50% - 24px); }
+.lb-zu { right: 20px; top: 18px; }
+.lb-zaehler {
+  position: absolute; left: 0; right: 0; bottom: max(18px, env(safe-area-inset-bottom));
+  text-align: center; font-size: 12px; letter-spacing: .1em; color: var(--leise);
+  font-variant-numeric: tabular-nums;
+}
+
+/* shared element (tile ↔ viewer) */
+.flug {
+  position: fixed; z-index: 13;          /* above the pages, below the glass bar */
+  overflow: hidden;
+  transform-origin: 0 0;
+  pointer-events: none;
+  will-change: transform, clip-path;
+}
+.flug .ph { position: absolute; inset: 0; border-radius: 0; }
+/* the real viewer on its way home: in the flight frame, then inside its tile (cover) until the move has ended */
+.flug > .viewer, .kachel > .viewer {
+  position: absolute; inset: 0;
+  width: 100%; height: 100%; aspect-ratio: auto;
+  border-radius: 0;
+}
+.kachel > .viewer { z-index: 5; pointer-events: none; }
+.kachel > .viewer.heim-raus { opacity: 0; }
+.flug > .viewer .v-laden, .kachel > .viewer .v-laden { display: none; }
+
+/* ------------------------------------------------------------------
+   Phone: the tree becomes a horizontal path line at the bottom
+   ------------------------------------------------------------------ */
+.pfadleiste, .astfeld { display: none; }
+
+@media (max-width: 760px) {
+  .baum, .verbinder { display: none; }
+  .spalte,
+  body.baum-an .spalte,
+  body.baum-an.baum-schmal .seite-produkt .spalte,
+  .seite-galerie .spalte,
+  body.baum-an .seite-galerie .spalte {
+    margin-left: 16px; margin-right: 16px;
+  }
+  .spalte { padding: 22px 0 calc(96px + env(safe-area-inset-bottom)); }
+  .seite-galerie .spalte { padding: 0; }
+  .start-feld { width: 72px; height: 72px; }
+  .start-auswahl { gap: 16px; }
+  .lb-zurueck, .lb-vor { top: auto; bottom: max(6px, env(safe-area-inset-bottom)); }
+  .lb-zurueck { left: 8px; }
+  .lb-vor { right: 8px; }
+  .lb-zu { right: 8px; top: max(8px, env(safe-area-inset-top)); }
+  .lb-zaehler { bottom: max(20px, calc(env(safe-area-inset-bottom) + 14px)); }
+
+  .pfadleiste {
+    display: block;
+    position: fixed; left: 0; right: 0; bottom: 0; z-index: 15;
+    background: linear-gradient(to bottom, rgba(239, 238, 235, 0), var(--grund) 14px);
+    padding: 10px 0 env(safe-area-inset-bottom);
+    transition: opacity var(--t-seite), visibility 0s;
+  }
+  body.ist-start .pfadleiste, body.lightbox-offen .pfadleiste {
+    opacity: 0; visibility: hidden; pointer-events: none;
+    transition: opacity var(--t-seite), visibility 0s linear var(--t-seite);
+  }
+  .pl-spur {
+    display: flex; align-items: center;
+    overflow-x: auto; overflow-y: hidden;
+    scrollbar-width: none;
+    padding: 4px 16px 10px;
+    white-space: nowrap;
+  }
+  .pl-spur::-webkit-scrollbar { display: none; }
+  .pl-linie { flex: 0 0 16px; height: 1px; background: var(--linie); margin: 0 6px; }
+  .pl-knoten {
+    flex: 0 0 auto;
+    appearance: none; -webkit-appearance: none;
+    display: inline-flex; align-items: center; gap: 7px;
+    background: none; border: 0; padding: 8px 2px; margin: 0;
+    font-size: 13.5px; letter-spacing: .03em;
+    color: #55524d;
+    cursor: pointer;
+  }
+  .pl-knoten .knoten { background: var(--leise); }
+  .pl-knoten.aktuell { color: var(--text); font-weight: 500; }
+  .pl-knoten.aktuell .knoten { background: var(--text); }
+  .pl-knoten.wurzel { padding: 0 4px 2px 0; }
+  .pl-knoten .wurzel-g { font-size: 28px; transform: none; padding: 0; }
+  .pl-pfeil {
+    width: 0; height: 0; margin-left: 2px;
+    border-left: 4px solid transparent; border-right: 4px solid transparent;
+    border-bottom: 5px solid currentColor;
+    transition: transform var(--t-hand) var(--kurve);
+  }
+  .feld-offen .pl-pfeil { transform: rotate(180deg); }
+  .pl-knoten.neu, .pl-linie.neu { animation: pl-rein var(--t-wachsen) var(--kurve) both; }
+  @keyframes pl-rein { from { opacity: 0; transform: translateX(-10px); } to { opacity: 1; transform: none; } }
+
+  .astfeld {
+    display: block;
+    position: fixed; left: 10px; right: 10px;
+    bottom: calc(58px + env(safe-area-inset-bottom));
+    z-index: 14;
+    max-height: 58vh;
+    overflow-y: auto;
+    background: var(--flaeche);
+    border: 1px solid var(--rand);
+    border-radius: var(--r);
+    padding: 8px 6px;
+    transform: translateY(24px);
+    opacity: 0; visibility: hidden;
+    transition: transform var(--t-hand) var(--kurve), opacity var(--t-hand) var(--kurve), visibility 0s linear var(--t-hand);
+  }
+  .astfeld.offen {
+    transform: none; opacity: 1; visibility: visible;
+    transition: transform var(--t-hand) var(--kurve), opacity var(--t-hand) var(--kurve), visibility 0s;
+  }
+  .af-werkzeug { display: flex; align-items: center; gap: 12px; padding: 6px 10px 10px; border-bottom: 1px solid var(--rand); margin-bottom: 4px; }
+  .af-werkzeug .views { padding: 0; }
+  .af-werkzeug .view, .af-werkzeug .lampe { min-width: 30px; height: 30px; font-size: 12px; }
+  .af-titel { font-size: 11px; letter-spacing: .12em; text-transform: uppercase; color: var(--leise); min-width: 40px; }
+  .af-knopf {
+    appearance: none; -webkit-appearance: none;
+    display: flex; align-items: center; gap: 12px;
+    width: 100%; padding: 10px 10px;
+    background: none; border: 0; border-radius: var(--r);
+    font-size: 15px; letter-spacing: .03em; text-align: left;
+    cursor: pointer;
+  }
+  .af-knopf .knoten { background: var(--grund); border-color: var(--linie); }
+  .af-ast.dummy .wort { font-style: italic; color: var(--leise); }
+  .af-ast .regler-huelle { padding-left: 31px; }
+  .af-ast.offen .knoten { background: var(--text); border-color: var(--text); }
+}
+
+/* ------------------------------------------------------------------
+   Phone: the glass bar always at the bottom centre; the page tools in a small glass field above it
+   ------------------------------------------------------------------ */
+@media (max-width: 760px) {
+  .glas, .glas-oben { --feld: var(--feld-handy); }
+  .glas { bottom: max(var(--leiste-rand-handy), env(safe-area-inset-bottom)); }
+  .glas-oben { bottom: calc(max(var(--leiste-rand-handy), env(safe-area-inset-bottom)) + var(--leiste-h, 50px) + 8px); }
+  .g-reihe { padding: 4px; gap: 1px; }
+  .nav-leiste .seite .spalte { margin-left: 12px; margin-right: 12px; padding: 16px 0 calc(var(--frei-u) + 16px); }
+  .nav-leiste .seite.seite-galerie .spalte { margin-left: 10px; margin-right: 10px; padding: 0; }
+  .raster { gap: 16px var(--raster-abstand-handy); }
+  .name { font-size: 12.5px; margin-top: 5px; }
+  /* product page on the phone: free area above the bars; customize stacks axonometry and options field */
+  .p-frei { --m: 12px; }
+  .p-customize {
+    --panel-h: 110px;
+    --axo: min(calc(100cqw - 2 * var(--m)), calc((100cqh - 3 * var(--m) - var(--panel-h)) * 4 / 3));
+    flex-direction: column;
+  }
+  .p-optionen { width: var(--axo); height: var(--panel-h); padding: 12px 14px; }
+}
+@media (max-width: 370px) { .glas, .glas-oben { --feld: 36px; } }
+
+/* very small phones */
+@media (max-width: 360px) {
+  .start-feld { width: 64px; height: 64px; }
+}
