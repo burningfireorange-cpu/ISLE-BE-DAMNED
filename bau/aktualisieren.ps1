@@ -1,16 +1,22 @@
 ﻿<#
   gauge – Bau-Skript: aktualisiert alles, was die Website an Daten und Medien braucht.
   Beliebig oft wiederholbar: Es kopiert nur, was neu ist oder sich geändert hat (Größe oder Änderungszeit),
-  entfernt, was es in der Quelle nicht mehr gibt, und legt nie etwas doppelt an.
+  legt beiseite, was es in der Quelle nicht mehr gibt, und legt nie etwas doppelt an.
+  Es löscht nie endgültig: Überzähliges wandert nach _Papierkorb\<Datum_Uhrzeit>\ (nicht in Git; bei Bedarf von Hand leeren),
+  und nur aus den eigenen Bildordnern unter media\ (Sicherheitsprüfung siehe "SICHERES AUFRÄUMEN").
 
   1. Galerie:  _Import\Galerie\*.jpg|*.jpeg|*.png  →  media\galerie\klein\ (ca. 800 px) + media\galerie\gross\ (ca. 2000 px)
                Metadaten entfernt, Drehung (EXIF) berücksichtigt, Transparenz auf Seitenfarbe  →  data\galerie.js
   2. Produkte: <Quelle>\produkte.json  →  media\produkte\produkte.json (Kopie)
                je Produkt  <Quelle>\<Name>\bilder\   nur die Bilder aus dem Feld "bilder" (Abendbilder nur bei "abendbilder": true)
-                           <Quelle>\<Name>\video\    Move_CamX_CamY.mp4 + .webm zwischen den vorhandenen Kameras, beide Richtungen
+                           Kachelbild = erstes Bild aus "kacheln" (+ Abendversion bei Lampen), verkleinert nach bilder\kachel\
+                           <Quelle>\<Name>\video\    Move_CamX_CamY.mp4 + .webm zwischen den vorhandenen Kameras, beide Richtungen,
+                                                     bei Lampen zusätzlich die Abendfahrten aus "abendfahrten" (Move_CamX_CamY_abend)
                            <Quelle>\<Name>\video\klein\  dasselbe in klein (Handy / schmale Fenster)
                →  media\produkte\<Name>\...  →  data\produkte.js
-               Zusatzinfos (Kategorie, Maße) aus _Import\produkte-zusatz.json.
+               Typ und Anzeigename aus "typ" / "anzeigename", Bildformat und Ausschnitte aus "format".
+               Fehlt eines davon: Rückfall auf _Import\produkte-zusatz.json (Kategorie, Maße) – steht am Ende im Bericht.
+               "raum_leer" und der Ordner Raum_leer werden nicht verwendet.
                Die Quelle (Unity-Projekt) wird NUR gelesen – dort wird nie etwas geändert.
                Am Ende steht eine Liste aller Dateien, die gefehlt haben.
   Dummy-Produkte stehen in data\dummies.js und werden hier nicht angefasst (an/aus in js\config.js: dummiesZeigen).
@@ -81,6 +87,58 @@ function Wert($obj, [string]$name) {
 }
 function Melden([string]$text, [string]$farbe = 'Gray') { Write-Host $text -ForegroundColor $farbe }
 
+<# ---------------------------------------------------------------------
+   SICHERES AUFRÄUMEN – das Skript löscht nie endgültig.
+   Was nicht mehr gebraucht wird, wandert nach  _Papierkorb\<Datum_Uhrzeit>\<gleicher Pfad>  (nicht in Git).
+   Erlaubt sind NUR diese Ordner (relativ zur Ausgabe):
+       media\produkte\<Produkt>\bilder | bilder\kachel | video | video\klein   (Dateien darin)
+       media\produkte                                                          (ganze Produktordner, die nicht mehr in produkte.json stehen)
+       media\galerie\klein | gross                                             (Dateien darin)
+   Vor jedem Verschieben wird geprüft: Pfad liegt genau in so einem Ordner, kein Laufwerks-/Hauptordner,
+   keine Verknüpfung (Junction/Symlink) auf dem Weg. Sonst bricht das Skript ab, ohne etwas anzufassen.
+   --------------------------------------------------------------------- #>
+$ZielVoll = [IO.Path]::GetFullPath($Ziel).TrimEnd('\')
+if ($ZielVoll.Length -le 3 -or $ZielVoll -eq [IO.Path]::GetFullPath($env:USERPROFILE).TrimEnd('\')) { throw "Sicherheitsstopp: Ausgabeordner '$ZielVoll' ist ein Laufwerks- oder Benutzer-Hauptordner." }
+$Papierkorb = Join-Path $ZielVoll ('_Papierkorb\' + (Get-Date -Format 'yyyy-MM-dd_HHmmss'))
+$ErlaubteOrdner = @(
+  '^media\\produkte\\[^\\]+\\(bilder|bilder\\kachel|video|video\\klein)$',
+  '^media\\produkte$',
+  '^media\\galerie\\(klein|gross)$'
+)
+function Sicherheitsstopp([string]$text) { throw "Sicherheitsstopp beim Aufräumen: $text – nichts verschoben." }
+<# Datei oder Ordner $pfad, der DIREKT in $ordner liegt, in den Papierkorb-Ordner verschieben. #>
+function Beiseitelegen([string]$pfad, [string]$ordner) {
+  $voll = [IO.Path]::GetFullPath($pfad).TrimEnd('\')
+  $ordnerVoll = [IO.Path]::GetFullPath($ordner).TrimEnd('\')
+  if (-not $ordnerVoll.StartsWith($ZielVoll + '\', [StringComparison]::OrdinalIgnoreCase)) { Sicherheitsstopp "$ordnerVoll liegt nicht im Ausgabeordner" }
+  $relOrdner = $ordnerVoll.Substring($ZielVoll.Length + 1)
+  $ok = $false; foreach ($m in $ErlaubteOrdner) { if ($relOrdner -match $m) { $ok = $true } }
+  if (-not $ok) { Sicherheitsstopp "$relOrdner ist kein Bildordner des Bau-Skripts" }
+  if ((Split-Path -Parent $voll) -ne $ordnerVoll) { Sicherheitsstopp "$voll liegt nicht direkt in $relOrdner" }
+  # keine Verknüpfung auf dem Weg vom Ausgabeordner bis zum Ziel (eine Junction könnte sonst auf fremde Ordner zeigen)
+  $p = $voll
+  while ($p.Length -ge $ZielVoll.Length) {
+    $it = Get-Item -LiteralPath $p -Force -ErrorAction Stop
+    if ($it.Attributes -band [IO.FileAttributes]::ReparsePoint) { Sicherheitsstopp "$p ist eine Verknüpfung (Junction/Symlink)" }
+    if ($p -eq $ZielVoll) { break }
+    $p = Split-Path -Parent $p
+  }
+  if ((Get-Item -LiteralPath $voll -Force).PSIsContainer) {
+    $verkn = @(Get-ChildItem -LiteralPath $voll -Recurse -Force -Attributes ReparsePoint -ErrorAction SilentlyContinue)
+    if ($verkn.Count) { Sicherheitsstopp "$voll enthält Verknüpfungen" }
+  }
+  $nach = Join-Path $Papierkorb $voll.Substring($ZielVoll.Length + 1)
+  $nachOrdner = Split-Path -Parent $nach
+  if (-not (Test-Path -LiteralPath $nachOrdner)) { New-Item -ItemType Directory -Force $nachOrdner | Out-Null }
+  Move-Item -LiteralPath $voll -Destination $nach
+}
+<# Leeren Ordner entfernen (nur wenn wirklich leer, nur in erlaubten Bildordnern). #>
+function LeerenOrdnerEntfernen([string]$ordner) {
+  if (-not (Test-Path -LiteralPath $ordner)) { return }
+  if (@(Get-ChildItem -LiteralPath $ordner -Force).Count) { return }
+  Beiseitelegen $ordner (Split-Path -Parent $ordner)
+}
+
 $zeit = Get-Date -Format 'yyyy-MM-dd HH:mm'
 Melden "gauge – aktualisieren ($zeit)" 'White'
 Melden "  Website: $Website"
@@ -98,6 +156,15 @@ if (-not $OhneGalerie) {
   if (-not (Test-Path $FFmpeg)) { throw "ffmpeg nicht gefunden: $FFmpeg" }
 
   $dateien = @(Get-ChildItem -LiteralPath $eingang -File | Where-Object { $_.Extension -match '^\.(jpe?g|png)$' } | Sort-Object Name)
+  $vorhandeneAusgaben = @(Get-ChildItem -LiteralPath $ausGross -File -Filter *.jpg -ErrorAction SilentlyContinue)
+  if (-not $dateien.Count -and $vorhandeneAusgaben.Count) {
+    # Schutz: Originale fehlen (z. B. Ordner geleert), aber es gibt fertige Galeriebilder → nichts entfernen, Liste nicht leeren
+    Melden ("  ! _Import\Galerie ist leer, media\galerie enthält aber {0} Foto(s) – Galerie bleibt unverändert." -f $vorhandeneAusgaben.Count) 'Yellow'
+    Melden '    Zum Entfernen aller Fotos: media\galerie\klein und \gross von Hand leeren.' 'Yellow'
+    $dateien = $null
+  }
+}
+if (-not $OhneGalerie -and $null -ne $dateien) {
   $fotos = @()
   $vergeben = @{}
   foreach ($d in $dateien) {
@@ -137,10 +204,10 @@ if (-not $OhneGalerie) {
     $fotos += [pscustomobject]@{ datei = $d.Name; name = $name; b = $ergebnis.gross.w; h = $ergebnis.gross.h }
     Melden ("  {0,-40} {1} x {2}" -f $d.Name, $ergebnis.gross.w, $ergebnis.gross.h)
   }
-  # verwaiste Ausgaben entfernen (Original wurde gelöscht)
+  # verwaiste Ausgaben beiseitelegen (Original wurde gelöscht) – in den Papierkorb-Ordner, nicht endgültig
   foreach ($o in @($ausKlein, $ausGross)) {
-    Get-ChildItem -LiteralPath $o -File -Filter *.jpg | Where-Object { -not $vergeben.ContainsKey($_.BaseName) } | ForEach-Object {
-      Remove-Item -LiteralPath $_.FullName; Melden "  entfernt: $($_.Name)" 'DarkGray'
+    @(Get-ChildItem -LiteralPath $o -File -Filter *.jpg | Where-Object { -not $vergeben.ContainsKey($_.BaseName) }) | ForEach-Object {
+      Beiseitelegen $_.FullName $o; Melden "  → Papierkorb: $($_.Name)" 'DarkGray'
     }
   }
   $zeilen = $fotos | ForEach-Object {
@@ -192,13 +259,13 @@ if (-not $OhneProdukte) {
       $stat.neu++
     }
   }
-  <# Alles in einem Zielordner entfernen, was nicht (mehr) dazugehört. #>
+  <# Alles in einem Produkt-Bildordner beiseitelegen, was nicht (mehr) dazugehört (→ _Papierkorb, siehe oben). #>
   function Aufraeumen([string]$ordner, [hashtable]$behalten, [string]$muster) {
-    if ($NurDaten -or -not (Test-Path -LiteralPath $ordner)) { return }
-    Get-ChildItem -LiteralPath $ordner -File | Where-Object { $_.Name -match $muster -and -not $behalten.ContainsKey($_.Name) } | ForEach-Object {
-      Remove-Item -LiteralPath $_.FullName
+    if ($NurDaten -or $quelleFehlt -or -not (Test-Path -LiteralPath $ordner)) { return }
+    @(Get-ChildItem -LiteralPath $ordner -File | Where-Object { $_.Name -match $muster -and -not $behalten.ContainsKey($_.Name) }) | ForEach-Object {
+      Beiseitelegen $_.FullName $ordner
       $stat.entfernt++
-      Melden ("    entfernt: {0}" -f $_.FullName.Substring($Ziel.Length).TrimStart('\')) 'DarkGray'
+      Melden ("    → Papierkorb: {0}" -f $_.FullName.Substring($ZielVoll.Length).TrimStart('\')) 'DarkGray'
     }
   }
 
@@ -207,36 +274,69 @@ if (-not $OhneProdukte) {
 
   $namen = @{}
   $zeilen = @()
+  $rueckfall = New-Object System.Collections.ArrayList     # Felder, die in produkte.json fehlten (→ Bericht)
+  $typNamen = @{ 'tables' = 'tables'; 'table' = 'tables'; 'seating' = 'seating'; 'seat' = 'seating'; 'storage' = 'storage'; 'lighting' = 'lighting'; 'light' = 'lighting'; 'lamp' = 'lighting' }
+  function Rechteck($r) {     # {x,y,breite,hoehe} → [x, y, b, h] (oder $null)
+    if ($null -eq $r) { return $null }
+    $x = Wert $r 'x'; $y = Wert $r 'y'; $b = Wert $r 'breite'; $h = Wert $r 'hoehe'
+    if ($null -eq $b -or $null -eq $h) { return $null }
+    return @([int]$x, [int]$y, [int]$b, [int]$h)
+  }
   foreach ($p in $daten.produkte) {
     $name = [string]$p.produkt
     if (-not $name) { continue }
     $namen[$name] = $true
     $z = Wert $zusatz $name
-    $kat = Wert $p 'kategorie'; if (-not $kat) { $kat = Wert $z 'kategorie' }
-    $kat = ([string]$kat).ToLowerInvariant()
-    if ($kategorien -notcontains $kat) { Melden "  ! $name hat keine gültige Kategorie ('$kat') – nehme 'tables'. Bitte in _Import\produkte-zusatz.json eintragen." 'Yellow'; $kat = 'tables' }
+
+    # ---- Typ und Anzeigename: aus produkte.json ("typ", "anzeigename"); leer → Rückfall auf _Import\produkte-zusatz.json ----
+    $typRoh = ([string](Wert $p 'typ')).Trim().ToLowerInvariant()
+    $kat = $typNamen[$typRoh]
+    if (-not $kat) {
+      $kat = ([string](Wert $z 'kategorie')).ToLowerInvariant()
+      if ($typRoh) { [void]$rueckfall.Add("$name  typ = '$(Wert $p 'typ')' unbekannt → Kategorie '$kat' aus produkte-zusatz.json") }
+      else { [void]$rueckfall.Add("$name  typ leer → Kategorie '$kat' aus produkte-zusatz.json") }
+    }
+    if ($kategorien -notcontains $kat) { Melden "  ! $name hat keine gültige Kategorie ('$kat') – nehme 'tables'." 'Yellow'; [void]$rueckfall.Add("$name  keine Kategorie gefunden → 'tables'"); $kat = 'tables' }
     $masse = Wert $p 'masse'; if (-not $masse) { $masse = Wert $z 'masse' }
-    $nummer = Wert $p 'nummer'; if (-not $nummer) { $nummer = Wert $z 'nummer' }
-    if (-not $nummer) { $ziffern = $name -replace '\D', ''; if ($ziffern) { $nummer = [int]$ziffern } else { $nummer = 0 } }
     $kl = $klassen[([string]$p.klasse).ToUpperInvariant()]
     if (-not $kl) { $kl = $klassen[([string](Wert $z 'klasse')).ToUpperInvariant()] }
     if (-not $kl) { $kl = 'M' }
-    $code = 'OBJ_' + $typen[$kat] + '_' + $kl + '_' + ([int]$nummer).ToString('00')
+    $anzeige = ([string](Wert $p 'anzeigename')).Trim()
+    $nummer = $null
+    if ($anzeige -match '^OBJ_([A-Z]+)_([A-Z]+)_(\d+)$') {
+      $code = $anzeige; $nummer = [int]$matches[3]
+      if ($matches[1] -ne $typen[$kat]) { [void]$rueckfall.Add("$name  anzeigename ${anzeige}: Typkürzel $($matches[1]) passt nicht zu typ '$kat' ($($typen[$kat])) – Anzeigename gilt, Filter nach typ") }
+      if ($matches[2] -ne $kl) { [void]$rueckfall.Add("$name  anzeigename ${anzeige}: Größe $($matches[2]) passt nicht zu klasse $kl – Anzeigename gilt, Filter nach klasse") }
+    } else {
+      $nummer = Wert $z 'nummer'
+      if (-not $nummer) { $ziffern = $name -replace '\D', ''; if ($ziffern) { $nummer = [int]$ziffern } else { $nummer = 0 } }
+      $code = 'OBJ_' + $typen[$kat] + '_' + $kl + '_' + ([int]$nummer).ToString('00')
+      if ($anzeige) { [void]$rueckfall.Add("$name  anzeigename '$anzeige' nicht im Muster OBJ_TT_G_NN → $code") }
+      else { [void]$rueckfall.Add("$name  anzeigename leer → $code (aus Typ, Klasse, Nummer)") }
+    }
     $perspektiven = [int](Wert $p 'perspektiven')
     $mitAbend = [bool](Wert $p 'abendbilder')
     $quellOrdner = Join-Path $Quelle $name
     $zielOrdner = Join-Path $mediaProdukte $name
+    # Schutz: fehlt der Quellordner (z. B. gerade im Neuaufbau), wird für dieses Produkt nichts beiseitegelegt
+    $quelleFehlt = -not (Test-Path -LiteralPath $quellOrdner)
+    if ($quelleFehlt) { Melden "  ! $name  Quellordner fehlt – vorhandene Dateien bleiben unverändert." 'Yellow' }
     $versionText = New-Object System.Text.StringBuilder
+
+    function QuellDatei([string]$eintrag) {      # Pfad aus produkte.json (relativ zu Website_Test) → FileInfo oder $null
+      $rel = $eintrag.Replace('/', '\').TrimStart('\')
+      $voll = Join-Path $Quelle $rel
+      if (-not (Test-Path -LiteralPath $voll)) { $voll2 = Join-Path $quellOrdner $rel; if (Test-Path -LiteralPath $voll2) { $voll = $voll2 } }
+      if (-not (Test-Path -LiteralPath $voll)) { return $null }
+      return Get-Item -LiteralPath $voll
+    }
 
     # ---- Bilder: genau die aus dem Feld "bilder" (nicht aus "perspektiven" abgeleitet) ----
     $tag = @{}; $abend = @{}; $bildDateien = @{}
     foreach ($eintrag in @(Wert $p 'bilder')) {
       if (-not $eintrag) { continue }
-      $rel = ([string]$eintrag).Replace('/', '\').TrimStart('\')
-      $voll = Join-Path $Quelle $rel
-      if (-not (Test-Path -LiteralPath $voll)) { $voll2 = Join-Path $quellOrdner $rel; if (Test-Path -LiteralPath $voll2) { $voll = $voll2 } }
-      if (-not (Test-Path -LiteralPath $voll)) { [void]$fehlend.Add("$name  $rel  (steht in produkte.json, Datei fehlt)"); continue }
-      $f = Get-Item -LiteralPath $voll
+      $f = QuellDatei ([string]$eintrag)
+      if (-not $f) { [void]$fehlend.Add("$name  $eintrag  (steht in produkte.json, Datei fehlt)"); continue }
       if ($f.Name -notmatch '^Still_Cam(\d+)(_abend)?\.(jpe?g|png|webp)$') { Melden "  ! $name  unbekannter Bildname $($f.Name) – übersprungen" 'Yellow'; continue }
       $cam = [int]$matches[1]
       if ($matches[2]) {
@@ -250,13 +350,31 @@ if (-not $OhneProdukte) {
     }
     if ($perspektiven -and $kameras.Count -and $perspektiven -ne $kameras.Count) {
       Melden ("  i $name  perspektiven = {0}, im Feld bilder stehen {1} Kamera(s) – es zählen die Bilder." -f $perspektiven, $kameras.Count) 'DarkYellow'
+      [void]$rueckfall.Add("$name  perspektiven = $perspektiven, vorhandene Standbilder = $($kameras.Count) – die Website zeigt $($kameras.Count) View(s)")
     }
-    # Bildformat (Breite, Höhe) aus dem ersten Standbild – die Produktseite füllt damit den Bildschirm in jedem Seitenverhältnis
-    $format = @()
-    if ($kameras.Count) {
+    # ---- Format: volle Bildgröße und Lage des 16:9- (bildschirm) und 4:3-Ausschnitts (kachel) aus "format" ----
+    $fo = Wert $p 'format'
+    $format = @(); $bildschirm = $null; $kachelAus = $null
+    if ($fo -and (Wert $fo 'breite') -and (Wert $fo 'hoehe')) {
+      $format = @([int](Wert $fo 'breite'), [int](Wert $fo 'hoehe'))
+      $bildschirm = Rechteck (Wert $fo 'bildschirm')
+      $kachelAus = Rechteck (Wert $fo 'kachel')
+      if (-not $bildschirm) { [void]$rueckfall.Add("$name  format.bildschirm fehlt → ganzes Bild") }
+      if (-not $kachelAus) { [void]$rueckfall.Add("$name  format.kachel fehlt → mittiger 4:3-Ausschnitt") }
+    } else {
+      [void]$rueckfall.Add("$name  format fehlt → Größe aus dem ersten Standbild")
+    }
+    if (-not $format.Count -and $kameras.Count) {
       $bild = [System.Drawing.Image]::FromFile($tag[$kameras[0]].FullName)
       try { $format = @([int]$bild.Width, [int]$bild.Height) } finally { $bild.Dispose() }
     }
+    if ($format.Count -and $kameras.Count) {      # passt die Angabe zum echten Bild?
+      $bild = [System.Drawing.Image]::FromFile($tag[$kameras[0]].FullName)
+      try { if ($bild.Width -ne $format[0] -or $bild.Height -ne $format[1]) { [void]$rueckfall.Add("$name  format $($format[0])×$($format[1]), Standbild ist $($bild.Width)×$($bild.Height) – es gilt das Standbild"); $format = @([int]$bild.Width, [int]$bild.Height) } } finally { $bild.Dispose() }
+    }
+    if (-not $bildschirm -and $format.Count) { $bildschirm = @(0, 0, $format[0], $format[1]) }
+    if (-not $kachelAus -and $format.Count) { $kw = [int][Math]::Round($format[1] * 4 / 3); $kachelAus = @([int](($format[0] - $kw) / 2), 0, $kw, $format[1]) }
+
     $bilderJs = @(); $abendJs = @()
     foreach ($c in $kameras) {
       $f = $tag[$c]; $bildDateien[$f.Name] = $true; $bilderJs += 'bilder/' + $f.Name
@@ -268,28 +386,45 @@ if (-not $OhneProdukte) {
         [void]$versionText.Append("$($fa.Name)|$($fa.Length)|$($fa.LastWriteTimeUtc.Ticks);")
       } else { $abendJs += $null }
     }
-    # Kachelbilder: View 1 (und ihr Abendbild) klein – die Kacheln laden beim Start nur diese, nicht die großen Standbilder
+
+    # ---- Kachelbilder: das erste Bild aus "kacheln" (4:3) und bei Lampen seine Abendversion (Still_Cam1_abend_kachel) ----
+    #      Die Quelle liefert sie in voller Größe (2400 px, ~700 KB) – für die Übersicht wird eine kleine Kopie erzeugt
+    #      (KachelBreite, ~35 KB), damit der Startbildschirm schnell bleibt.  → bilder\kachel\<Name aus kacheln>
+    $kachelListe = @(@(Wert $p 'kacheln') | Where-Object { $_ })
+    if (-not $kachelListe.Count) { [void]$rueckfall.Add("$name  kacheln leer → Kachelbild aus Still_Cam1") }
+    $kachelTag = $null; $kachelAbend = $null
+    foreach ($eintrag in $kachelListe) {
+      $nm = Split-Path -Leaf ([string]$eintrag)
+      if (-not $kachelTag -and $nm -notmatch '_abend') { $kachelTag = [string]$eintrag }
+      if ($mitAbend -and -not $kachelAbend -and $kameras.Count -and $nm -match ('^Still_Cam' + $kameras[0] + '_abend_kachel\.')) { $kachelAbend = [string]$eintrag }
+    }
+    if ($kachelListe.Count -and [string]$kachelListe[0] -ne $kachelTag) { [void]$rueckfall.Add("$name  erstes Bild in kacheln ist kein Tagbild – nehme $kachelTag") }
+    $paare = @()
+    if ($kachelTag) { $q = QuellDatei $kachelTag; if ($q) { $paare += @{ q = $q; js = 'tag' } } else { [void]$fehlend.Add("$name  $kachelTag  (steht in kacheln, Datei fehlt)") } }
+    elseif ($kameras.Count) { $paare += @{ q = $tag[$kameras[0]]; js = 'tag'; mitte = $true } }
+    if ($mitAbend) {
+      if ($kachelAbend) { $q = QuellDatei $kachelAbend; if ($q) { $paare += @{ q = $q; js = 'abend' } } else { [void]$fehlend.Add("$name  $kachelAbend  (steht in kacheln, Datei fehlt)") } }
+      elseif ($kameras.Count) { [void]$fehlend.Add("$name  Still_Cam$($kameras[0])_abend_kachel.jpg  (Lampe: Abend-Kachelbild fehlt in kacheln)") }
+    }
     $kachelJs = $null; $kachelAbendJs = $null; $kachelDateien = @{}
     $kachelOrdner = Join-Path $zielOrdner 'bilder\kachel'
-    if ($kameras.Count) {
-      $c1 = $kameras[0]
-      $paare = @(@{ q = $tag[$c1]; js = 'tag' })
-      if ($abend.ContainsKey($c1)) { $paare += @{ q = $abend[$c1]; js = 'abend' } }
-      foreach ($pa in $paare) {
-        $q = $pa.q
-        $aus = Join-Path $kachelOrdner $q.Name
-        $kachelDateien[$q.Name] = $true
-        if (-not $NurDaten) {
-          if (-not (Test-Path -LiteralPath $kachelOrdner)) { New-Item -ItemType Directory -Force $kachelOrdner | Out-Null }
-          if ($Neu -or -not (Test-Path -LiteralPath $aus) -or (Get-Item -LiteralPath $aus).LastWriteTimeUtc -lt $q.LastWriteTimeUtc) {
-            & $FFmpeg -hide_banner -loglevel error -y -i $q.FullName -vf "scale=${KachelBreite}:-2:flags=lanczos" -frames:v 1 -update 1 -q:v 4 -map_metadata -1 $aus
-            if ($LASTEXITCODE -ne 0) { throw "ffmpeg-Fehler beim Kachelbild $name $($q.Name)" }
-            $stat.neu++
-          }
+    foreach ($pa in $paare) {
+      $q = $pa.q
+      $aus = Join-Path $kachelOrdner $q.Name
+      $kachelDateien[$q.Name] = $true
+      if (-not $NurDaten) {
+        if (-not (Test-Path -LiteralPath $kachelOrdner)) { New-Item -ItemType Directory -Force $kachelOrdner | Out-Null }
+        if ($Neu -or -not (Test-Path -LiteralPath $aus) -or (Get-Item -LiteralPath $aus).LastWriteTimeUtc -lt $q.LastWriteTimeUtc) {
+          # (nur im Notfall ohne kacheln: aus dem vollen Standbild den 4:3-Ausschnitt schneiden)
+          $vf = if ($pa.mitte -and $kachelAus) { "crop=$($kachelAus[2]):$($kachelAus[3]):$($kachelAus[0]):$($kachelAus[1])," } else { '' }
+          & $FFmpeg -hide_banner -loglevel error -y -i $q.FullName -vf "${vf}scale=${KachelBreite}:-2:flags=lanczos" -frames:v 1 -update 1 -q:v 4 -map_metadata -1 $aus
+          if ($LASTEXITCODE -ne 0) { throw "ffmpeg-Fehler beim Kachelbild $name $($q.Name)" }
+          $stat.neu++
         }
-        if (Test-Path -LiteralPath $aus) {
-          if ($pa.js -eq 'tag') { $kachelJs = 'bilder/kachel/' + $q.Name } else { $kachelAbendJs = 'bilder/kachel/' + $q.Name }
-        }
+      }
+      if (Test-Path -LiteralPath $aus) {
+        [void]$versionText.Append("kachel\$($q.Name)|$($q.Length)|$($q.LastWriteTimeUtc.Ticks);")
+        if ($pa.js -eq 'tag') { $kachelJs = 'bilder/kachel/' + $q.Name } else { $kachelAbendJs = 'bilder/kachel/' + $q.Name }
       }
     }
     Aufraeumen $kachelOrdner $kachelDateien '\.(jpe?g|png|webp)$'
@@ -308,32 +443,49 @@ if (-not $OhneProdukte) {
     Aufraeumen (Join-Path $zielOrdner 'bilder') $bildDateien '\.(jpe?g|png|webp)$'
 
     # ---- Videos: Fahrten zwischen allen vorhandenen Kameras, beide Richtungen, mp4 + webm, groß und klein ----
+    #      Abendfahrten (nur Lampen): genau die aus "abendfahrten" – Move_CamA_CamB_abend.mp4, daneben .webm und video\klein\
+    $abendPaare = @{}
+    foreach ($eintrag in @(Wert $p 'abendfahrten')) {
+      if (-not $eintrag) { continue }
+      $nm = Split-Path -Leaf ([string]$eintrag)
+      if ($nm -match '^Move_Cam(\d+)_Cam(\d+)_abend\.(mp4|webm)$') { $abendPaare["$([int]$matches[1])-$([int]$matches[2])"] = $true }
+      else { Melden "  ! $name  unbekannter Name in abendfahrten: $nm – übersprungen" 'Yellow' }
+    }
+    if ($abendPaare.Count -and -not $mitAbend) { [void]$rueckfall.Add("$name  abendfahrten vorhanden, aber abendbilder: false – Abendfahrten nicht übernommen"); $abendPaare = @{} }
     $fahrtenJs = @{}
     foreach ($stufe in @(@{ ordner = 'video'; js = 'fahrten' }, @{ ordner = 'video\klein'; js = 'fahrtenKlein' })) {
-      $vorhanden = @{}; $eintraege = @()
+      $vorhanden = @{}; $eintraege = @(); $eintraegeAbend = @()
       foreach ($a in $kameras) {
         foreach ($b in $kameras) {
           if ($a -eq $b) { continue }
-          $formate = @()
-          foreach ($endung in @('webm', 'mp4')) {
-            $datei = "Move_Cam${a}_Cam${b}.$endung"
-            $qv = Join-Path $quellOrdner ($stufe.ordner + '\' + $datei)
-            if (Test-Path -LiteralPath $qv) {
-              $fv = Get-Item -LiteralPath $qv
-              $vorhanden[$datei] = $true
-              $formate += $endung
-              Spiegeln $fv (Join-Path $zielOrdner ($stufe.ordner + '\' + $datei))
-              [void]$versionText.Append("$($stufe.ordner)\$datei|$($fv.Length)|$($fv.LastWriteTimeUtc.Ticks);")
-            } else {
-              [void]$fehlend.Add("$name  $($stufe.ordner)\$datei")
+          foreach ($art in @('', '_abend')) {
+            if ($art -and -not $abendPaare.ContainsKey("$a-$b")) { continue }
+            $formate = @()
+            foreach ($endung in @('webm', 'mp4')) {
+              $datei = "Move_Cam${a}_Cam${b}$art.$endung"
+              $qv = Join-Path $quellOrdner ($stufe.ordner + '\' + $datei)
+              if (Test-Path -LiteralPath $qv) {
+                $fv = Get-Item -LiteralPath $qv
+                $vorhanden[$datei] = $true
+                $formate += $endung
+                Spiegeln $fv (Join-Path $zielOrdner ($stufe.ordner + '\' + $datei))
+                [void]$versionText.Append("$($stufe.ordner)\$datei|$($fv.Length)|$($fv.LastWriteTimeUtc.Ticks);")
+              } else {
+                [void]$fehlend.Add("$name  $($stufe.ordner)\$datei")
+              }
+            }
+            if ($formate.Count) {
+              $e = '"' + $a + '-' + $b + '": ' + (JsListe $formate)
+              if ($art) { $eintraegeAbend += $e } else { $eintraege += $e }
             }
           }
-          if ($formate.Count) { $eintraege += ('"' + $a + '-' + $b + '": ' + (JsListe $formate)) }
         }
       }
       Aufraeumen (Join-Path $zielOrdner $stufe.ordner) $vorhanden '\.(mp4|webm)$'
       $fahrtenJs[$stufe.js] = '{' + ($eintraege -join ', ') + '}'
+      $fahrtenJs[$stufe.js + 'Abend'] = '{' + ($eintraegeAbend -join ', ') + '}'
     }
+    LeerenOrdnerEntfernen $kachelOrdner
 
     # Versionsmarke: ändert sich, sobald sich eine Datei des Produkts ändert → der Browser lädt sie neu
     $hash = $md5.ComputeHash([Text.Encoding]::UTF8.GetBytes($versionText.ToString()))
@@ -343,26 +495,31 @@ if (-not $OhneProdukte) {
     $licht = $mitAbend
     $nV = ([regex]::Matches($fahrtenJs.fahrten, '"\d+-\d+"')).Count
     $nVk = ([regex]::Matches($fahrtenJs.fahrtenKlein, '"\d+-\d+"')).Count
-    Melden ("  {0,-12} {1,-12} {2,-9} {3}  {4} View(s){5}   Bilder: {6}{7}   Fahrten: {8} / klein {9}" -f $name, $code, $kat, $kl, $views,
-      $(if ($licht) { '  Licht' } else { '' }), $kameras.Count, $(if ($abend.Count) { " + $($abend.Count) Abend" } else { '' }), $nV, $nVk)
+    $nA = ([regex]::Matches($fahrtenJs.fahrtenAbend, '"\d+-\d+"')).Count
+    Melden ("  {0,-12} {1,-12} {2,-9} {3}  {4} View(s){5}   Bilder: {6}{7}   Fahrten: {8} / klein {9}{10}   Format {11}" -f $name, $code, $kat, $kl, $views,
+      $(if ($licht) { '  Licht' } else { '' }), $kameras.Count, $(if ($abend.Count) { " + $($abend.Count) Abend" } else { '' }), $nV, $nVk,
+      $(if ($nA) { " + $nA Abend" } else { '' }), $(if ($format.Count) { "$($format[0])×$($format[1])" } else { '?' }))
 
     $zeilen += '    { "name": ' + (JsText $name) + ', "code": ' + (JsText $code) + ', "nummer": ' + $nummer + ', "kategorie": ' + (JsText $kat) + ', "klasse": ' + (JsText $kl) +
       ', "views": ' + $views + ', "leuchtmittel": ' + $(if ($licht) { 'true' } else { 'false' }) + ', "masse": ' + (JsText $masse) +
       ",`n      ""ordner"": " + (JsText ("media/produkte/" + $name + "/")) + ', "version": ' + (JsText $version) +
-      ', "kameras": ' + (JsListe $kameras) + ', "format": ' + (JsListe $format) + ', "axo": ' + (JsText $axo) +
-      ', "kachel": ' + (JsText $kachelJs) + ', "kachelAbend": ' + (JsText $kachelAbendJs) +
+      ', "kameras": ' + (JsListe $kameras) + ', "axo": ' + (JsText $axo) +
+      ",`n      ""format"": " + (JsListe $format) + ', "bildschirm": ' + $(if ($bildschirm) { JsListe $bildschirm } else { 'null' }) + ', "kachelAusschnitt": ' + $(if ($kachelAus) { JsListe $kachelAus } else { 'null' }) +
+      ",`n      ""kachel"": " + (JsText $kachelJs) + ', "kachelAbend": ' + (JsText $kachelAbendJs) +
       ",`n      ""bilder"": " + (JsListe $bilderJs) +
       ",`n      ""abend"": " + $(if ($licht) { JsListe $abendJs } else { '[]' }) +
       ",`n      ""fahrten"": " + $fahrtenJs.fahrten +
-      ",`n      ""fahrtenKlein"": " + $fahrtenJs.fahrtenKlein + ' }'
+      ",`n      ""fahrtenKlein"": " + $fahrtenJs.fahrtenKlein +
+      ",`n      ""fahrtenAbend"": " + $fahrtenJs.fahrtenAbend +
+      ",`n      ""fahrtenAbendKlein"": " + $fahrtenJs.fahrtenKleinAbend + ' }'
   }
 
   # Ordner von Produkten, die nicht mehr in produkte.json stehen, entfernen
   if (-not $NurDaten) {
-    Get-ChildItem -LiteralPath $mediaProdukte -Directory | Where-Object { -not $namen.ContainsKey($_.Name) } | ForEach-Object {
-      Remove-Item -LiteralPath $_.FullName -Recurse -Force
+    @(Get-ChildItem -LiteralPath $mediaProdukte -Directory | Where-Object { -not $namen.ContainsKey($_.Name) }) | ForEach-Object {
+      Beiseitelegen $_.FullName $mediaProdukte
       $stat.entfernt++
-      Melden "    entfernt: media\produkte\$($_.Name)\ (steht nicht mehr in produkte.json)" 'DarkGray'
+      Melden "    → Papierkorb: media\produkte\$($_.Name)\ (steht nicht mehr in produkte.json)" 'DarkGray'
     }
   }
 
@@ -370,9 +527,12 @@ if (-not $OhneProdukte) {
         "   Do not edit by hand – changes are overwritten on the next build.`n" +
         "   Paths are relative to ""ordner"". bilder[i] / abend[i] = still of view i+1 (camera kameras[i]), abend entry null = no evening image.`n" +
         "   fahrten / fahrtenKlein: ""a-b"" = move from camera a to camera b, with the formats that exist.`n" +
-        "   kachel / kachelAbend = small copy of view 1 for the tiles (bilder/kachel/).`n" +
-        "   format = [width, height] of the stills (the product page covers the screen with this aspect ratio).`n" +
-        "   code = display name OBJ_<type>_<size>_<number>; typen = the type abbreviations (from _Import/produkte-zusatz.json ""_typen"").`n" +
+        "   fahrtenAbend / fahrtenAbendKlein: the same for the evening moves of a lamp (Move_CamA_CamB_abend, field abendfahrten).`n" +
+        "   kachel / kachelAbend = small copy of the first image of ""kacheln"" (4:3) and its evening version, for the tiles (bilder/kachel/).`n" +
+        "   format = [width, height] of the stills and videos (full picture, e.g. 88:45); bildschirm / kachelAusschnitt = [x, y, w, h] of the`n" +
+        "   16:9 and 4:3 crops in it (both centred – the picture centre is the composition centre; the reserve left/right lets the`n" +
+        "   product page move the centre into the middle of the free area).`n" +
+        "   code = display name (field anzeigename, e.g. OBJ_ST_M_05), kategorie = field typ; typen = the type abbreviations.`n" +
         "   name = internal name (folders, files, URLs). */`n" +
         "window.GAUGE_PRODUKTE = {`n  ""erzeugt"": " + (JsText $zeit) + ",`n" +
         "  ""typen"": {" + ((@($typen.Keys) | ForEach-Object { (JsText $_) + ': ' + (JsText $typen[$_]) }) -join ', ') + "},`n" +
@@ -381,6 +541,12 @@ if (-not $OhneProdukte) {
   Melden ("  {0} Produkt(e) → data\produkte.js{1}" -f $zeilen.Count, $(if ($neuGeschrieben) { '' } else { ' (unverändert)' })) 'Green'
   if ($NurDaten) { Melden '  (-NurDaten: keine Dateien kopiert)' 'DarkGray' }
   else { Melden ("  Dateien: {0} neu, {1} ersetzt, {2} unverändert, {3} entfernt" -f $stat.neu, $stat.ersetzt, $stat.gleich, $stat.entfernt) 'Green' }
+  if ($rueckfall.Count) {
+    Melden ("`n  Hinweise zu produkte.json ({0}) – Rückfall oder Abweichung:" -f $rueckfall.Count) 'Yellow'
+    $rueckfall | ForEach-Object { Melden "    $_" 'Yellow' }
+  } else {
+    Melden '  produkte.json: typ, anzeigename, format, kacheln vollständig – kein Rückfall nötig.' 'Green'
+  }
   if ($fehlend.Count) {
     Melden ("`n  Fehlende Dateien ({0}):" -f $fehlend.Count) 'Yellow'
     $fehlend | ForEach-Object { Melden "    $_" 'Yellow' }

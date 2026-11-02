@@ -25,13 +25,17 @@
      (the target image has loaded), so there is never a grey moment at the end.
      o: gross, klein (rects), radiusKlein, radiusGross, auf (true: tile → viewer), schichten, verstecken, dauer, bereit */
   var flugEl = null;
-  /** Transform + clip that show the rect rk (cover crop, radius) of a picture laid out at rg. */
-  function fenster(rk, rg, radius) {
-    var s = Math.max(rk.width / rg.width, rk.height / rg.height);
-    var w = rk.width / s, h = rk.height / s, ix = (rg.width - w) / 2, iy = (rg.height - h) / 2;
+  /** Transform + clip that show the rect rk (radius) as a window onto a picture laid out at rg. aus = the part of the
+      picture that belongs into the window (shares x, y, w, h – the 4:3 tile crop of the wide picture); without it the
+      whole picture (cover crop). Opening the window from the tile crop to the whole picture = the picture opens sideways. */
+  function fenster(rk, rg, radius, aus) {
+    var a = aus || { x: 0, y: 0, w: 1, h: 1 };
+    var rx = a.x * rg.width, ry = a.y * rg.height, rw = a.w * rg.width, rh = a.h * rg.height;
+    var s = Math.max(rk.width / rw, rk.height / rh);
+    var w = rk.width / s, h = rk.height / s, ix = rx + (rw - w) / 2, iy = ry + (rh - h) / 2;
     return {
       transform: 'translate(' + (rk.left - rg.left - s * ix) + 'px,' + (rk.top - rg.top - s * iy) + 'px) scale(' + s + ')',
-      clipPath: 'inset(' + iy + 'px ' + ix + 'px round ' + (radius / s) + 'px)'
+      clipPath: 'inset(' + iy + 'px ' + (rg.width - ix - w) + 'px ' + (rg.height - iy - h) + 'px ' + ix + 'px round ' + (radius / s) + 'px)'
     };
   }
   function radiusVon(el) { return el ? parseFloat(getComputedStyle(el).borderTopLeftRadius) || 0 : 0; }
@@ -51,6 +55,12 @@
       c.style.transform = s.von.transform || 'none';
       c.style.opacity = s.von.opacity == null ? 1 : s.von.opacity;
       c.style.transition = 'none';
+      if (s.box) {      // a 4:3 tile image: sits exactly on the tile crop inside the wide picture
+        c.style.inset = 'auto';
+        c.style.left = s.box.x * 100 + '%'; c.style.top = s.box.y * 100 + '%';
+        c.style.width = s.box.w * 100 + '%'; c.style.height = s.box.h * 100 + '%';
+      }
+      if (s.ursprung) c.style.transformOrigin = s.ursprung;
       k.appendChild(c);
       var a = { transform: s.von.transform || 'none', opacity: c.style.opacity }, b = { transform: s.nach.transform || 'none', opacity: s.nach.opacity == null ? 1 : s.nach.opacity };
       if (a.transform !== b.transform || String(a.opacity) !== String(b.opacity)) anims.push({ el: c, frames: [a, b] });
@@ -60,7 +70,7 @@
     o.verstecken.forEach(function (e) { e.style.visibility = 'hidden'; });
     anims.forEach(function (x) { G.animiere(x.el, x.frames, opts); });
     var bereit = o.bereit || Promise.resolve();
-    var klein = fenster(o.klein, r1, o.radiusKlein || 0);
+    var klein = fenster(o.klein, r1, o.radiusKlein || 0, o.aus);
     var gross = { transform: 'translate(0px,0px) scale(1)', clipPath: 'inset(0px 0px round ' + (o.radiusGross || 0) + 'px)' };
     return G.animiere(k, o.auf ? [klein, gross] : [gross, klein], { duration: o.dauer, easing: C.kurve, fill: 'forwards' }).then(function () {
       return Promise.race([bereit, G.warte(2500)]);
@@ -102,7 +112,7 @@
     document.body.appendChild(k);
     h.anim = k.animate([
       { transform: 'translate(0px,0px) scale(1)', clipPath: 'inset(0px 0px round ' + radiusGross + 'px)' },
-      fenster(kachel.getBoundingClientRect(), gross, radiusVon(kachel))
+      fenster(kachel.getBoundingClientRect(), gross, radiusVon(kachel), v.kachelAnteil)   // ends on the 4:3 tile crop
     ], { duration: C.seite.kachelZumViewer * 0.85, easing: C.kurve, fill: 'forwards' });
     h.anim.onfinish = function () {
       if (heim !== h) return;
@@ -116,7 +126,8 @@
         var t = G.blende(C.viewer.heimAusblenden);
         el.style.transition = 'opacity ' + t + 'ms linear';
         el.classList.add('heim-raus');
-        h.uhr = setTimeout(function () { if (heim === h) heimAbbrechen(); }, t + 40);
+        // (evening mode: the evening move ended on the evening still – fading out shows the tile's day image; the lamp goes off)
+        h.uhr = setTimeout(function () { if (heim === h) { v.lampeAus(); heimAbbrechen(); } }, t + 40);
       });
     };
   }
@@ -196,13 +207,20 @@
       var vw = G.viewerFuer(r.produkt);
       var r0 = q.getBoundingClientRect();
       if (sichtbar(r0)) {
-        var schichten = [{ el: q.querySelector('.k-tag'), von: { transform: 'scale(' + kz.skala + ')' }, nach: {} }];
-        // the tile shows a small copy of the picture – once the full still is there, it flies on top (sharp at full size)
+        // the tile shows the 4:3 crop; the window opens sideways onto the full, shifted picture. The tile image sits on its
+        // crop; once the full still is there, it flies on top (sharp at full size, and it fills the sides as they open)
+        var ka = vw.kachelAnteil, mitte = (ka.x + ka.w / 2) * 100 + '% ' + (ka.y + ka.h / 2) * 100 + '%';
+        var zoom = { transform: 'scale(' + kz.skala + ')' };
+        var schichten = [{ el: q.querySelector('.k-tag'), box: ka, von: zoom, nach: {} }];
         var gs = vw.stills[1];
-        if (gs && gs.classList.contains('echt')) schichten.push({ el: gs, von: { transform: 'scale(' + kz.skala + ')' }, nach: {} });
-        var ab = q.querySelector('.k-abend');
-        if (ab && kz.abend > 0.01) schichten.push({ el: ab, von: { opacity: kz.abend }, nach: { opacity: kz.abend > 0.5 ? 1 : 0 } });
-        flug({ auf: true, klein: r0, gross: vw.el.getBoundingClientRect(), radiusKlein: radiusVon(q), radiusGross: radiusVon(vw.el),
+        if (gs && gs.classList.contains('echt')) schichten.push({ el: gs, ursprung: mitte, von: zoom, nach: {} });
+        var ab = q.querySelector('.k-abend'), ga = vw.abende[1];
+        if (ab && kz.abend > 0.01) {
+          var abNach = { opacity: kz.abend > 0.5 ? 1 : 0 };
+          schichten.push({ el: ab, box: ka, von: { opacity: kz.abend }, nach: abNach });
+          if (ga && ga.classList.contains('echt')) schichten.push({ el: ga, von: { opacity: kz.abend }, nach: abNach });
+        }
+        flug({ auf: true, klein: r0, gross: vw.el.getBoundingClientRect(), radiusKlein: radiusVon(q), radiusGross: radiusVon(vw.el), aus: ka,
           schichten: schichten, verstecken: [vw.el, q], dauer: C.seite.kachelZumViewer,
           bereit: Promise.all([geladen(vw.stills[1]), kz.abend > 0.5 ? geladen(vw.abende[1]) : null]) });
       }

@@ -749,10 +749,10 @@ html.eigener-zeiger .g-seg:hover, html.eigener-zeiger .g-opt:not(.aktiv):hover {
 .seite-produkt[data-modus=payment] .p-payment { display: flex; animation: rein var(--t-seite) var(--kurve) both; }
 @keyframes rein { from { opacity: 0; } to { opacity: 1; } }
 .p-ansicht { align-items: center; justify-content: center; }
-.p-buehne { width: min(calc(100cqw - 2 * var(--m)), calc((100cqh - 2 * var(--m)) * 4 / 3)); }
-/* glass bar: the picture fills the WHOLE screen (cover), also behind the bar – but its centre sits in the middle of the
-   FREE area (left edge up to the bar incl. its edge distance; phone: above the bars). Any window shape, any picture
-   aspect ratio (--a, from the stills): width = enough to reach the far edges from that centre. */
+.p-buehne { width: min(calc(100cqw - 2 * var(--m)), calc((100cqh - 2 * var(--m)) * var(--a, 4 / 3))); }   /* (tree mode: the 16:9 crop) */
+/* glass bar: the full picture (88:45 – 16:9 in the middle, an equal reserve left and right) fills the WHOLE screen (cover),
+   also behind the bar – but its centre sits in the middle of the FREE area (left edge up to the bar incl. its edge distance;
+   phone: above the bars). Any window shape: width = just enough to reach the far edges from that centre. */
 .nav-leiste .p-ansicht {
   inset: 0 calc(-1 * var(--frei-r, 0px)) calc(-1 * var(--frei-u, 0px)) 0;   /* = the whole screen */
   container-type: size;
@@ -786,7 +786,10 @@ html.eigener-zeiger .g-seg:hover, html.eigener-zeiger .g-opt:not(.aktiv):hover {
 .viewer > .v-still.raus { transition-duration: var(--t-still-raus); }
 .viewer > .v-still.rein { transition-duration: var(--t-still-rein); }
 .viewer > .v-abend { z-index: 3; transition: opacity var(--t-lampe) var(--kurve); }
-.viewer > .v-abend.vor-fahrt { transition-duration: var(--t-lampe-vor); }   /* back to day before a move */
+.viewer > .v-abend.vor-fahrt { transition-duration: var(--t-lampe-vor); }   /* back to day before a move (no evening move) */
+.viewer > .v-abend.raus { transition-duration: var(--t-still-raus); }       /* evening move: evening still ↔ video, like by day */
+.viewer > .v-abend.rein { transition-duration: var(--t-still-rein); }
+.viewer > .v-abend.wechsel { z-index: 4; transition-duration: var(--t-ueberblenden); }   /* evening crossfade (reduced motion) */
 .viewer > .sofort { transition: none; }
 .viewer > .sichtbar { opacity: 1; }
 .v-laden { position: absolute; left: 0; right: 0; bottom: 0; height: 2px; z-index: 4; transition: opacity .4s; }
@@ -846,17 +849,18 @@ html.eigener-zeiger .g-seg:hover, html.eigener-zeiger .g-opt:not(.aktiv):hover {
 /* ------------------------------------------------------------------
    About
    ------------------------------------------------------------------ */
-/* About Us + Bespoke: the content sits in the middle of the screen as one calm block (text left-aligned inside it).
-   Equal room above and below (as much as the bar takes at the bottom), so the block is centred on the screen. */
+/* About Us + Bespoke: one calm block, every line centred on the vertical middle axis (headings, paragraphs, contact lines).
+   Vertically exactly in the middle between the top screen edge and the TOP EDGE OF THE BAR: below, the column keeps
+   --frei-u + gutter (= up to the bar's top edge + the bar's edge distance + gutter); above, the same edge distance + gutter. */
 .seite-about .spalte, .seite-bespoke .spalte {
   box-sizing: border-box;
   min-height: 100%;
   display: flex; align-items: center; justify-content: center;
 }
 .nav-leiste .seite-about .spalte, .nav-leiste .seite-bespoke .spalte {
-  padding-top: calc(var(--frei-u) + var(--inhalt-rand, 20px));
+  padding-top: calc(var(--leiste-abstand, 0px) + var(--inhalt-rand, 20px));
 }
-.about-text { width: 100%; max-width: 520px; font-size: 15px; line-height: 1.7; }
+.about-text { width: 100%; max-width: 520px; font-size: 15px; line-height: 1.7; text-align: center; }
 .about-titel { font-size: 12px; font-weight: 500; letter-spacing: .14em; text-transform: uppercase; color: var(--leise); margin: 0 0 14px; }
 .about-text p { margin: 0 0 16px; }
 .about-text p:last-child { margin-bottom: 0; }
@@ -932,6 +936,7 @@ html.eigener-zeiger .g-seg:hover, html.eigener-zeiger .g-opt:not(.aktiv):hover {
 /* shared element (tile ↔ viewer) */
 .flug {
   position: fixed; z-index: 13;          /* above the pages, below the glass bar */
+  background: var(--ph);                 /* the sides of the wide picture, until its full still has loaded */
   overflow: hidden;
   transform-origin: 0 0;
   pointer-events: none;
@@ -943,6 +948,13 @@ html.eigener-zeiger .g-seg:hover, html.eigener-zeiger .g-opt:not(.aktiv):hover {
   position: absolute; inset: 0;
   width: 100%; height: 100%; aspect-ratio: auto;
   border-radius: 0;
+}
+/* inside the tile the viewer keeps the size of the full picture, shifted so that exactly its 4:3 tile crop
+   (--kx/--ky/--kw/--kh, from produkte.json "format") fills the tile – a move playing on shows the same crop */
+.kachel > .viewer {
+  inset: auto;
+  left: calc(-100% * var(--kx, 0) / var(--kw, 1)); top: calc(-100% * var(--ky, 0) / var(--kh, 1));
+  width: calc(100% / var(--kw, 1)); height: calc(100% / var(--kh, 1));
 }
 .kachel > .viewer { z-index: 5; pointer-events: none; }
 .kachel > .viewer.heim-raus { opacity: 0; }
@@ -1063,6 +1075,7 @@ html.eigener-zeiger .g-seg:hover, html.eigener-zeiger .g-opt:not(.aktiv):hover {
   .g-reihe { padding: 4px; gap: 1px; }
   .nav-leiste .seite .spalte { margin-left: 12px; margin-right: 12px; padding: 16px 0 calc(var(--frei-u) + 16px); }
   .nav-leiste .seite.seite-galerie .spalte { margin-left: 10px; margin-right: 10px; padding: 0; }
+  .nav-leiste .seite-about .spalte, .nav-leiste .seite-bespoke .spalte { padding-top: calc(var(--leiste-abstand, 0px) + 16px); }
   .raster { gap: 16px var(--raster-abstand-handy); }
   .name { font-size: 12.5px; margin-top: 5px; }
   /* product page on the phone: free area above the bars; customize stacks axonometry and options field */

@@ -7,3 +7,6 @@ Thumbs.db
 desktop.ini
 .DS_Store
 .vscode/
+
+# Build script never deletes for good – superseded files are moved here (local only)
+_Papierkorb/

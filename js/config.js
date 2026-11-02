@@ -84,7 +84,8 @@ window.GAUGE_CONFIG = {
     strich: 1.25,                  // line width of the symbols
     blur: 18,                      // px – how strongly the background behind the glass is blurred
     glasDeckkraft: 0.52,           // 0–1 – how milky the glass is (lower = more transparent)
-    abstandRand: 36,               // px from the bottom AND the right screen edge (desktop) – both the same
+    abstandRand: 60,               // px from the bottom AND the right screen edge (desktop) – both the same; the free area
+                                   //   for the picture centre on the product page includes this distance (measured from the bar)
     abstandRandHandy: 16,          // px (phone)
     inhaltRand: 20,                // px – gutter of the content (tiles, texts) at the screen edges
     wechsel: 340,                  // ms – bottom <-> right (product pages): the bar contracts to a point at its old place

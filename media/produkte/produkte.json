@@ -1,26 +1,66 @@
 {
   "version": 1,
+  "raum_leer": { "klasse": "M", "bild": "Raum_leer/bilder/Still_Raum_M.jpg", "kachel": "Raum_leer/bilder/Still_Raum_M_kachel.jpg", "format": { "breite": 3520, "hoehe": 1800, "bildschirm": { "x": 160, "y": 0, "breite": 3200, "hoehe": 1800 }, "kachel": { "x": 560, "y": 0, "breite": 2400, "hoehe": 1800 } } },
   "produkte": [
     {
       "produkt": "Object_01",
       "klasse": "M",
       "perspektiven": 4,
       "abendbilder": false,
-      "bilder": ["Object_01/bilder/Still_Cam1.jpg", "Object_01/bilder/Still_Cam2.jpg", "Object_01/bilder/Still_Cam3.jpg", "Object_01/bilder/Still_Cam4.jpg"]
+      "bilder": ["Object_01/bilder/Still_Cam1.jpg", "Object_01/bilder/Still_Cam2.jpg", "Object_01/bilder/Still_Cam3.jpg", "Object_01/bilder/Still_Cam4.jpg"],
+      "kacheln": ["Object_01/bilder/Still_Cam1_kachel.jpg", "Object_01/bilder/Still_Cam2_kachel.jpg", "Object_01/bilder/Still_Cam3_kachel.jpg", "Object_01/bilder/Still_Cam4_kachel.jpg"],
+      "format": { "breite": 3520, "hoehe": 1800, "bildschirm": { "x": 160, "y": 0, "breite": 3200, "hoehe": 1800 }, "kachel": { "x": 560, "y": 0, "breite": 2400, "hoehe": 1800 }, "video": { "breite": 2112, "hoehe": 1080, "bildschirm": { "x": 96, "y": 0, "breite": 1920, "hoehe": 1080 } } },
+      "typ": "Tables",
+      "anzeigename": "OBJ_TB_M_01",
+      "abendfahrten": []
     },
     {
       "produkt": "Object_02",
       "klasse": "M",
       "perspektiven": 3,
       "abendbilder": false,
-      "bilder": ["Object_02/bilder/Still_Cam1.jpg", "Object_02/bilder/Still_Cam2.jpg", "Object_02/bilder/Still_Cam3.jpg"]
+      "bilder": ["Object_02/bilder/Still_Cam1.jpg", "Object_02/bilder/Still_Cam2.jpg", "Object_02/bilder/Still_Cam3.jpg"],
+      "kacheln": ["Object_02/bilder/Still_Cam1_kachel.jpg", "Object_02/bilder/Still_Cam2_kachel.jpg", "Object_02/bilder/Still_Cam3_kachel.jpg"],
+      "format": { "breite": 3520, "hoehe": 1800, "bildschirm": { "x": 160, "y": 0, "breite": 3200, "hoehe": 1800 }, "kachel": { "x": 560, "y": 0, "breite": 2400, "hoehe": 1800 }, "video": { "breite": 2112, "hoehe": 1080, "bildschirm": { "x": 96, "y": 0, "breite": 1920, "hoehe": 1080 } } },
+      "typ": "Storage",
+      "anzeigename": "OBJ_SH_M_02",
+      "abendfahrten": []
     },
     {
       "produkt": "Object_03",
       "klasse": "M",
       "perspektiven": 3,
       "abendbilder": true,
-      "bilder": ["Object_03/bilder/Still_Cam1.jpg", "Object_03/bilder/Still_Cam2.jpg", "Object_03/bilder/Still_Cam3.jpg", "Object_03/bilder/Still_Cam1_abend.jpg", "Object_03/bilder/Still_Cam2_abend.jpg", "Object_03/bilder/Still_Cam3_abend.jpg"]
+      "bilder": ["Object_03/bilder/Still_Cam1.jpg", "Object_03/bilder/Still_Cam2.jpg", "Object_03/bilder/Still_Cam3.jpg", "Object_03/bilder/Still_Cam1_abend.jpg", "Object_03/bilder/Still_Cam2_abend.jpg", "Object_03/bilder/Still_Cam3_abend.jpg"],
+      "kacheln": ["Object_03/bilder/Still_Cam1_kachel.jpg", "Object_03/bilder/Still_Cam2_kachel.jpg", "Object_03/bilder/Still_Cam3_kachel.jpg", "Object_03/bilder/Still_Cam1_abend_kachel.jpg", "Object_03/bilder/Still_Cam2_abend_kachel.jpg", "Object_03/bilder/Still_Cam3_abend_kachel.jpg"],
+      "format": { "breite": 3520, "hoehe": 1800, "bildschirm": { "x": 160, "y": 0, "breite": 3200, "hoehe": 1800 }, "kachel": { "x": 560, "y": 0, "breite": 2400, "hoehe": 1800 }, "video": { "breite": 2112, "hoehe": 1080, "bildschirm": { "x": 96, "y": 0, "breite": 1920, "hoehe": 1080 } } },
+      "typ": "Lighting",
+      "anzeigename": "OBJ_LT_M_03",
+      "abendfahrten": ["Object_03/video/Move_Cam1_Cam2_abend.mp4", "Object_03/video/Move_Cam1_Cam3_abend.mp4", "Object_03/video/Move_Cam2_Cam1_abend.mp4", "Object_03/video/Move_Cam2_Cam3_abend.mp4", "Object_03/video/Move_Cam3_Cam1_abend.mp4", "Object_03/video/Move_Cam3_Cam2_abend.mp4"]
+    },
+    {
+      "produkt": "Object_04",
+      "klasse": "M",
+      "perspektiven": 3,
+      "abendbilder": false,
+      "bilder": ["Object_04/bilder/Still_Cam1.jpg", "Object_04/bilder/Still_Cam2.jpg", "Object_04/bilder/Still_Cam3.jpg"],
+      "kacheln": ["Object_04/bilder/Still_Cam1_kachel.jpg", "Object_04/bilder/Still_Cam2_kachel.jpg", "Object_04/bilder/Still_Cam3_kachel.jpg"],
+      "format": { "breite": 3520, "hoehe": 1800, "bildschirm": { "x": 160, "y": 0, "breite": 3200, "hoehe": 1800 }, "kachel": { "x": 560, "y": 0, "breite": 2400, "hoehe": 1800 }, "video": { "breite": 2112, "hoehe": 1080, "bildschirm": { "x": 96, "y": 0, "breite": 1920, "hoehe": 1080 } } },
+      "typ": "Storage",
+      "anzeigename": "OBJ_SH_M_04",
+      "abendfahrten": []
+    },
+    {
+      "produkt": "Object_05",
+      "klasse": "M",
+      "perspektiven": 3,
+      "abendbilder": false,
+      "bilder": ["Object_05/bilder/Still_Cam1.jpg", "Object_05/bilder/Still_Cam2.jpg", "Object_05/bilder/Still_Cam3.jpg"],
+      "kacheln": ["Object_05/bilder/Still_Cam1_kachel.jpg", "Object_05/bilder/Still_Cam2_kachel.jpg", "Object_05/bilder/Still_Cam3_kachel.jpg"],
+      "format": { "breite": 3520, "hoehe": 1800, "bildschirm": { "x": 160, "y": 0, "breite": 3200, "hoehe": 1800 }, "kachel": { "x": 560, "y": 0, "breite": 2400, "hoehe": 1800 }, "video": { "breite": 2112, "hoehe": 1080, "bildschirm": { "x": 96, "y": 0, "breite": 1920, "hoehe": 1080 } } },
+      "typ": "Seating",
+      "anzeigename": "OBJ_ST_M_05",
+      "abendfahrten": []
     }
   ]
 }

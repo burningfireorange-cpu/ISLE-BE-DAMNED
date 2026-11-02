@@ -4,12 +4,23 @@
    A view change:  current still ─0.1 s soft→ first video frame · the move plays · last video frame ─0.1 s soft→ target still.
    (The moves have fewer samples than the stills, so first and last video frame look a touch different – the short fades hide that.)
    Without a video (or with reduced motion) a view change is a simple crossfade.
-   Lamp (only products with evening images): soft crossfade day ↔ evening; before a move it first fades back to day.
+   Lamp (only products with evening images): soft crossfade day ↔ evening. With the lamp on, a view change stays in the
+   evening: the evening move (video/Move_CamX_CamY_abend) plays and ends on the evening still of the target. Where an
+   evening move is missing: first softly back to day, then the normal move (and the evening image again afterwards).
    Loading with priority: still of the current view, then the moves starting at the current view (with their target stills),
    then all other moves. After every view change the moves of the new view move to the front. */
 (function () {
   'use strict';
   var G = window.G, C = G.C, V = C.viewer;
+
+  /** Show / hide a layer at once, without its fade. */
+  function sofort(el, an) {
+    if (!el) return;
+    el.classList.add('sofort');
+    el.classList.toggle('sichtbar', an);
+    void el.offsetWidth;            // apply without transition, then give the transition back
+    el.classList.remove('sofort');
+  }
 
   function Viewer(p) {
     this.p = p;
@@ -17,7 +28,15 @@
     this.el = G.el('div', 'viewer');
     this.el.setAttribute('role', 'img');
     this.el.setAttribute('aria-label', p.code);
-    this.el.style.setProperty('--a', String(p.verhaeltnis));   // aspect ratio of the pictures
+    // aspect ratio of what it shows (full 88:45 picture) and where the 4:3 tile crop lies in it – inside a tile
+    // (way back to the wall) the viewer is laid out so that exactly this crop fills the tile
+    var an = G.anzeige(p);
+    this.kachelAnteil = an.kachel;
+    this.el.style.setProperty('--a', String(an.verhaeltnis));
+    this.el.style.setProperty('--kx', String(an.kachel.x));
+    this.el.style.setProperty('--ky', String(an.kachel.y));
+    this.el.style.setProperty('--kw', String(an.kachel.w));
+    this.el.style.setProperty('--kh', String(an.kachel.h));
     this.stills = [];
     this.abende = [];
     this.videos = { g: {}, k: {} };   // created on demand: g = video/, k = video/klein/
@@ -48,12 +67,12 @@
   /** Small videos on phones and in narrow windows (decided anew for every move, so resizing switches over). */
   Viewer.prototype.klein = function () { return window.innerWidth <= V.handyBreite; };
 
-  /** The video element of the move a → b (null if there is no such file). */
-  Viewer.prototype.video = function (a, b, klein) {
+  /** The video element of the move a → b (null if there is no such file); abend = the evening move of a lamp. */
+  Viewer.prototype.video = function (a, b, klein, abend) {
     if (klein == null) klein = this.klein();
-    var satz = this.videos[klein ? 'k' : 'g'], key = a + '-' + b;
+    var satz = this.videos[klein ? 'k' : 'g'], key = a + '-' + b + (abend ? '-abend' : '');
     if (key in satz) return satz[key];
-    var url = C.echteDateienVerwenden ? G.pfade.fahrt(this.p, a, b, klein) : null;
+    var url = C.echteDateienVerwenden ? G.pfade.fahrt(this.p, a, b, klein, abend) : null;
     if (!url) return (satz[key] = null);
     if (this.perUrl[url]) return (satz[key] = this.perUrl[url]);   // the other size stood in for a missing file
     var vid = document.createElement('video');
@@ -70,8 +89,12 @@
     return (satz[key] = vid);
   };
 
-  Viewer.prototype.videoJob = function (a, b, prio) {
-    var v = this.video(a, b);
+  /** Is there an evening move a → b (lamps; field abendfahrten of produkte.json)? */
+  Viewer.prototype.hatAbendFahrt = function (a, b) {
+    return !!(this.p.leuchtmittel && C.echteDateienVerwenden && G.pfade.fahrt(this.p, a, b, false, true));
+  };
+  Viewer.prototype.videoJob = function (a, b, prio, abend) {
+    var v = this.video(a, b, null, abend);
     if (!v) return null;
     var j = G.lader.video(v.dataset.url, v, prio);
     this.merken(j);
@@ -112,11 +135,22 @@
       this.videoJob(von, b, prio());
       this.bildJob(this.stills[b], prio());
     }
-    if (stufe !== 'aktiv') return;
+    // evening moves (lamps): like the other videos, but only after the normal moves
+    var self = this;
+    function abendFahrten(nurVon, p0) {
+      for (var a = 1; a <= self.n; a++) for (var d = 1; d <= self.n; d++) {
+        if (a === d || (nurVon && a !== von) || (!nurVon && a === von) || !self.hatAbendFahrt(a, d)) continue;
+        self.videoJob(a, d, p0 - (k++) * 0.01, true);
+      }
+    }
+    if (stufe !== 'aktiv') { abendFahrten(true, basis - 1); return; }
     for (var c = 1; c <= this.n; c++) if (this.abende[c] && c !== von) this.bildJob(this.abende[c], 56);
     for (var a = 1; a <= this.n; a++) for (var d = 1; d <= this.n; d++) {
       if (a !== d && a !== von) this.videoJob(a, d, 55 - (k++) * 0.01);
     }
+    // the lamp is on: the evening moves from here are what comes next (right after the normal moves from here)
+    abendFahrten(true, this.lampe ? 64 : 50);
+    abendFahrten(false, 45);
   };
 
   Viewer.prototype.info = function () {
@@ -165,7 +199,22 @@
       if (this.lampe) this.bildJob(a, 100);
       a.classList.toggle('sichtbar', this.lampe);
     }
+    if (this.lampe) this.vorladen('aktiv');     // the evening moves from here move up in the queue
     this.melden();
+  };
+  /** Lamp off at once (the viewer is back in its tile – next time it starts by day). */
+  Viewer.prototype.lampeAus = function () {
+    if (!this.p.leuchtmittel) return;
+    this.lampe = false;
+    this.abende.forEach(function (a) { sofort(a, false); });
+    this.melden();
+  };
+
+  /** Lamp on: does the move von → nach stay in the evening? Yes if there is an evening move (reduced motion: always –
+      it is only a crossfade anyway). Otherwise the fallback: first softly back to day, then the normal move. */
+  Viewer.prototype.bleibtAbend = function (von, nach) {
+    if (!this.lampe || !this.abende[von] || !this.abende[nach]) return false;
+    return G.modus !== 'voll' || this.hatAbendFahrt(von, nach);
   };
 
   Viewer.prototype.fahren = function (von, nach) {
@@ -175,20 +224,25 @@
     this.melden();
     var schritt = Promise.resolve();
     var abendVon = this.abende[von];
-    if (abendVon && abendVon.classList.contains('sichtbar')) {
-      // evening: first fade softly back to day, then the move
+    var abendAn = !!(abendVon && abendVon.classList.contains('sichtbar'));
+    var abendFahrt = abendAn && this.bleibtAbend(von, nach);
+    if (abendAn && !abendFahrt) {
+      // no evening move for this change: first fade softly back to day, then the normal move
       abendVon.classList.add('vor-fahrt');
       abendVon.classList.remove('sichtbar');
       schritt = G.warte(G.blende(V.lampeVorFahrt) + 30).then(function () { abendVon.classList.remove('vor-fahrt'); });
     }
-    schritt.then(function () { return self.bewegen(von, nach); }).then(function (gefahren) {
+    schritt.then(function () { return self.bewegen(von, nach, abendFahrt); }).then(function (gefahren) {
       if (gefahren === false) nach = von;      // another view was chosen while the move was still loading
       self.aktuell = nach;
       self.ziel = null;
       self.belegt = false;
-      if (self.lampe && self.abende[nach]) {
-        if (V.lampeNachFahrtWiederAn) { self.bildJob(self.abende[nach], 100); self.abende[nach].classList.add('sichtbar'); }
-        else self.lampe = false;
+      var an = self.abende[nach];
+      if (an) {
+        if (self.lampe && !abendFahrt && !V.lampeNachFahrtWiederAn) self.lampe = false;
+        if (self.lampe) self.bildJob(an, 100);
+        // after an evening move the evening still is already there; the lamp may have been switched meanwhile
+        an.classList.toggle('sichtbar', self.lampe);
       }
       self.vorladen('aktiv');
       var w = self.wartend;
@@ -207,10 +261,12 @@
     if (!this.belegt) { fn(); return; }
     (this.ruhig || (this.ruhig = [])).push(fn);
   };
-  /** Back to the wall: the tile shows view 1 by day – lamp off, the move back to view 1 starts right away (normal speed;
-      with the lamp on it first fades back to day, as before every move). */
+  /** Back to the wall: the move back to view 1 starts right away (normal speed). Lamp on: with the evening move to
+      view 1, the tile shows the day image again afterwards (app.js: the viewer fades out, then lampeAus). Without an
+      evening move: as before – lamp off, the move by day. */
   Viewer.prototype.heim = function () {
-    if (this.lampe) {
+    var von = this.belegt && this.ziel ? this.ziel : this.aktuell;
+    if (this.lampe && !(von === 1 || this.bleibtAbend(von, 1))) {
       this.lampe = false;
       if (!this.belegt && this.aktuell === 1 && this.abende[1]) this.abende[1].classList.remove('sichtbar');
     }
@@ -218,15 +274,28 @@
     this.melden();
   };
 
-  /** Move from view a to view b. Resolves when b's still is shown. */
-  Viewer.prototype.bewegen = function (von, nach) {
+  /** Move from view a to view b (abend: the evening move, from evening still to evening still). Resolves when b's still is shown. */
+  Viewer.prototype.bewegen = function (von, nach, abend) {
     var self = this;
-    var still = this.stills[von], img = this.stills[nach];
-    var v = G.modus === 'voll' ? this.video(von, nach) : null;     // reduced motion: no camera move, only a fade
+    var still = abend ? this.abende[von] : this.stills[von], img = abend ? this.abende[nach] : this.stills[nach];
+    var tagVon = this.stills[von], tagNach = this.stills[nach];   // (evening: the day stills lie below and are switched at once)
+    var v = G.modus === 'voll' ? this.video(von, nach, null, abend) : null;     // reduced motion: no camera move, only a fade
     return new Promise(function (fertig) {
       var stillJob = self.bildJob(img, 100);
+      if (abend) self.bildJob(tagNach, 90);
       function ueberblenden() {
         function los() {
+          if (abend) {
+            // evening → evening: the new evening still fades in on top, then everything below is switched at once
+            img.classList.remove('raus', 'rein');
+            img.classList.add('wechsel', 'sichtbar');
+            setTimeout(function () {
+              sofort(still, false); sofort(tagVon, false); sofort(tagNach, true);
+              img.classList.remove('wechsel');
+              fertig();
+            }, G.blende(V.ueberblenden) + 20);
+            return;
+          }
           img.classList.remove('raus', 'rein');
           still.classList.remove('raus', 'rein');
           img.classList.add('sichtbar');
@@ -236,7 +305,7 @@
         if (!stillJob || stillJob.zustand === 'fertig') los();
         else { var x = false; var einmal = function () { if (!x) { x = true; los(); } }; stillJob.dann(einmal); setTimeout(einmal, 4000); }
       }
-      var job = v ? self.videoJob(von, nach, 100) : null;
+      var job = v ? self.videoJob(von, nach, 100, abend) : null;
       if (!v || !job || v.dataset.fehlt || (job.zustand === 'fertig' && !job.ok)) { ueberblenden(); return; }
       G.lader.sofort(job);
       if (job.zustand === 'fertig') { fahrtStarten(); return; }
@@ -284,6 +353,7 @@
           v.classList.remove('sichtbar');
           still.classList.remove('raus');
           if (!still.classList.contains('sichtbar')) still.classList.add('sichtbar');
+          if (abend) sofort(tagVon, true);
           ueberblenden();
         }
 
@@ -299,6 +369,7 @@
             img.classList.remove('raus');
             img.classList.add('rein', 'sichtbar');
             setTimeout(function () {
+              if (abend) sofort(tagNach, true);      // the day still of the target lies ready below the evening still
               v.classList.remove('sichtbar');
               v.pause();
               try { v.currentTime = 0; } catch (e) {}
@@ -326,6 +397,7 @@
         function blenden() {
           if (gestartet || beendet) return;
           gestartet = true;
+          if (abend) sofort(tagVon, false);        // evening: the day still below goes at once, the evening still fades into the video
           still.classList.add('raus');
           still.classList.remove('sichtbar');
           setTimeout(abspielen, tRaus + 20);

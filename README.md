@@ -34,11 +34,11 @@ Browser-Zurück und der Zurück-Pfeil gehen immer genau einen Schritt zurück (P
 
 ## 2. Bedienung
 
-**Gläserne Leiste:** eine lange, schmale Pille aus Milchglas (halb durchsichtig, `backdrop-filter`-Unschärfe, feine Kontur). Der Inhalt scrollt sichtbar dahinter durch. Alle Symbole sind gleich groß und aus feinen Linien. Der aktive Punkt ist ein schwarzer Kreis mit weißem Symbol. Beim Hover erscheint ein Namensschild, immer zur Bildschirmmitte hin: über dem Symbol, wenn die Leiste unten liegt, links daneben, wenn sie rechts steht. Der Abstand zum unteren und zum rechten Rand ist gleich (`leiste.abstandRand`, 36 px). Wie durchsichtig das Glas ist, steht in `leiste.glasDeckkraft`.
+**Gläserne Leiste:** eine lange, schmale Pille aus Milchglas (halb durchsichtig, `backdrop-filter`-Unschärfe, feine Kontur). Der Inhalt scrollt sichtbar dahinter durch. Alle Symbole sind gleich groß und aus feinen Linien. Der aktive Punkt ist ein schwarzer Kreis mit weißem Symbol. Beim Hover erscheint ein Namensschild, immer zur Bildschirmmitte hin: über dem Symbol, wenn die Leiste unten liegt, links daneben, wenn sie rechts steht. Der Abstand zum unteren und zum rechten Rand ist gleich (`leiste.abstandRand`, 60 px). Wie durchsichtig das Glas ist, steht in `leiste.glasDeckkraft`.
 
 - **Laden:** Beim ersten Öffnen steht das Logo in der Mitte, an der Stelle der Leiste zuerst nur ihr leerer Glas-Umriss. Er füllt sich von links nach rechts wie ein Ladebalken, während alle Kachelbilder (zuerst) und die Galeriefotos des ersten Bildschirms laden. Ist er voll, verschwindet die Füllung weich und die Symbole steigen nacheinander auf. Die Füllung braucht mindestens 1,2 s und wartet höchstens bis 5 s nach dem Aufruf, dann geht es trotzdem weiter und der Rest lädt nach. Große Standbilder und Videos laden erst danach im Hintergrund (`start.laden.*`).
 - **Startbildschirm:** großes Logo in der Mitte, die Leiste unten mittig mit Products · Bespoke · Gallery · About Us, ohne Home. Ein Klick auf einen Bereich blendet das Logo aus. Ab dann steht ganz links das Home-Symbol (zurück zum Start). Die Namen stehen in `js/config.js` unter `bereiche`; „Bespoke“ ist ein Platzhaltername.
-- **Gallery, About Us, Bespoke:** Die Leiste bleibt unten mittig, der Inhalt scrollt dahinter. Unten ist genug Luft, damit das Letzte über die Leiste gescrollt werden kann. About Us (Concept · Studio · Contact) und Bespoke stehen als ruhiger Block genau in der Bildschirmmitte. „Contact us“ auf Bespoke führt zum Abschnitt Contact auf About Us.
+- **Gallery, About Us, Bespoke:** Die Leiste bleibt unten mittig, der Inhalt scrollt dahinter. Unten ist genug Luft, damit das Letzte über die Leiste gescrollt werden kann. About Us (Concept · Studio · Contact) und Bespoke stehen als ruhiger Block, jede Zeile auf der Mittelachse zentriert, senkrecht genau mittig zwischen oberem Bildschirmrand und Oberkante der Leiste. „Contact us“ auf Bespoke führt zum Abschnitt Contact auf About Us.
 - **Produktseiten** (Produkt, Customize, To Order, Payment): Die Leiste steht rechts, senkrecht in der Bildschirmmitte. Beim Wechsel unten ↔ rechts schwingt nichts: Die alte Leiste zieht sich an ihrem Platz zu einem Punkt zusammen und blendet aus, gleichzeitig wächst die neue am neuen Platz aus einem Punkt (`leiste.wechsel`, 340 ms, unterbrechbar). Dabei laufen nur `transform` und `opacity`, die Unschärfe ist währenddessen aus und blendet danach ein.
 - **Gleicher Ort, anderer Inhalt:** Das Glas wächst bzw. schrumpft weich (`leiste.umformen`).
 - **Handy:** Die Leiste steht immer unten mittig, auch auf der Produktseite. Die Werkzeuge der Seite (Code-Filter, Views, Lampe, Pfeile) sitzen in einem eigenen kleinen Glasfeld direkt über der Leiste.
@@ -63,17 +63,17 @@ Hinter einem feinen Trenner stehen die Werkzeuge der jeweiligen Seite:
 
 **Aufsteigen:** Kacheln und Galeriefotos erscheinen nicht auf einmal, sondern steigen nacheinander leicht von unten auf und blenden dabei ein, „aus dem Wasser“ (je ca. 0,5 s, die ganze Welle ca. 1 s, `welle.*`). Products in Lesereihenfolge, die Galerie in zufälliger Reihenfolge, beim Öffnen und für Fotos, die neu ins Bild scrollen. Ein Element steigt erst auf, wenn sein Bild wirklich geladen ist; bis dahin eine ruhige graue Fläche.
 
-**Anzeigenamen:** Unter den Kacheln, im Titel und in allen Beschriftungen steht der Produktcode `OBJ_<Typ>_<Größe>_<Nummer>`, z. B. Object_01 = `OBJ_TB_M_01`, Object_02 = `OBJ_SH_M_02`, Object_03 = `OBJ_LT_M_03`. Typ-Kürzel und Code je Produkt stehen zentral in `data/produkte.js`; das Bau-Skript schreibt sie dorthin, die Kürzel lassen sich in `_Import/produkte-zusatz.json` unter `_typen` ändern. Ordner, Dateinamen und Adressen bleiben `Object_0N`.
+**Anzeigenamen:** Unter den Kacheln, im Titel und in allen Beschriftungen steht der Produktcode `OBJ_<Typ>_<Größe>_<Nummer>`, z. B. `OBJ_TB_M_01`, `OBJ_SH_M_02`, `OBJ_LT_M_03`, `OBJ_SH_M_04`, `OBJ_ST_M_05`. Er kommt aus dem Feld `anzeigename` von `produkte.json`, die Kategorie (Filter TYPE) aus `typ`. Fehlt eines davon, rechnet das Bau-Skript den Code wie früher aus `_Import/produkte-zusatz.json` und meldet das am Ende. Ordner, Dateinamen und Adressen bleiben `Object_0N`.
 
 **Produktbild (Viewer):**
-- **Vollbild:** Das Bild füllt den ganzen Bildschirm (cover), auch hinter der Leiste. Seine Mitte sitzt aber in der Mitte der freien Fläche: vom linken Rand bis zum Leistenbereich samt Randabstand, auf dem Handy über den Leisten. Das wird bei jeder Fenstergröße neu gerechnet (reines CSS) und funktioniert in jedem Seitenverhältnis. Das Seitenverhältnis kommt aus den Standbildern (`format` in `data/produkte.js`, jetzt 2400 × 1800). Breitere Renderings später, etwa 16:9 + 10 %, haben dann links und rechts gleich viel Reserve.
-- **Aus der Kachel:** Ein Klick auf die Kachel zoomt das Kachelbild nahtlos ins Vollbild. Es ist dasselbe Bild (View 1); die Kachel zeigt eine kleine Kopie (`bilder/kachel/`), das große Standbild fliegt mit, sobald es geladen ist. Zeigte die Kachel beim Klick gerade das Abendbild (Hover bei Leuchten), öffnet das Produkt mit eingeschalteter Lampe.
-- **Zurück zu Products:** Der echte Viewer schrumpft in seine Kachel. War eine andere View als 1 aktiv, startet die Fahrt zurück zu Cam1 sofort in normaler Geschwindigkeit, läuft in der Kachel weiter und endet auf dem Cam1-Standbild. Danach blendet der Viewer in das gleiche Kachelbild aus (`viewer.heimAusblenden`). Bei View 1 schrumpft das Bild nur.
-- **View-Wechsel:** Das Standbild blendet in 0,1 s ins erste Videobild, die Fahrt läuft in der richtigen Richtung, und am Ende blendet das letzte Videobild in 0,1 s ins Standbild der Zielkamera.
+- **Vollbild:** Bilder und Videos haben das volle Format 88:45 (3520 × 1800 / 2112 × 1080): 16:9 in der Mitte, links und rechts gleich breite Reserve, Bildmitte = Komposition. Das Bild füllt den ganzen Bildschirm (cover), auch hinter der Leiste. Seine Mitte sitzt in der Mitte der freien Fläche: vom linken Rand bis zum Leistenbereich samt Randabstand, auf dem Handy über den Leisten. Die Breite ist gerade so groß, dass das Bild von dieser Mitte aus alle Ränder erreicht – bei jeder Fenstergröße, reines CSS, gerechnet mit `format` aus `produkte.json`. Geprüft von 320 × 568 bis 3440 × 1440: nirgends ein Rand ohne Bild. (Baum-Modus: der 16:9-Ausschnitt, mittig.)
+- **Aus der Kachel:** Die Kachel zeigt den 4:3-Ausschnitt (`format.kachel`). Beim Klick zoomt sie nahtlos ins Vollbild, und das Bild öffnet sich dabei seitlich wie ein Fenster auf das volle, verschobene Bild. Das kleine Kachelbild fliegt an seinem Platz im breiten Bild mit, das große Standbild darüber, sobald es geladen ist (bis dahin sind die Seiten kurz grau). Zeigte die Kachel beim Klick gerade das Abendbild (Hover bei Leuchten), öffnet das Produkt mit eingeschalteter Lampe.
+- **Zurück zu Products:** Der echte Viewer schrumpft in seine Kachel. War eine andere View als 1 aktiv, startet die Fahrt zurück zu Cam1 sofort in normaler Geschwindigkeit und läuft in der schrumpfenden Kachel weiter, dort als 4:3-Ausschnitt des Videos. Sie endet auf dem Cam1-Standbild, danach blendet der Viewer in das gleiche Kachelbild aus (`viewer.heimAusblenden`). Bei View 1 schrumpft das Bild nur.
+- **View-Wechsel:** Das Standbild blendet in 0,1 s ins erste Videobild, die Fahrt läuft in der richtigen Richtung, und am Ende blendet das letzte Videobild in 0,1 s ins Standbild der Zielkamera. Die Leiste zeigt nur die vorhandenen Views (Object_01: 4, die anderen 3).
 - **Fahrt noch nicht geladen:** Das Standbild bleibt stehen, im View-Symbol der Leiste füllt sich ein feiner Ring, danach startet die Fahrt. Wählt man währenddessen eine andere View, wird die wartende Fahrt aufgegeben. Lädt sie gar nicht, wird überblendet.
-- **Lampe:** Ist sie an, blendet das Bild vor der Fahrt erst zurück auf Tag.
+- **Lampe (Abendmodus):** Ist die Lampe an, bleibt sie beim View-Wechsel an: Die passende Abendfahrt (`Move_CamA_CamB_abend`) spielt, am Ende steht das Abendbild der Zielkamera – kein Zurückspringen auf Tag. Fehlt zu einem Übergang eine Abendfahrt, gilt das frühere Verhalten (erst weich auf Tag, dann die normale Fahrt, danach wieder Abendbild). Zurück zu Products im Abendmodus: Abendfahrt zu Cam1 in der Kachel, danach zeigt die Kachel wieder das Tagbild, die Lampe ist aus.
 - **Handy / schmale Fenster:** Videos aus `video/klein/`.
-- **Vorladen:** zuerst die Fahrten ab der aktuellen View, dann die übrigen.
+- **Vorladen:** zuerst die Fahrten ab der aktuellen View, dann die übrigen, die Abendfahrten erst danach (bei eingeschalteter Lampe die ab der aktuellen View gleich nach deren normalen Fahrten).
 
 **Mauszeiger:** ein kleiner gefüllter Kreis (10 px), die Mitte ist der Klickpunkt. Er kehrt sich von selbst um: schwarz auf hellem, weiß auf dunklem Grund.
 - **Über Feldern der Glasleiste** bleibt der Kreis immer sichtbar obenauf; nur das runde Hover-Feld reagiert: Das helle Feld wächst aus dem Zeiger und fließt in die Form des Feldes. Es liegt im Glas unter den Symbolen und fließt zwischen Nachbarfeldern weiter. Beim Verlassen zieht es sich wieder in den Zeiger zusammen.
@@ -107,7 +107,8 @@ data/galerie.js       Galerie-Liste – ERZEUGT vom Bau-Skript
 media/produkte/…      Produktbilder und Videos – vom Bau-Skript kopiert
 media/galerie/…       optimierte Galerie-Fotos – vom Bau-Skript erzeugt
 _Import/Galerie/      HIER Fotos ablegen (Originale, werden nicht veröffentlicht)
-_Import/produkte-zusatz.json   Kategorie und Maße je Produkt, Typ-Kürzel (_typen)
+_Import/produkte-zusatz.json   Maße je Produkt; Kategorie nur als Rückfall (sonst typ/anzeigename aus produkte.json)
+_Papierkorb/          was das Bau-Skript beiseitegelegt hat (nicht in Git, von Hand leeren)
 bau/aktualisieren.ps1 Bau-Skript (bau/aktualisieren.cmd = Doppelklick-Version)
 fonts/logo/           Logo-Schrift
 lizenzen/             Lizenzen und Hinweise
@@ -134,23 +135,26 @@ Jede Spalte ist eine eigene Endlosfolge mit eigenem Startversatz. So gibt es nir
 
 Die Produkte kommen ausschließlich aus `C:\Unity\website steel furniture\Website_Test\` (nicht aus `Renders\`). Das Skript liest dort nur und ändert nie etwas.
 
-1. In Unity wie bisher exportieren: Eintrag in `produkte.json`, Ordner `Object_XX/bilder/` und `Object_XX/video/` (+ `video/klein/`).
-2. In **`_Import/produkte-zusatz.json`** Kategorie und Maße ergänzen (`produkte.json` kennt sie noch nicht):
+1. In Unity wie bisher exportieren: Eintrag in `produkte.json` (mit `typ`, `anzeigename`, `format`, `kacheln`, bei Lampen `abendfahrten`), Ordner `Object_XX/bilder/` und `Object_XX/video/` (+ `video/klein/`).
+2. Nur noch als **Rückfall**: In `_Import/produkte-zusatz.json` stehen Maße und – falls `typ` / `anzeigename` in `produkte.json` leer sind – die Kategorie:
    ```json
-   "Object_04": { "kategorie": "seating", "masse": "W 500 × D 520 × H 780 mm" }
+   "Object_06": { "kategorie": "seating", "masse": "W 500 × D 520 × H 780 mm" }
    ```
-   Kategorien: `tables`, `seating`, `storage`, `lighting`. Steht ein Feld später direkt in `produkte.json`, hat es Vorrang.
+   Kategorien: `tables`, `seating`, `storage`, `lighting`. Werte aus `produkte.json` haben Vorrang.
 3. **`bau/aktualisieren.cmd`** ausführen und die Seite neu laden.
 
 **Was das Skript übernimmt:**
-- **Bilder:** genau die Bilder aus dem Feld `bilder` von `produkte.json`, nicht abgeleitet aus `perspektiven`. Die Views sind die Kameras dieser Standbilder, nach Nummer sortiert.
+- **Bilder:** genau die Bilder aus dem Feld `bilder` von `produkte.json`, nicht abgeleitet aus `perspektiven`. Die Views sind die Kameras dieser Standbilder, nach Nummer sortiert (weicht `perspektiven` ab, steht es im Bericht).
+- **Format:** `format` (volle Größe, Lage des 16:9-Ausschnitts `bildschirm` und des 4:3-Ausschnitts `kachel`) → `format`, `bildschirm`, `kachelAusschnitt` in `data/produkte.js`. Passt die Angabe nicht zum Standbild, gilt das Standbild.
+- **Kachelbilder:** das erste Bild aus `kacheln` (4:3), bei Lampen zusätzlich `Still_Cam1_abend_kachel`. Die Quelle liefert sie in voller Größe (2400 px, ~700 KB); das Skript legt eine kleine Kopie nach `bilder/kachel/` (800 px, ~35 KB, `-KachelBreite`), damit der Startbildschirm schnell bleibt.
+- **Typ und Anzeigename:** aus `typ` und `anzeigename`; leer → Rückfall auf `produkte-zusatz.json`, im Bericht gemeldet.
 - **Abendbilder:** `Still_CamN_abend.jpg` nur bei `"abendbilder": true`.
-- **Fahrten:** alle Fahrten zwischen den vorhandenen Kameras, in beiden Richtungen, als `.mp4` und `.webm`, aus `video/` und `video/klein/`.
-- **`produkte.json`** selbst als Kopie nach `media/produkte/produkte.json`.
+- **Fahrten:** alle Fahrten zwischen den vorhandenen Kameras, in beiden Richtungen, als `.mp4` und `.webm`, aus `video/` und `video/klein/`. Bei Lampen zusätzlich die Abendfahrten aus `abendfahrten` (`Move_CamA_CamB_abend`, ebenfalls beide Formate und klein).
+- **`produkte.json`** selbst als Kopie nach `media/produkte/produkte.json`. `raum_leer` und der Ordner `Raum_leer` werden nicht verwendet.
 
 **Beliebig oft wiederholbar:** Eine einzelne Perspektive neu gerendert? Einfach noch einmal ausführen.
-- **Kopieren:** Nur Dateien, deren Größe oder Änderungszeit sich unterscheidet, werden ersetzt (im Fenster als „ersetzt“).
-- **Aufräumen:** Was es in der Quelle nicht mehr gibt, wird entfernt. Nichts wird doppelt angelegt.
+- **Kopieren:** Nur Dateien, deren Größe oder Änderungszeit sich unterscheidet, werden ersetzt (im Fenster als „ersetzt“; die alte Fassung steht in Git).
+- **Aufräumen – nie endgültig löschen:** Was es in der Quelle nicht mehr gibt (z. B. alte 4:3-Kachelbilder), wandert nach **`_Papierkorb/<Datum_Uhrzeit>/`** mit gleichem Pfad (nicht in Git; bei Bedarf von Hand leeren). Das geschieht nur in den eigenen Bildordnern: `media/produkte/<Produkt>/bilder`, `bilder/kachel`, `video`, `video/klein`, ganze Produktordner unter `media/produkte`, `media/galerie/klein|gross`. Vor jedem Verschieben prüft das Skript den Pfad (genau so ein Ordner, kein Haupt- oder Laufwerksordner, keine Verknüpfung/Junction auf dem Weg) und bricht sonst ab, ohne etwas anzufassen. Ist `_Import/Galerie/` leer, die Galerie aber gefüllt, bleibt die Galerie unverändert; fehlt der Quellordner eines Produkts, bleiben seine Dateien unverändert. Nichts wird doppelt angelegt.
 - **Datenliste:** `data/produkte.js` wird nur neu geschrieben, wenn sich wirklich etwas geändert hat.
 - **Neu laden:** Jede Produktdatei trägt eine Versionsmarke (`?v=…`), die sich mit den Dateien ändert. So lädt auch ein Browser mit Cache die neue Fassung.
 - **Fehlende Dateien:** Am Ende listet das Skript alle Dateien, die gefehlt haben, z. B. ein Bild aus `bilder`, das es nicht gibt, oder eine fehlende Fahrt/Richtung/Größe.
@@ -161,16 +165,17 @@ Optionen des Skripts: `-OhneGalerie`, `-OhneProdukte`, `-NurDaten` (nur `data/pr
 
 | Datei | Bedeutung |
 |---|---|
-| `bilder/Still_Cam1.jpg` … | Standbild je View (View 1 = Kachel) |
-| `bilder/kachel/Still_Cam1.jpg` (+ `_abend`) | kleine Kopie von View 1 für die Kacheln (800 px breit, vom Skript erzeugt, `-KachelBreite`) |
+| `bilder/Still_Cam1.jpg` … | Standbild je View, volles Format 88:45 |
+| `bilder/kachel/Still_Cam1_kachel.jpg` (+ `Still_Cam1_abend_kachel.jpg`) | Kachelbild: kleine Kopie des ersten Bilds aus `kacheln` (4:3, 800 px breit, vom Skript erzeugt, `-KachelBreite`) |
 | `bilder/Still_Cam1_abend.jpg` … | Abendbild je View (nur Produkte mit Leuchtmittel) |
 | `bilder/Axonometrie.jpg` | Axonometrie für Customize (noch nicht im Unity-Export: bis dahin Platzhalter, von Hand ablegen möglich) |
 | `video/Move_Cam1_Cam2.mp4` / `.webm` | Fahrt von View 1 nach View 2 |
+| `video/Move_Cam1_Cam2_abend.mp4` / `.webm` | Abendfahrt (nur Lampen, Feld `abendfahrten`) |
 | `video/klein/…` | dieselben Fahrten für Handys (unter 760 px Fensterbreite) |
 
 **Platzhalter → echte Dateien:** Die Seite verwendet genau die Dateien, die das Skript in `data/produkte.js` eingetragen hat. Produkte ohne Bilder (z. B. ein neuer Eintrag in `produkte.json` ohne Renderings und die Dummies) zeigen graue Platzhalter. Fehlende Fahrten werden zu einem schlichten Überblenden. Fehlt eine Fahrt nur in einer Größe, wird die andere Größe genommen. Abschalten lässt sich das mit `echteDateienVerwenden: false` in `js/config.js`.
 
-Die Größenklasse aus `produkte.json` (`"klasse": "L" | "M" | "S"`; fehlt sie dort, `klasse` in `produkte-zusatz.json`) benutzen der Größen-Filter und der Code. Die Nummer im Namen (Object_**03**) bestimmt die Reihenfolge (neueste = höchste Nummer zuerst) und das Ende des Codes. Das Bau-Skript schreibt je Produkt `code` (z. B. `OBJ_LT_M_03`), `format` (Breite, Höhe der Standbilder) und `kachel` / `kachelAbend` (die kleinen Kachelbilder) in `data/produkte.js`.
+Die Größenklasse aus `produkte.json` (`"klasse": "L" | "M" | "S"`; fehlt sie dort, `klasse` in `produkte-zusatz.json`) benutzen der Größen-Filter und der Code. Die Nummer im Namen (Object_**03**) bestimmt die Reihenfolge (neueste = höchste Nummer zuerst) und das Ende des Codes. Das Bau-Skript schreibt je Produkt `code` (= `anzeigename`), `kategorie` (= `typ`), `format`, `bildschirm`, `kachelAusschnitt`, `kachel` / `kachelAbend` und `fahrtenAbend` / `fahrtenAbendKlein` in `data/produkte.js`.
 
 **Dummy-Produkte:** `data/dummies.js` enthält 8 klar markierte Testprodukte über alle Kategorien und Größen. Abschalten: `dummiesZeigen: false` in `js/config.js`.
 
@@ -196,7 +201,7 @@ Alles steht in **`js/config.js`** (kommentiert). Speichern, Seite neu laden, fer
 | `leiste.radius` | Rundung der Leisten-Enden (999 = ganz rund; z. B. 14 = nur weich gerundet), gilt auch für Namensschilder und Optionsleisten |
 | `leiste.feld`, `feldHandy`, `icon`, `strich` | Größe der runden Felder, Symbolgröße, Linienstärke der Symbole |
 | `leiste.blur`, `leiste.glasDeckkraft` | wie stark der Hintergrund hinter dem Glas verschwimmt, wie deckend das Glas ist |
-| `leiste.abstandRand`, `abstandRandHandy` | Abstand zum unteren und rechten Rand (auch der Rand des Inhalts) |
+| `leiste.abstandRand`, `abstandRandHandy` | Abstand zum unteren und rechten Rand (Desktop 60 px, Handy 16 px); der freie Bereich für die Bildmitte der Produktseite rechnet ihn mit |
 | `leiste.wechsel` | Wechsel unten ↔ rechts: alte Leiste zieht sich zum Punkt zusammen, neue wächst aus einem Punkt (Test-Bereich 300–400 ms, unterbrechbar) |
 | `leiste.umformen` | gleicher Ort, anderer Inhalt: Glas wächst / schrumpft |
 | `leiste.klappfeld` | die kleine Optionsleiste eines Code-Segments fährt aus / ein |

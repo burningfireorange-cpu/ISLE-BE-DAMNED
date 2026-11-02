@@ -342,6 +342,11 @@
     { id: 'S', name: 'Small', schluessel: 'klein' }
   ];
 
+  /** [x, y, w, h] in pixels of the full picture [W, H] → shares (null without data – then the crops are centred). */
+  function anteil(format, r) {
+    if (!format || format.length !== 2 || !format[0] || !r || r.length !== 4) return null;
+    return { x: r[0] / format[0], y: r[1] / format[1], w: r[2] / format[0], h: r[3] / format[1] };
+  }
   var roh = (window.GAUGE_PRODUKTE && window.GAUGE_PRODUKTE.produkte) || [];
   var dummies = (C.dummiesZeigen && window.GAUGE_DUMMIES && window.GAUGE_DUMMIES.produkte) || [];
   G.produkte = roh.concat(dummies).map(function (p) {
@@ -361,8 +366,11 @@
       ordner: p.ordner || ('media/produkte/' + p.name + '/'),
       version: p.version || '',
       kameras: p.kameras || [],
-      // aspect ratio of the pictures (from the stills; 4:3 until the data says otherwise)
+      // aspect ratio of the full pictures (stills and videos, field format of produkte.json, e.g. 88:45; 4:3 without data)
       verhaeltnis: (p.format && p.format.length === 2 && p.format[1]) ? p.format[0] / p.format[1] : 4 / 3,
+      // where the 16:9 screen crop and the 4:3 tile crop lie in the full picture – as shares (x, y, w, h of 0…1)
+      bildschirm: anteil(p.format, p.bildschirm),
+      kachelAusschnitt: anteil(p.format, p.kachelAusschnitt),
       bilder: bilder,
       abend: (!p.dummy && p.abend) || [],
       axo: (!p.dummy && p.axo) || null,
@@ -370,12 +378,24 @@
       kachelAbend: (!p.dummy && p.kachelAbend) || null,
       fahrten: (!p.dummy && p.fahrten) || {},
       fahrtenKlein: (!p.dummy && p.fahrtenKlein) || {},
+      fahrtenAbend: (!p.dummy && p.fahrtenAbend) || {},             // lamps: evening moves (field abendfahrten)
+      fahrtenAbendKlein: (!p.dummy && p.fahrtenAbendKlein) || {},
       hatBilder: bilder.length > 0,
       dummy: !!p.dummy
     };
     if (!o.code) o.code = G.produktCode(o);
     return o;
   });
+  /** What the viewer shows of a product: aspect ratio of its box and where the 4:3 tile crop lies in it (shares).
+      Glass bar: the full picture (the reserve left/right lets the page move its centre); tree mode: the 16:9 crop. */
+  G.anzeige = function (p) {
+    var b = (!G.LEISTE && p.bildschirm) || { x: 0, y: 0, w: 1, h: 1 };
+    var verh = p.verhaeltnis * b.w / b.h;
+    var k = p.kachelAusschnitt;
+    if (k) return { verhaeltnis: verh, kachel: { x: (k.x - b.x) / b.w, y: (k.y - b.y) / b.h, w: k.w / b.w, h: k.h / b.h } };
+    var kw = verh >= 4 / 3 ? (4 / 3) / verh : 1, kh = verh >= 4 / 3 ? 1 : verh / (4 / 3);   // centred 4:3
+    return { verhaeltnis: verh, kachel: { x: (1 - kw) / 2, y: (1 - kh) / 2, w: kw, h: kh } };
+  };
   G.produkt = function (id) {
     for (var i = 0; i < G.produkte.length; i++) if (G.produkte[i].id === id) return G.produkte[i];
     return null;
@@ -431,15 +451,16 @@
     kachelAbend: function (p) { return p.leuchtmittel ? (datei(p, p.kachelAbend) || G.pfade.abend(p, 1)) : null; },
     /** Move from view a to view b (views → cameras); klein = video/klein/. WebM (AV1) only where it surely plays, else MP4.
         If one size is missing, the other one is used. */
-    fahrt: function (p, a, b, klein) {
+    fahrt: function (p, a, b, klein, abend) {
       var ka = p.kameras[a - 1], kb = p.kameras[b - 1];
       if (ka == null || kb == null) return null;
       var key = ka + '-' + kb;
-      var wahl = [[klein, klein ? p.fahrtenKlein : p.fahrten], [!klein, klein ? p.fahrten : p.fahrtenKlein]];
+      var gross = abend ? p.fahrtenAbend : p.fahrten, kl = abend ? p.fahrtenAbendKlein : p.fahrtenKlein;
+      var wahl = [[klein, klein ? kl : gross], [!klein, klein ? gross : kl]];
       for (var i = 0; i < wahl.length; i++) {
         var formate = wahl[i][1][key] || [];
         var endung = AV1 && formate.indexOf('webm') >= 0 ? 'webm' : formate.indexOf('mp4') >= 0 ? 'mp4' : null;
-        if (endung) return datei(p, (wahl[i][0] ? 'video/klein/' : 'video/') + 'Move_Cam' + ka + '_Cam' + kb + '.' + endung);
+        if (endung) return datei(p, (wahl[i][0] ? 'video/klein/' : 'video/') + 'Move_Cam' + ka + '_Cam' + kb + (abend ? '_abend' : '') + '.' + endung);
       }
       return null;
     }

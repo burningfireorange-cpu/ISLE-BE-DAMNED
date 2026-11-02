@@ -261,7 +261,8 @@
 
   /* =================================================================
      PRODUCT PAGE – one page with four modes, all inside the FREE area (left screen edge up to the bars):
-       produkt    ONLY the image/video, 4:3, as large as possible, same distance all round, centred
+       produkt    ONLY the image/video. Glass bar: the full picture (88:45) covers the whole screen, also behind the bar,
+                  its centre in the middle of the free area (css .nav-leiste .p-buehne). Tree mode: the 16:9 crop, centred.
        customize  axonometry large on the left, next to it a separate narrow field for sliders/options (empty for now)
        order      "To Order": overview – tile image, name, placeholders for dimensions/options and price
        payment    placeholder with a disabled "Pay" button
@@ -295,7 +296,7 @@
       viewer = G.viewerFuer(p);
       viewer.onwechsel = function () { G.app.viewerGeaendert(); };
       buehne.appendChild(viewer.el);
-      s.style.setProperty('--a', String(p.verhaeltnis));   // the stage covers the screen in the pictures' aspect ratio
+      s.style.setProperty('--a', String(G.anzeige(p).verhaeltnis));   // the stage covers the screen in the pictures' aspect ratio
       // axonometry (customize) and tile image (order) – placeholders that know their future file
       axoHuelle.textContent = '';
       axoHuelle.appendChild(G.platzhalter({ pfad: G.pfade.axo(p), text: p.code + ' · axonometry' + (p.dummy ? ' · dummy' : ''), klasse: 'p-axo-bild', alt: p.code + ', axonometry' }));

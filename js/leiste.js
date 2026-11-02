@@ -62,6 +62,7 @@
     if (oben.classList.contains('da')) oberkante = Math.min(oberkante, oben.offsetTop);
     s.setProperty('--frei-r', (modus === 'rechts' ? Math.round(window.innerWidth - nav.offsetLeft + rand) : 0) + 'px');
     s.setProperty('--frei-u', (modus === 'unten' ? Math.round(window.innerHeight - oberkante + rand) : 0) + 'px');
+    s.setProperty('--leiste-abstand', rand + 'px');   // (--frei-u = from the screen bottom up to the bar's top edge + this)
     s.setProperty('--leiste-b', nav.offsetWidth + 'px');
     s.setProperty('--leiste-h', nav.offsetHeight + 'px');
   }
