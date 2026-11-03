@@ -54,6 +54,7 @@
     r.setProperty('--t-still-raus', ms(f(V.standbildRaus)));
     r.setProperty('--t-lampe', ms(f(V.lampe)));
     r.setProperty('--t-lampe-vor', ms(f(V.lampeVorFahrt)));
+    r.setProperty('--t-auslaufen', ms(f(V.auslaufenWechsel || 0)));
     r.setProperty('--t-foto', ms(f(Ga.einblenden)));
     r.setProperty('--t-lightbox', ms(f(Ga.lightboxAuf)));
     r.setProperty('--t-lb-wechsel', ms(f(Ga.lightboxWechsel)));
@@ -67,6 +68,8 @@
     r.setProperty('--blur', px(Le.blur));
     r.setProperty('--hover-zoom', String(G.modus === 'voll' ? Le.hoverZoom : 1));
     r.setProperty('--t-klappfeld', ms(b(Le.klappfeld)));
+    r.setProperty('--t-namen', ms(f(Le.namenWechsel || 300)));        // the name fades …
+    r.setProperty('--t-namen-weg', ms(b(Le.namenWechsel || 300)));    // … the field grows (reduced motion: at once)
     r.setProperty('--t-blende-klapp', ms(f(Le.klappfeld)));
     r.setProperty('--leiste-rand', px(Le.abstandRand));
     r.setProperty('--leiste-rand-handy', px(Le.abstandRandHandy));
@@ -347,6 +350,27 @@
     if (!format || format.length !== 2 || !format[0] || !r || r.length !== 4) return null;
     return { x: r[0] / format[0], y: r[1] / format[1], w: r[2] / format[0], h: r[3] / format[1] };
   }
+  /** Furniture boxes (field bildinfo): [x, y, w, h, cut] in pixels → { x, y, w, h (shares), cut } or null. */
+  function moebelListe(format, liste) {
+    return (liste || []).map(function (r) {
+      var a = r && r.length >= 4 ? anteil(format, r.slice(0, 4)) : null;
+      if (a) a.cut = !!r[4];
+      return a;
+    });
+  }
+  /** Portrait version (phones held upright) – null while it does not exist for every view. */
+  function hochDaten(h) {
+    if (!h || !h.format || h.format.length !== 2 || !h.format[1] || !(h.bilder || []).length) return null;
+    return {
+      verhaeltnis: h.format[0] / h.format[1],
+      kachelAusschnitt: anteil(h.format, h.kachelAusschnitt),
+      bilder: h.bilder, abend: h.abend || [],
+      moebel: moebelListe(h.format, h.moebel), moebelAbend: moebelListe(h.format, h.moebelAbend),
+      fahrten: h.fahrten || {}, fahrtenKlein: h.fahrtenKlein || {},
+      fahrtenAbend: h.fahrtenAbend || {}, fahrtenAbendKlein: h.fahrtenAbendKlein || {},
+      kachel: h.kachel || null, kachelAbend: h.kachelAbend || null
+    };
+  }
   var roh = (window.GAUGE_PRODUKTE && window.GAUGE_PRODUKTE.produkte) || [];
   var dummies = (C.dummiesZeigen && window.GAUGE_DUMMIES && window.GAUGE_DUMMIES.produkte) || [];
   G.produkte = roh.concat(dummies).map(function (p) {
@@ -366,7 +390,7 @@
       ordner: p.ordner || ('media/produkte/' + p.name + '/'),
       version: p.version || '',
       kameras: p.kameras || [],
-      // aspect ratio of the full pictures (stills and videos, field format of produkte.json, e.g. 88:45; 4:3 without data)
+      // aspect ratio of the full pictures (stills and videos, field format of produkte.json, e.g. 12:5; 4:3 without data)
       verhaeltnis: (p.format && p.format.length === 2 && p.format[1]) ? p.format[0] / p.format[1] : 4 / 3,
       // where the 16:9 screen crop and the 4:3 tile crop lie in the full picture – as shares (x, y, w, h of 0…1)
       bildschirm: anteil(p.format, p.bildschirm),
@@ -376,10 +400,15 @@
       axo: (!p.dummy && p.axo) || null,
       kachel: (!p.dummy && p.kachel) || null,            // small copy of view 1 for the tiles (build script)
       kachelAbend: (!p.dummy && p.kachelAbend) || null,
+      kachelVoll: !p.dummy && !!p.kachelVoll,           // the tile image is the whole wide picture (the tile shows its 4:3 crop)
       fahrten: (!p.dummy && p.fahrten) || {},
       fahrtenKlein: (!p.dummy && p.fahrtenKlein) || {},
       fahrtenAbend: (!p.dummy && p.fahrtenAbend) || {},             // lamps: evening moves (field abendfahrten)
       fahrtenAbendKlein: (!p.dummy && p.fahrtenAbendKlein) || {},
+      // furniture box per still (field bildinfo) – the product page never crops it (unless it is a close-up, cut = true)
+      moebel: p.dummy ? [] : moebelListe(p.format, p.moebel),
+      moebelAbend: p.dummy ? [] : moebelListe(p.format, p.moebelAbend),
+      hoch: p.dummy ? null : hochDaten(p.hoch),
       hatBilder: bilder.length > 0,
       dummy: !!p.dummy
     };
@@ -388,13 +417,66 @@
   });
   /** What the viewer shows of a product: aspect ratio of its box and where the 4:3 tile crop lies in it (shares).
       Glass bar: the full picture (the reserve left/right lets the page move its centre); tree mode: the 16:9 crop. */
-  G.anzeige = function (p) {
+  G.anzeige = function (p, format) {
+    if (format === 'hoch' && p.hoch) {        // portrait picture: the whole picture; the tile crop from format_hoch / bildinfo
+      var kh = p.hoch.kachelAusschnitt || { x: 0, y: 750 / 4800, w: 1, h: p.hoch.verhaeltnis * 3 / 4 };
+      return { verhaeltnis: p.hoch.verhaeltnis, kachel: kh };
+    }
     var b = (!G.LEISTE && p.bildschirm) || { x: 0, y: 0, w: 1, h: 1 };
     var verh = p.verhaeltnis * b.w / b.h;
     var k = p.kachelAusschnitt;
     if (k) return { verhaeltnis: verh, kachel: { x: (k.x - b.x) / b.w, y: (k.y - b.y) / b.h, w: k.w / b.w, h: k.h / b.h } };
     var kw = verh >= 4 / 3 ? (4 / 3) / verh : 1, kh = verh >= 4 / 3 ? 1 : verh / (4 / 3);   // centred 4:3
     return { verhaeltnis: verh, kachel: { x: (1 - kw) / 2, y: (1 - kh) / 2, w: kw, h: kh } };
+  };
+  /** Where the picture of the product page lies on the screen (glass bar), in px of the window:
+      { left, top, width, height, maske: { l, r, t, b } (px of the picture over which an edge fades out), art }.
+      W, H = window, fr / fu = the room the bar takes on the right / at the bottom (incl. its edge distance).
+      Wide picture (art 'voll'): full height (+ fu), its centre in the middle of the FREE area – it covers the window
+        as long as it is wide enough; a window wider than that (21:9, 32:9) keeps the full height and the picture ends
+        softly at the sides (maske). The furniture box of every view (bildinfo, not for close-ups) stays inside the free
+        area with config viewer.moebelRand – if needed the picture gets smaller (the same for all views of the product,
+        so nothing jumps between views), its edges then fade out above / below as well.
+      Phone upright without portrait pictures (art 'decken'): the wide picture covers the screen as before.
+      Portrait picture (art 'hoch', phone upright): full width, top aligned, the bars lie over the floor; on phones
+        slimmer than its aspect ratio it is enlarged to the full height and cropped evenly at the sides (tile centre). */
+  G.buehne = function (p, format, W, H, fr, fu) {
+    var V = C.viewer, h, w, left, top;
+    if (format === 'hoch' && p.hoch) {
+      var aH = p.hoch.verhaeltnis, k = p.hoch.kachelAusschnitt, kc = k ? k.x + k.w / 2 : 0.5;
+      w = W; h = W / aH;
+      if (h < H) { h = H; w = H * aH; }
+      left = Math.min(0, Math.max(W - w, W / 2 - kc * w));
+      return { left: left, top: 0, width: w, height: h, maske: { l: 0, r: 0, t: 0, b: 0 }, art: 'hoch' };
+    }
+    var a = p.verhaeltnis, freiW = W - fr, freiH = H - fu, cx = freiW / 2, cy = freiH / 2, art = 'voll';
+    h = H + fu; w = h * a;
+    if (W <= C.handy.breite && H > W) { w = Math.max(W + fr, w); art = 'decken'; }
+    else {
+      var m = V.moebelRand || 0;
+      p.moebel.concat(p.moebelAbend).forEach(function (b) {
+        if (!b || b.cut) return;
+        var dl = 0.5 - b.x, dr = b.x + b.w - 0.5, dt = 0.5 - b.y, db = b.y + b.h - 0.5;   // box edges from the picture centre
+        if (dl > 0) w = Math.min(w, (cx - m) / dl);
+        if (dr > 0) w = Math.min(w, (freiW - m - cx) / dr);
+        if (dt > 0) w = Math.min(w, a * cy / dt);
+        if (db > 0) w = Math.min(w, a * (freiH - cy) / db);
+      });
+      w = Math.max(w, 40);
+    }
+    h = w / a;
+    left = cx - w / 2; top = cy - h / 2;
+    // an edge that lies inside the window fades out softly (the further inside, the wider – up to config viewer.auslaufen)
+    var F = V.auslaufen || 0;
+    function rand(innen, voll) { return innen > 0.5 ? Math.min(voll, innen * 3) : 0; }
+    return { left: left, top: top, width: w, height: h, art: art,
+      maske: { l: rand(left, F * w), r: rand(W - left - w, F * w), t: rand(top, F * h), b: rand(H - top - h, F * h) } };
+  };
+  /** CSS object-position that shows exactly the 4:3 tile crop of a whole-picture tile image (object-fit: cover). */
+  G.kachelPosition = function (p) {
+    var k = p.kachelAusschnitt;
+    if (!p.kachelVoll || !k) return '50% 50%';
+    return (k.w < 0.999 ? k.x / (1 - k.w) * 100 : 50) + '% ' + (k.h < 0.999 ? k.y / (1 - k.h) * 100 : 50) + '%';
   };
   G.produkt = function (id) {
     for (var i = 0; i < G.produkte.length; i++) if (G.produkte[i].id === id) return G.produkte[i];
@@ -442,25 +524,37 @@
   var probe = document.createElement('video');
   var AV1 = !!(probe.canPlayType && probe.canPlayType('video/webm; codecs="av01.0.08M.08"') === 'probably');
   function datei(p, rel) { return rel ? p.ordner + rel + (p.version ? '?v=' + p.version : '') : null; }
+  /** The data of one picture format: the product itself ('breit') or its portrait version ('hoch'). */
+  function satz(p, format) { return format === 'hoch' && p.hoch ? p.hoch : p; }
+  /** Which pictures a product shows right now: 'hoch' on a phone held upright (glass bar) if it has portrait pictures,
+      otherwise 'breit'. */
+  G.formatFuer = function (p) {
+    var hochkant = window.innerWidth <= C.handy.breite && window.innerHeight > window.innerWidth;
+    return C.viewer.hochformat !== false && G.LEISTE && p && p.hoch && hochkant ? 'hoch' : 'breit';
+  };
   G.pfade = {
-    still: function (p, v) { return datei(p, p.bilder[v - 1]); },
-    abend: function (p, v) { return p.leuchtmittel ? datei(p, p.abend[v - 1]) : null; },
+    still: function (p, v, format) { return datei(p, satz(p, format).bilder[v - 1]); },
+    abend: function (p, v, format) { return p.leuchtmittel ? datei(p, satz(p, format).abend[v - 1]) : null; },
     axo: function (p) { return datei(p, p.axo); },     // Customize (placeholder until the file exists)
-    /** Tile image: the small copy of view 1 (loads fast on the start screen); without it the full still. */
-    kachel: function (p) { return datei(p, p.kachel) || G.pfade.still(p, 1); },
-    kachelAbend: function (p) { return p.leuchtmittel ? (datei(p, p.kachelAbend) || G.pfade.abend(p, 1)) : null; },
+    /** Tile image: the small copy of view 1 (loads fast on the start screen); without it the full still.
+        format 'hoch': the small copy of the portrait picture (opening a product on the phone). */
+    kachel: function (p, format) { return format === 'hoch' ? (p.hoch ? datei(p, p.hoch.kachel) : null) : (datei(p, p.kachel) || G.pfade.still(p, 1)); },
+    kachelAbend: function (p, format) {
+      if (!p.leuchtmittel) return null;
+      return format === 'hoch' ? (p.hoch ? datei(p, p.hoch.kachelAbend) : null) : (datei(p, p.kachelAbend) || G.pfade.abend(p, 1));
+    },
     /** Move from view a to view b (views → cameras); klein = video/klein/. WebM (AV1) only where it surely plays, else MP4.
-        If one size is missing, the other one is used. */
-    fahrt: function (p, a, b, klein, abend) {
+        If one size is missing, the other one is used. format 'hoch': the portrait moves (Move_CamA_CamB_hoch). */
+    fahrt: function (p, a, b, klein, abend, format) {
       var ka = p.kameras[a - 1], kb = p.kameras[b - 1];
       if (ka == null || kb == null) return null;
-      var key = ka + '-' + kb;
-      var gross = abend ? p.fahrtenAbend : p.fahrten, kl = abend ? p.fahrtenAbendKlein : p.fahrtenKlein;
+      var key = ka + '-' + kb, d = satz(p, format), hoch = d !== p;
+      var gross = abend ? d.fahrtenAbend : d.fahrten, kl = abend ? d.fahrtenAbendKlein : d.fahrtenKlein;
       var wahl = [[klein, klein ? kl : gross], [!klein, klein ? gross : kl]];
       for (var i = 0; i < wahl.length; i++) {
         var formate = wahl[i][1][key] || [];
         var endung = AV1 && formate.indexOf('webm') >= 0 ? 'webm' : formate.indexOf('mp4') >= 0 ? 'mp4' : null;
-        if (endung) return datei(p, (wahl[i][0] ? 'video/klein/' : 'video/') + 'Move_Cam' + ka + '_Cam' + kb + (abend ? '_abend' : '') + '.' + endung);
+        if (endung) return datei(p, (wahl[i][0] ? 'video/klein/' : 'video/') + 'Move_Cam' + ka + '_Cam' + kb + (abend ? '_abend' : '') + (hoch ? '_hoch' : '') + '.' + endung);
       }
       return null;
     }

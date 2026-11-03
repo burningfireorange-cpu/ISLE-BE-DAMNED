@@ -27,10 +27,43 @@
     if (o.icon) sym.appendChild(G.icon(o.icon, o.iconGroesse || L.icon, o.strich || L.strich));
     if (o.text != null) sym.appendChild(G.el('span', 'g-text', o.text));
     b.appendChild(sym);
+    // touch devices (no hover): the active area shows its name next to the symbol (CSS, only in a horizontal bar)
+    if (o.name) b.appendChild(G.el('span', 'g-name', o.name));
     if (o.schild && L.namensschild) b.appendChild(G.el('span', 'schild', o.schild));
     b.setAttribute('aria-label', o.label || o.schild || o.text || '');
+    langDruecken(b);
     if (o.klick) b.addEventListener('click', function (e) { e.stopPropagation(); o.klick(e); });
     return b;
+  }
+  /** Touch: pressing a symbol long shows its name plate – without triggering it (the click that follows is swallowed). */
+  function langDruecken(b) {
+    var uhr = null, start = null, lang = false, weg = null;
+    function zu() { b.classList.remove('schild-an'); }
+    b.addEventListener('touchstart', function (e) {
+      lang = false; clearTimeout(uhr); clearTimeout(weg);
+      if (e.touches.length !== 1 || !b.querySelector('.schild')) return;
+      start = { x: e.touches[0].clientX, y: e.touches[0].clientY };
+      uhr = setTimeout(function () {
+        lang = true;
+        Array.prototype.forEach.call(document.querySelectorAll('.g-feld.schild-an'), function (x) { x.classList.remove('schild-an'); });
+        b.classList.add('schild-an');
+      }, L.langDruck || 450);
+    }, { passive: true });
+    b.addEventListener('touchmove', function (e) {
+      if (!start || lang) return;
+      var t = e.touches[0];
+      if (Math.abs(t.clientX - start.x) > 10 || Math.abs(t.clientY - start.y) > 10) { clearTimeout(uhr); start = null; }
+    }, { passive: true });
+    b.addEventListener('touchend', function (e) {
+      clearTimeout(uhr); start = null;
+      if (!lang) return;
+      if (e.cancelable) e.preventDefault();        // no click after a long press
+      weg = setTimeout(zu, L.schildNachLangDruck || 900);
+    });
+    b.addEventListener('touchcancel', function () { clearTimeout(uhr); start = null; if (lang) weg = setTimeout(zu, L.schildNachLangDruck || 900); });
+    b.addEventListener('contextmenu', function (e) { if (lang || uhr) e.preventDefault(); });
+    // (in case a click still arrives after the long press: swallow it)
+    b.addEventListener('click', function (e) { if (lang) { lang = false; e.stopImmediatePropagation(); e.preventDefault(); } }, true);
   }
   /** A piece of glass: the blurred, frosted surface sits in its own layer (so nested glass keeps seeing the page). */
   function glas(klasse) {
@@ -65,6 +98,7 @@
     s.setProperty('--leiste-abstand', rand + 'px');   // (--frei-u = from the screen bottom up to the bar's top edge + this)
     s.setProperty('--leiste-b', nav.offsetWidth + 'px');
     s.setProperty('--leiste-h', nav.offsetHeight + 'px');
+    if (G.seiteProdukt && G.seiteProdukt.legen) G.seiteProdukt.legen();   // the product picture follows the free area
   }
 
   /* ---------------- moving the glass ---------------- */
@@ -308,7 +342,7 @@
       homeFeld.dataset.bereich = 'home';
       haupt.appendChild(homeFeld);
       G.BEREICHE.forEach(function (b) {
-        var f = feld({ klasse: 'g-bereich', icon: b.id, schild: b.name, label: b.name, klick: function () {
+        var f = feld({ klasse: 'g-bereich', icon: b.id, schild: b.name, name: L.aktivName !== false ? b.name : null, label: b.name, klick: function () {
           if (bereitsAktiv(b.id)) return;
           G.router.geh(b.id);
         } });

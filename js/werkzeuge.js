@@ -2,9 +2,9 @@
    Each entry: key(route) → a string (same string = same content, it is only updated),
                bauen(route) → { el, aktualisieren(route) }.
    Products   the product code OBJ_TYPE_SIZE_NUMBER – every segment opens a small glass bar with its options
-   Product    View 1 · 2 · 3 … · bulb (lighting only) · → Customize · ←
-   Customize  → To Order · ←
-   To Order   → Payment · ←
+   Product    View 1 · 2 · 3 … · bulb (lighting only) | ← · → Customize
+   Customize  ← · → To Order
+   To Order   ← · → Payment
    Payment    ←
    The arrow to the left always goes exactly one step back (like browser back). */
 (function () {
@@ -165,14 +165,16 @@
     }
   };
 
-  /** → (optional) and ← – always the end of the tools. */
+  /** → (optional) and ← – always the end of the tools; behind a fine divider if other tools stand before them. */
   function wege(el, weiter) {
+    if (el.childNodes.length) el.appendChild(G.el('span', 'w-trenner'));
+    // ← first, then → (left arrow on the left, right arrow on the right – they never point at each other)
+    el.appendChild(feld({ klasse: 'g-zurueck', icon: 'zurueck', strich: 1.4, schild: 'Back', label: 'Back (one step)',
+      klick: function () { G.router.zurueck(); } }));
     if (weiter) {
       el.appendChild(feld({ klasse: 'g-weiter', icon: 'weiter', strich: 1.4, schild: weiter.name, label: 'Next: ' + weiter.name,
         klick: function () { G.router.geh(weiter.pfad); } }));
     }
-    el.appendChild(feld({ klasse: 'g-zurueck', icon: 'zurueck', strich: 1.4, schild: 'Back', label: 'Back (one step)',
-      klick: function () { G.router.zurueck(); } }));
   }
 
   /** A fine ring around a view field that fills clockwise (0..1) – shown while the move to this view loads. */
@@ -201,22 +203,23 @@
     key: function (r) { return 'produkt:' + r.produkt.id; },
     bauen: function (r) {
       var p = r.produkt;
-      var viewer = G.viewerFuer(p);
+      // always the viewer on the stage right now (turning the phone swaps it for one with the other picture format)
+      function vw() { var v = G.seiteProdukt.viewerObj(); return v && v.p === p ? v : G.viewerFuer(p); }
       var el = G.el('div', 'w-gruppe w-produkt');
       var views = [];
       for (var i = 1; i <= p.views; i++) (function (i) {
-        var b = feld({ klasse: 'g-view', text: String(i), schild: 'View ' + i, label: 'View ' + i, klick: function () { viewer.waehlen(i); } });
+        var b = feld({ klasse: 'g-view', text: String(i), schild: 'View ' + i, label: 'View ' + i, klick: function () { vw().waehlen(i); } });
         views.push(b);
         el.appendChild(b);
       })(i);
       var lampe = null;
       if (p.leuchtmittel) {
-        lampe = feld({ klasse: 'g-lampe', icon: 'lampe', schild: 'Evening', label: 'Lamp: day / evening', klick: function () { viewer.lampeSchalten(); } });
+        lampe = feld({ klasse: 'g-lampe', icon: 'lampe', schild: 'Evening', label: 'Lamp: day / evening', klick: function () { vw().lampeSchalten(); } });
         el.appendChild(lampe);
       }
       wege(el, { name: 'Customize', pfad: 'products/' + p.id + '/customize' });
       function aktualisieren() {
-        var info = viewer.info();
+        var info = vw().info();
         // while the move is still loading, the current view stays marked; the target shows a filling ring
         var jetzt = info.laden ? info.aktuell : (info.ziel || info.aktuell);
         views.forEach(function (b, k) {

@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "raum_leer": { "klasse": "M", "bild": "Raum_leer/bilder/Still_Raum_M.jpg", "kachel": "Raum_leer/bilder/Still_Raum_M_kachel.jpg", "format": { "breite": 3520, "hoehe": 1800, "bildschirm": { "x": 160, "y": 0, "breite": 3200, "hoehe": 1800 }, "kachel": { "x": 560, "y": 0, "breite": 2400, "hoehe": 1800 } } },
+  "raum_leer": { "klasse": "M", "bild": "Raum_leer/bilder/Still_Raum_M.jpg", "kachel": "Raum_leer/bilder/Still_Raum_M_kachel.jpg", "format": { "breite": 4320, "hoehe": 1800, "bildschirm": { "x": 560, "y": 0, "breite": 3200, "hoehe": 1800 }, "kachel": { "x": 960, "y": 0, "breite": 2400, "hoehe": 1800 } }, "bild_hoch": null, "format_hoch": null },
   "produkte": [
     {
       "produkt": "Object_01",
@@ -9,10 +9,21 @@
       "abendbilder": false,
       "bilder": ["Object_01/bilder/Still_Cam1.jpg", "Object_01/bilder/Still_Cam2.jpg", "Object_01/bilder/Still_Cam3.jpg", "Object_01/bilder/Still_Cam4.jpg"],
       "kacheln": ["Object_01/bilder/Still_Cam1_kachel.jpg", "Object_01/bilder/Still_Cam2_kachel.jpg", "Object_01/bilder/Still_Cam3_kachel.jpg", "Object_01/bilder/Still_Cam4_kachel.jpg"],
-      "format": { "breite": 3520, "hoehe": 1800, "bildschirm": { "x": 160, "y": 0, "breite": 3200, "hoehe": 1800 }, "kachel": { "x": 560, "y": 0, "breite": 2400, "hoehe": 1800 }, "video": { "breite": 2112, "hoehe": 1080, "bildschirm": { "x": 96, "y": 0, "breite": 1920, "hoehe": 1080 } } },
+      "format": { "breite": 4320, "hoehe": 1800, "bildschirm": { "x": 560, "y": 0, "breite": 3200, "hoehe": 1800 }, "kachel": { "x": 960, "y": 0, "breite": 2400, "hoehe": 1800 }, "video": { "breite": 2592, "hoehe": 1080, "bildschirm": { "x": 336, "y": 0, "breite": 1920, "hoehe": 1080 } } },
       "typ": "Tables",
       "anzeigename": "OBJ_TB_M_01",
-      "abendfahrten": []
+      "abendfahrten": [],
+      "bilder_hoch": [],
+      "format_hoch": null,
+      "fahrten_hoch": [],
+      "abendfahrten_hoch": [],
+      "bildinfo": [
+        { "bild": "Object_01/bilder/Still_Cam1.jpg", "format": "breit", "breite": 4320, "hoehe": 1800, "kachel": { "x": 960, "y": 0, "breite": 2400, "hoehe": 1800 }, "moebel": { "x": 1503, "y": 1064, "breite": 1314, "hoehe": 520 }, "angeschnitten": false },
+        { "bild": "Object_01/bilder/Still_Cam2.jpg", "format": "breit", "breite": 4320, "hoehe": 1800, "kachel": { "x": 960, "y": 0, "breite": 2400, "hoehe": 1800 }, "moebel": { "x": 1180, "y": 372, "breite": 1903, "hoehe": 1256 }, "angeschnitten": false },
+        { "bild": "Object_01/bilder/Still_Cam3.jpg", "format": "breit", "breite": 4320, "hoehe": 1800, "kachel": { "x": 960, "y": 0, "breite": 2400, "hoehe": 1800 }, "moebel": { "x": 1479, "y": 0, "breite": 2841, "hoehe": 1800 }, "angeschnitten": true },
+        { "bild": "Object_01/bilder/Still_Cam4.jpg", "format": "breit", "breite": 4320, "hoehe": 1800, "kachel": { "x": 960, "y": 0, "breite": 2400, "hoehe": 1800 }, "moebel": { "x": 0, "y": 0, "breite": 4320, "hoehe": 1800 }, "angeschnitten": true }
+      ],
+      "handykameras": [2, 3, 4]
     },
     {
       "produkt": "Object_02",
@@ -21,10 +32,20 @@
       "abendbilder": false,
       "bilder": ["Object_02/bilder/Still_Cam1.jpg", "Object_02/bilder/Still_Cam2.jpg", "Object_02/bilder/Still_Cam3.jpg"],
       "kacheln": ["Object_02/bilder/Still_Cam1_kachel.jpg", "Object_02/bilder/Still_Cam2_kachel.jpg", "Object_02/bilder/Still_Cam3_kachel.jpg"],
-      "format": { "breite": 3520, "hoehe": 1800, "bildschirm": { "x": 160, "y": 0, "breite": 3200, "hoehe": 1800 }, "kachel": { "x": 560, "y": 0, "breite": 2400, "hoehe": 1800 }, "video": { "breite": 2112, "hoehe": 1080, "bildschirm": { "x": 96, "y": 0, "breite": 1920, "hoehe": 1080 } } },
+      "format": { "breite": 4320, "hoehe": 1800, "bildschirm": { "x": 560, "y": 0, "breite": 3200, "hoehe": 1800 }, "kachel": { "x": 960, "y": 0, "breite": 2400, "hoehe": 1800 }, "video": { "breite": 2592, "hoehe": 1080, "bildschirm": { "x": 336, "y": 0, "breite": 1920, "hoehe": 1080 } } },
       "typ": "Storage",
       "anzeigename": "OBJ_SH_M_02",
-      "abendfahrten": []
+      "abendfahrten": [],
+      "bilder_hoch": [],
+      "format_hoch": null,
+      "fahrten_hoch": [],
+      "abendfahrten_hoch": [],
+      "bildinfo": [
+        { "bild": "Object_02/bilder/Still_Cam1.jpg", "format": "breit", "breite": 4320, "hoehe": 1800, "kachel": { "x": 960, "y": 0, "breite": 2400, "hoehe": 1800 }, "moebel": { "x": 1704, "y": 608, "breite": 912, "hoehe": 930 }, "angeschnitten": false },
+        { "bild": "Object_02/bilder/Still_Cam2.jpg", "format": "breit", "breite": 4320, "hoehe": 1800, "kachel": { "x": 960, "y": 0, "breite": 2400, "hoehe": 1800 }, "moebel": { "x": 1650, "y": 135, "breite": 1148, "hoehe": 1603 }, "angeschnitten": false },
+        { "bild": "Object_02/bilder/Still_Cam3.jpg", "format": "breit", "breite": 4320, "hoehe": 1800, "kachel": { "x": 960, "y": 0, "breite": 2400, "hoehe": 1800 }, "moebel": { "x": 0, "y": 307, "breite": 3229, "hoehe": 1493 }, "angeschnitten": true }
+      ],
+      "handykameras": [2, 3]
     },
     {
       "produkt": "Object_03",
@@ -33,10 +54,23 @@
       "abendbilder": true,
       "bilder": ["Object_03/bilder/Still_Cam1.jpg", "Object_03/bilder/Still_Cam2.jpg", "Object_03/bilder/Still_Cam3.jpg", "Object_03/bilder/Still_Cam1_abend.jpg", "Object_03/bilder/Still_Cam2_abend.jpg", "Object_03/bilder/Still_Cam3_abend.jpg"],
       "kacheln": ["Object_03/bilder/Still_Cam1_kachel.jpg", "Object_03/bilder/Still_Cam2_kachel.jpg", "Object_03/bilder/Still_Cam3_kachel.jpg", "Object_03/bilder/Still_Cam1_abend_kachel.jpg", "Object_03/bilder/Still_Cam2_abend_kachel.jpg", "Object_03/bilder/Still_Cam3_abend_kachel.jpg"],
-      "format": { "breite": 3520, "hoehe": 1800, "bildschirm": { "x": 160, "y": 0, "breite": 3200, "hoehe": 1800 }, "kachel": { "x": 560, "y": 0, "breite": 2400, "hoehe": 1800 }, "video": { "breite": 2112, "hoehe": 1080, "bildschirm": { "x": 96, "y": 0, "breite": 1920, "hoehe": 1080 } } },
+      "format": { "breite": 4320, "hoehe": 1800, "bildschirm": { "x": 560, "y": 0, "breite": 3200, "hoehe": 1800 }, "kachel": { "x": 960, "y": 0, "breite": 2400, "hoehe": 1800 }, "video": { "breite": 2592, "hoehe": 1080, "bildschirm": { "x": 336, "y": 0, "breite": 1920, "hoehe": 1080 } } },
       "typ": "Lighting",
       "anzeigename": "OBJ_LT_M_03",
-      "abendfahrten": ["Object_03/video/Move_Cam1_Cam2_abend.mp4", "Object_03/video/Move_Cam1_Cam3_abend.mp4", "Object_03/video/Move_Cam2_Cam1_abend.mp4", "Object_03/video/Move_Cam2_Cam3_abend.mp4", "Object_03/video/Move_Cam3_Cam1_abend.mp4", "Object_03/video/Move_Cam3_Cam2_abend.mp4"]
+      "abendfahrten": ["Object_03/video/Move_Cam1_Cam2_abend.mp4", "Object_03/video/Move_Cam1_Cam3_abend.mp4", "Object_03/video/Move_Cam2_Cam1_abend.mp4", "Object_03/video/Move_Cam2_Cam3_abend.mp4", "Object_03/video/Move_Cam3_Cam1_abend.mp4", "Object_03/video/Move_Cam3_Cam2_abend.mp4"],
+      "bilder_hoch": [],
+      "format_hoch": null,
+      "fahrten_hoch": [],
+      "abendfahrten_hoch": [],
+      "bildinfo": [
+        { "bild": "Object_03/bilder/Still_Cam1.jpg", "format": "breit", "breite": 4320, "hoehe": 1800, "kachel": { "x": 960, "y": 0, "breite": 2400, "hoehe": 1800 }, "moebel": { "x": 2124, "y": 267, "breite": 72, "hoehe": 1332 }, "angeschnitten": false },
+        { "bild": "Object_03/bilder/Still_Cam2.jpg", "format": "breit", "breite": 4320, "hoehe": 1800, "kachel": { "x": 960, "y": 0, "breite": 2400, "hoehe": 1800 }, "moebel": { "x": 1929, "y": 734, "breite": 419, "hoehe": 1066 }, "angeschnitten": true },
+        { "bild": "Object_03/bilder/Still_Cam3.jpg", "format": "breit", "breite": 4320, "hoehe": 1800, "kachel": { "x": 960, "y": 0, "breite": 2400, "hoehe": 1800 }, "moebel": { "x": 1730, "y": 0, "breite": 837, "hoehe": 1477 }, "angeschnitten": true },
+        { "bild": "Object_03/bilder/Still_Cam1_abend.jpg", "format": "breit", "breite": 4320, "hoehe": 1800, "kachel": { "x": 960, "y": 0, "breite": 2400, "hoehe": 1800 }, "moebel": { "x": 2124, "y": 267, "breite": 72, "hoehe": 1332 }, "angeschnitten": false },
+        { "bild": "Object_03/bilder/Still_Cam2_abend.jpg", "format": "breit", "breite": 4320, "hoehe": 1800, "kachel": { "x": 960, "y": 0, "breite": 2400, "hoehe": 1800 }, "moebel": { "x": 1929, "y": 734, "breite": 419, "hoehe": 1066 }, "angeschnitten": true },
+        { "bild": "Object_03/bilder/Still_Cam3_abend.jpg", "format": "breit", "breite": 4320, "hoehe": 1800, "kachel": { "x": 960, "y": 0, "breite": 2400, "hoehe": 1800 }, "moebel": { "x": 1730, "y": 0, "breite": 837, "hoehe": 1477 }, "angeschnitten": true }
+      ],
+      "handykameras": [3]
     },
     {
       "produkt": "Object_04",
@@ -45,10 +79,20 @@
       "abendbilder": false,
       "bilder": ["Object_04/bilder/Still_Cam1.jpg", "Object_04/bilder/Still_Cam2.jpg", "Object_04/bilder/Still_Cam3.jpg"],
       "kacheln": ["Object_04/bilder/Still_Cam1_kachel.jpg", "Object_04/bilder/Still_Cam2_kachel.jpg", "Object_04/bilder/Still_Cam3_kachel.jpg"],
-      "format": { "breite": 3520, "hoehe": 1800, "bildschirm": { "x": 160, "y": 0, "breite": 3200, "hoehe": 1800 }, "kachel": { "x": 560, "y": 0, "breite": 2400, "hoehe": 1800 }, "video": { "breite": 2112, "hoehe": 1080, "bildschirm": { "x": 96, "y": 0, "breite": 1920, "hoehe": 1080 } } },
+      "format": { "breite": 4320, "hoehe": 1800, "bildschirm": { "x": 560, "y": 0, "breite": 3200, "hoehe": 1800 }, "kachel": { "x": 960, "y": 0, "breite": 2400, "hoehe": 1800 }, "video": { "breite": 2592, "hoehe": 1080, "bildschirm": { "x": 336, "y": 0, "breite": 1920, "hoehe": 1080 } } },
       "typ": "Storage",
       "anzeigename": "OBJ_SH_M_04",
-      "abendfahrten": []
+      "abendfahrten": [],
+      "bilder_hoch": [],
+      "format_hoch": null,
+      "fahrten_hoch": [],
+      "abendfahrten_hoch": [],
+      "bildinfo": [
+        { "bild": "Object_04/bilder/Still_Cam1.jpg", "format": "breit", "breite": 4320, "hoehe": 1800, "kachel": { "x": 960, "y": 0, "breite": 2400, "hoehe": 1800 }, "moebel": { "x": 1572, "y": 793, "breite": 1176, "hoehe": 276 }, "angeschnitten": false },
+        { "bild": "Object_04/bilder/Still_Cam2.jpg", "format": "breit", "breite": 4320, "hoehe": 1800, "kachel": { "x": 960, "y": 0, "breite": 2400, "hoehe": 1800 }, "moebel": { "x": 1399, "y": 605, "breite": 1555, "hoehe": 538 }, "angeschnitten": false },
+        { "bild": "Object_04/bilder/Still_Cam3.jpg", "format": "breit", "breite": 4320, "hoehe": 1800, "kachel": { "x": 960, "y": 0, "breite": 2400, "hoehe": 1800 }, "moebel": { "x": 1405, "y": 630, "breite": 2915, "hoehe": 1170 }, "angeschnitten": true }
+      ],
+      "handykameras": [2]
     },
     {
       "produkt": "Object_05",
@@ -57,10 +101,20 @@
       "abendbilder": false,
       "bilder": ["Object_05/bilder/Still_Cam1.jpg", "Object_05/bilder/Still_Cam2.jpg", "Object_05/bilder/Still_Cam3.jpg"],
       "kacheln": ["Object_05/bilder/Still_Cam1_kachel.jpg", "Object_05/bilder/Still_Cam2_kachel.jpg", "Object_05/bilder/Still_Cam3_kachel.jpg"],
-      "format": { "breite": 3520, "hoehe": 1800, "bildschirm": { "x": 160, "y": 0, "breite": 3200, "hoehe": 1800 }, "kachel": { "x": 560, "y": 0, "breite": 2400, "hoehe": 1800 }, "video": { "breite": 2112, "hoehe": 1080, "bildschirm": { "x": 96, "y": 0, "breite": 1920, "hoehe": 1080 } } },
+      "format": { "breite": 4320, "hoehe": 1800, "bildschirm": { "x": 560, "y": 0, "breite": 3200, "hoehe": 1800 }, "kachel": { "x": 960, "y": 0, "breite": 2400, "hoehe": 1800 }, "video": { "breite": 2592, "hoehe": 1080, "bildschirm": { "x": 336, "y": 0, "breite": 1920, "hoehe": 1080 } } },
       "typ": "Seating",
       "anzeigename": "OBJ_ST_M_05",
-      "abendfahrten": []
+      "abendfahrten": [],
+      "bilder_hoch": [],
+      "format_hoch": null,
+      "fahrten_hoch": [],
+      "abendfahrten_hoch": [],
+      "bildinfo": [
+        { "bild": "Object_05/bilder/Still_Cam1.jpg", "format": "breit", "breite": 4320, "hoehe": 1800, "kachel": { "x": 960, "y": 0, "breite": 2400, "hoehe": 1800 }, "moebel": { "x": 1774, "y": 1085, "breite": 788, "hoehe": 596 }, "angeschnitten": false },
+        { "bild": "Object_05/bilder/Still_Cam2.jpg", "format": "breit", "breite": 4320, "hoehe": 1800, "kachel": { "x": 960, "y": 0, "breite": 2400, "hoehe": 1800 }, "moebel": { "x": 1666, "y": 505, "breite": 1166, "hoehe": 1032 }, "angeschnitten": false },
+        { "bild": "Object_05/bilder/Still_Cam3.jpg", "format": "breit", "breite": 4320, "hoehe": 1800, "kachel": { "x": 960, "y": 0, "breite": 2400, "hoehe": 1800 }, "moebel": { "x": 1181, "y": 168, "breite": 1920, "hoehe": 1529 }, "angeschnitten": false }
+      ],
+      "handykameras": [2, 3]
     }
   ]
 }

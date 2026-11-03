@@ -94,7 +94,12 @@ window.GAUGE_CONFIG = {
     klappfeld: 240,                // ms – the small glass bar with the options of a code segment slides out / in
     codeVollstaendig: 260,         // ms – a NUMBER was chosen: the complete code stays this long, then the product opens
     hoverZoom: 1.08,               // symbol slightly larger on hover
-    namensschild: true             // name plates on hover (always towards the screen centre)
+    namensschild: true,            // name plates on hover (always towards the screen centre)
+    /* touch devices (phone, no hover): */
+    aktivName: true,               // the active area grows softly and shows symbol + name, the others stay symbols only
+    namenWechsel: 300,             // ms – growing / shrinking of the active field
+    langDruck: 450,                // ms – pressing a symbol this long shows its name plate (and does not trigger it)
+    schildNachLangDruck: 900       // ms – the plate stays this long after letting go
   },
 
   /* ---------- Navigation tree (only with navigation: 'baum') ---------- */
@@ -159,7 +164,14 @@ window.GAUGE_CONFIG = {
     gleichzeitig: 2,               // files loading at the same time
     wartenJeDateiMs: 15000,        // give up waiting for one file after this time and continue with the next
     ringVoll: 160,                 // a view clicked before its move has loaded: the ring in the view symbol fills; once full, it stays this long, then the move starts
-    handyBreite: 760               // below this window width small videos from video/klein/ are used
+    handyBreite: 760,              // below this window width small videos from video/klein/ are used
+    /* picture of the product page (glass bar): it covers the window as long as it is wide enough. The furniture
+       (field bildinfo of produkte.json) is never cropped; in very wide windows (21:9, 32:9) the picture keeps the full
+       height and its sides fade softly into the background colour */
+    moebelRand: 20,                // px – the furniture keeps at least this distance from the left screen edge and from the bar
+    auslaufen: 0.1,                // share of the picture width (sides) / height (top, bottom) over which a visible picture edge fades out
+    auslaufenWechsel: 420,         // ms – the fade at the edges grows / shrinks softly (window resized, way back into the tile)
+    hochformat: true               // phone held upright: use the portrait pictures (bilder_hoch …) once they exist for a product
   },
 
   /* ---------- Gallery ---------- */

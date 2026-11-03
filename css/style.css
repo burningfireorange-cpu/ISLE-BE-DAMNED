@@ -167,6 +167,7 @@ body.baum-an .seite-galerie .spalte {
   position: absolute; inset: 0;
   width: 100%; height: 100%;
   object-fit: cover; display: block;
+  object-position: var(--kpos, 50% 50%);     /* tiles: the 4:3 crop of the whole wide picture (G.kachelPosition) */
   opacity: 0;
   transition: opacity var(--t-ueberblenden) linear;
 }
@@ -468,6 +469,9 @@ input[type=range]::-moz-range-thumb { width: 11px; height: 11px; border-radius: 
 .glas.mit-kontext .g-trenner { display: block; }
 .glas.rechts .g-trenner { width: 22px; height: 1px; margin: 7px 0; }
 .g-kontext:empty { display: none; }
+/* product page: a fine divider between the views (+ lamp) and the arrows – also in the phone's small glass field */
+.w-trenner { flex: 0 0 auto; width: 1px; height: 20px; margin: 0 6px; background: rgba(0, 0, 0, .16); }
+.glas.rechts .w-trenner { width: 20px; height: 1px; margin: 6px 0; }
 /* while the glass travels: the real bar waits invisibly at its new place */
 .glas.im-flug .g-hg, .glas.im-umformen .g-hg { visibility: hidden; }
 .glas.im-flug .g-reihe { opacity: 0; transition: none; }
@@ -554,6 +558,28 @@ html.eigener-zeiger .g-feld:hover { background: transparent; }   /* the pointer 
   .glas.rechts .g-feld:hover > .schild, .glas.rechts .g-feld:focus-visible > .schild { transform: translate(0, -50%); }
 }
 @media (hover: none) { .glas .schild, .glas-oben .schild, .g-optionen .schild { display: none; } }
+
+/* touch devices (no hover): the active area of a horizontal bar grows softly and shows symbol + name;
+   a long press on any symbol shows its name plate without triggering it (js/leiste.js langDruecken) */
+.g-name { display: none; }
+.g-feld { -webkit-touch-callout: none; -webkit-user-select: none; user-select: none; }
+@media (hover: none) {
+  .glas:not(.rechts) .g-bereich {
+    width: auto; min-width: var(--feld); padding: 0;
+    border-radius: var(--leiste-radius);
+    transition: background-color .2s var(--kurve), color .2s var(--kurve), padding var(--t-namen-weg) var(--kurve);
+  }
+  .glas:not(.rechts) .g-bereich .g-name {
+    display: block; overflow: hidden; white-space: nowrap;
+    max-width: 0; margin-left: 0; opacity: 0;
+    font-size: 12.5px; letter-spacing: .05em; line-height: 1;
+    transition: max-width var(--t-namen-weg) var(--kurve), margin var(--t-namen-weg) var(--kurve), opacity var(--t-namen) var(--kurve);
+  }
+  .glas:not(.rechts) .g-bereich.aktiv { padding: 0 15px 0 calc((var(--feld) - 21px) / 2); }
+  .glas:not(.rechts) .g-bereich.aktiv .g-name { max-width: 110px; margin-left: 7px; opacity: 1; }
+  .glas .g-feld.schild-an > .schild, .glas-oben .g-feld.schild-an > .schild { display: block; opacity: 1; transform: translate(-50%, 0); }
+  .glas.rechts .g-feld.schild-an > .schild { transform: translate(0, -50%); }
+}
 
 /* Products: the code filter OBJ_TYPE_SIZE_NUMBER behind the divider.
    Placeholders light grey, chosen values black and bolder. Each segment opens a small glass bar above it. */
@@ -714,6 +740,9 @@ html.eigener-zeiger .g-seg:hover, html.eigener-zeiger .g-opt:not(.aktiv):hover {
 .kachel .k-abend { opacity: 0; transition: opacity var(--t-abend) var(--kurve); }
 .kachel.licht:focus-visible .k-abend,
 .kachel.licht.hervor .k-abend { opacity: 1; }
+/* back from the product in evening mode: the tile holds the evening image, then the light goes out like the lamp switch */
+.kachel .k-abend.nachglimmen { opacity: 1; transition: none; }
+.kachel .k-abend.ausglimmen { transition: opacity var(--t-lampe) var(--kurve); }
 @media (hover: hover) {
   .kachel:not(.licht):hover .k-tag { transform: scale(var(--zoom)); }
   .kachel.licht:hover .k-abend { opacity: 1; }
@@ -765,6 +794,24 @@ html.eigener-zeiger .g-seg:hover, html.eigener-zeiger .g-opt:not(.aktiv):hover {
   transform: translate(-50%, -50%);
 }
 .nav-leiste .p-buehne .viewer { border-radius: 0; }
+/* JS (G.buehne) sets left / top / width / height of the stage; the formula above is only the fallback.
+   Soft edges: a picture edge inside the window (ultrawide, or a picture made smaller so that the furniture fits)
+   fades into the background colour – widths --ml/--mr/--mt/--mb (px), changing softly. */
+@property --ml { syntax: '<length>'; inherits: false; initial-value: 0px; }
+@property --mr { syntax: '<length>'; inherits: false; initial-value: 0px; }
+@property --mt { syntax: '<length>'; inherits: false; initial-value: 0px; }
+@property --mb { syntax: '<length>'; inherits: false; initial-value: 0px; }
+.viewer { transition: --ml var(--t-auslaufen) var(--kurve), --mr var(--t-auslaufen) var(--kurve), --mt var(--t-auslaufen) var(--kurve), --mb var(--t-auslaufen) var(--kurve); }
+.viewer.maske, .flug.maske {
+  -webkit-mask-image:
+    linear-gradient(to right, transparent 0, #000 var(--ml), #000 calc(100% - var(--mr)), transparent 100%),
+    linear-gradient(to bottom, transparent 0, #000 var(--mt), #000 calc(100% - var(--mb)), transparent 100%);
+  -webkit-mask-composite: source-in;
+  mask-image:
+    linear-gradient(to right, transparent 0, #000 var(--ml), #000 calc(100% - var(--mr)), transparent 100%),
+    linear-gradient(to bottom, transparent 0, #000 var(--mt), #000 calc(100% - var(--mb)), transparent 100%);
+  mask-composite: intersect;
+}
 .viewer {
   position: relative;
   width: 100%;
@@ -790,6 +837,8 @@ html.eigener-zeiger .g-seg:hover, html.eigener-zeiger .g-opt:not(.aktiv):hover {
 .viewer > .v-abend.raus { transition-duration: var(--t-still-raus); }       /* evening move: evening still ↔ video, like by day */
 .viewer > .v-abend.rein { transition-duration: var(--t-still-rein); }
 .viewer > .v-abend.wechsel { z-index: 4; transition-duration: var(--t-ueberblenden); }   /* evening crossfade (reduced motion) */
+.viewer > video.raus { transition: opacity var(--t-still-rein) linear; }   /* end of a move: the video fades out … */
+.viewer > .unter { z-index: 0; }                                             /* … over the target still that lies ready below it */
 .viewer > .sofort { transition: none; }
 .viewer > .sichtbar { opacity: 1; }
 .v-laden { position: absolute; left: 0; right: 0; bottom: 0; height: 2px; z-index: 4; transition: opacity .4s; }

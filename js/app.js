@@ -61,12 +61,22 @@
         c.style.width = s.box.w * 100 + '%'; c.style.height = s.box.h * 100 + '%';
       }
       if (s.ursprung) c.style.transformOrigin = s.ursprung;
+      if (s.durchsichtig) c.style.backgroundColor = 'transparent';   // a small copy still decoding: the layer below shows
       k.appendChild(c);
       var a = { transform: s.von.transform || 'none', opacity: c.style.opacity }, b = { transform: s.nach.transform || 'none', opacity: s.nach.opacity == null ? 1 : s.nach.opacity };
       if (a.transform !== b.transform || String(a.opacity) !== String(b.opacity)) anims.push({ el: c, frames: [a, b] });
     });
+    if (o.maske) {      // the soft edges of the picture (ultrawide) grow while the window opens
+      k.classList.add('maske');
+      ['l', 'r', 't', 'b'].forEach(function (s) { k.style.setProperty('--m' + s, '0px'); });
+    }
     document.body.appendChild(k);
     flugEl = k;
+    if (o.maske) {
+      void k.offsetWidth;
+      k.style.transition = ['l', 'r', 't', 'b'].map(function (s) { return '--m' + s + ' ' + o.dauer + 'ms ' + C.kurve; }).join(', ');
+      ['l', 'r', 't', 'b'].forEach(function (s) { k.style.setProperty('--m' + s, Math.round(o.maske[s]) + 'px'); });
+    }
     o.verstecken.forEach(function (e) { e.style.visibility = 'hidden'; });
     anims.forEach(function (x) { G.animiere(x.el, x.frames, opts); });
     var bereit = o.bereit || Promise.resolve();
@@ -84,13 +94,35 @@
      The REAL viewer shrinks into its tile (no copy): if another view than 1 was active, the move back to view 1
      starts at once at normal speed and may go on playing inside the tile; it ends on the view-1 still, which is
      exactly the tile image – then the viewer fades out and goes back to the product page. View 1: only shrinking. */
-  var heim = null;     // { v, k, anim, uhr }
+  var heim = null;     // { v, k, kachel, anim, uhr }
   var startVorgeladen = false;
+  /* Evening mode on the way home: the light never goes out at once. The tile takes over the evening image (its own
+     small copy of the same picture, held at full opacity under the viewer) and then fades into its day image with the
+     duration and curve of the lamp switch (viewer.lampe) – also when the way home is interrupted. */
+  function abendHalten(kachel) {
+    var ab = kachel && kachel.querySelector('.k-abend');
+    if (!ab || !ab.classList.contains('echt')) return null;     // not loaded: the viewer fades by itself (see heimfahren)
+    clearTimeout(ab._aus);
+    ab.classList.remove('ausglimmen');
+    ab.classList.add('nachglimmen');
+    return ab;
+  }
+  function abendAus(ab) {
+    if (!ab || !ab.classList.contains('nachglimmen')) return;
+    void ab.offsetWidth;                          // the held evening image is in place before the fade starts
+    ab.classList.add('ausglimmen');
+    ab.classList.remove('nachglimmen');
+    clearTimeout(ab._aus);
+    ab._aus = setTimeout(function () { ab.classList.remove('ausglimmen'); }, G.blende(C.viewer.lampe) + 60);
+  }
   function heimAbbrechen() {
     if (!heim) return;
     var h = heim;
     heim = null;
     clearTimeout(h.uhr);
+    // interrupted while the viewer over the tile still shows the evening (move running, or still): the tile holds the
+    // evening image and lets the light go out softly instead of jumping to day when the viewer leaves
+    if (h.kachel && h.v.lampe) abendAus(abendHalten(h.kachel));
     if (h.anim) { try { h.anim.cancel(); } catch (e) {} }
     var el = h.v.el;
     el.classList.remove('in-kachel', 'heim-raus');
@@ -100,9 +132,10 @@
   }
   function heimfahren(v, gross, kachel) {
     heimAbbrechen();
-    var el = v.el, h = heim = { v: v };
+    var el = v.el, h = heim = { v: v, kachel: kachel };
     var radiusGross = radiusVon(el);
     v.heim();
+    v.maske(null);       // soft edges (ultrawide) grow back to the hard picture edge while it shrinks into the tile
     var k = h.k = G.el('div', 'flug flug-echt');
     k.style.left = gross.left + 'px';
     k.style.top = gross.top + 'px';
@@ -123,11 +156,21 @@
       h.k = null;
       v.wennRuhig(function () {
         if (heim !== h) return;
-        var t = G.blende(C.viewer.heimAusblenden);
-        el.style.transition = 'opacity ' + t + 'ms linear';
-        el.classList.add('heim-raus');
-        // (evening mode: the evening move ended on the evening still – fading out shows the tile's day image; the lamp goes off)
-        h.uhr = setTimeout(function () { if (heim === h) { v.lampeAus(); heimAbbrechen(); } }, t + 40);
+        function ausblenden() {
+          var t = G.blende(C.viewer.heimAusblenden);
+          el.style.transition = 'opacity ' + t + 'ms linear';
+          el.classList.add('heim-raus');
+          h.uhr = setTimeout(function () { if (heim === h) { v.lampeAus(); heimAbbrechen(); } }, t + 40);
+        }
+        var a1 = v.abende[1];
+        if (!v.lampe || !a1 || !a1.classList.contains('sichtbar')) { ausblenden(); return; }
+        // evening mode: the evening move ended on the evening still. The tile holds the same evening image under the
+        // viewer, the viewer fades into it and at the same time the tile's light goes out softly (lamp switch, ~1 s).
+        var ab = abendHalten(kachel);
+        if (ab) { abendAus(ab); ausblenden(); return; }
+        // (the tile's evening image is not there: the light goes out inside the viewer first, then it fades out)
+        a1.classList.remove('sichtbar');
+        h.uhr = setTimeout(function () { if (heim === h) ausblenden(); }, G.blende(C.viewer.lampe) + 30);
       });
     };
   }
@@ -172,7 +215,7 @@
     var zurueckFlug = null;
     if (vorher && (vorher.seite === 'produkt') && r.seite === 'products' && G.modus === 'voll') {
       var vEl = G.seiteProdukt.viewerEl();
-      if (vEl && vEl.closest('.p-buehne')) { var vr = vEl.getBoundingClientRect(); if (sichtbar(vr)) zurueckFlug = { r: vr, produkt: vorher.produkt }; }
+      if (vEl && vEl.closest('.p-buehne')) { var vr = vEl.getBoundingClientRect(); if (sichtbar(vr)) zurueckFlug = { r: vr, produkt: vorher.produkt, v: G.seiteProdukt.viewerObj() }; }
     }
 
     body.classList.toggle('ist-start', istStart);
@@ -198,7 +241,7 @@
     ALLE().forEach(function (m) { if (m !== ziel) m.verbergen(); });
     if (ziel) ziel.zeigen(r, info);
     // the product is opened again while its viewer is still on its way home in the tile: take it back at once
-    if (heim && r.produkt && heim.v === G.viewerFuer(r.produkt)) heimAbbrechen();
+    if (heim && r.produkt && heim.v.p === r.produkt) heimAbbrechen();
     G.nav.extrasAktualisieren();   // views / lamp need the page's viewer
 
     // tile → viewer: the tile zooms seamlessly up into the centred product image (same image, no jump)
@@ -209,20 +252,32 @@
       if (sichtbar(r0)) {
         // the tile shows the 4:3 crop; the window opens sideways onto the full, shifted picture. The tile image sits on its
         // crop; once the full still is there, it flies on top (sharp at full size, and it fills the sides as they open)
-        var ka = vw.kachelAnteil, mitte = (ka.x + ka.w / 2) * 100 + '% ' + (ka.y + ka.h / 2) * 100 + '%';
+        var p = r.produkt, ka = vw.kachelAnteil, mitte = (ka.x + ka.w / 2) * 100 + '% ' + (ka.y + ka.h / 2) * 100 + '%';
         var zoom = { transform: 'scale(' + kz.skala + ')' };
-        var schichten = [{ el: q.querySelector('.k-tag'), box: ka, von: zoom, nach: {} }];
+        // the tile image is the whole wide picture (kachelVoll): it is placed so that its 4:3 crop lies exactly on the
+        // tile crop of the picture the viewer shows – wide: it fills the opening window at once, sides included;
+        // portrait (phone upright): it fills the tile part, above and below the small portrait copy comes in
+        var kw = p.kachelVoll ? (p.kachelAusschnitt || G.anzeige(p).kachel) : null, kbox = ka, kursprung = null;
+        if (kw) {
+          var bw = ka.w / kw.w, bh = ka.h / kw.h;
+          kbox = { x: ka.x - kw.x * bw, y: ka.y - kw.y * bh, w: bw, h: bh };
+          kursprung = (kw.x + kw.w / 2) * 100 + '% ' + (kw.y + kw.h / 2) * 100 + '%';
+        }
+        var voll = !!kw || vw.format === 'hoch';       // the viewer itself shows a small copy until its still has loaded
+        var schichten = [{ el: q.querySelector('.k-tag'), box: kbox, ursprung: kursprung, von: zoom, nach: {} }];
         var gs = vw.stills[1];
-        if (gs && gs.classList.contains('echt')) schichten.push({ el: gs, ursprung: mitte, von: zoom, nach: {} });
+        // view 1 of the viewer: the big still if it is there, else its small copy (background, see Viewer.vorschau)
+        if (gs && (gs.classList.contains('echt') || gs.classList.contains('mit-vorschau'))) schichten.push({ el: gs, ursprung: mitte, durchsichtig: true, von: zoom, nach: {} });
         var ab = q.querySelector('.k-abend'), ga = vw.abende[1];
         if (ab && kz.abend > 0.01) {
           var abNach = { opacity: kz.abend > 0.5 ? 1 : 0 };
-          schichten.push({ el: ab, box: ka, von: { opacity: kz.abend }, nach: abNach });
-          if (ga && ga.classList.contains('echt')) schichten.push({ el: ga, von: { opacity: kz.abend }, nach: abNach });
+          schichten.push({ el: ab, box: kbox, ursprung: kursprung, von: { opacity: kz.abend }, nach: abNach });
+          if (ga && (ga.classList.contains('echt') || ga.classList.contains('mit-vorschau'))) schichten.push({ el: ga, durchsichtig: true, von: { opacity: kz.abend }, nach: abNach });
         }
-        flug({ auf: true, klein: r0, gross: vw.el.getBoundingClientRect(), radiusKlein: radiusVon(q), radiusGross: radiusVon(vw.el), aus: ka,
+        flug({ auf: true, klein: r0, gross: vw.el.getBoundingClientRect(), radiusKlein: radiusVon(q), radiusGross: radiusVon(vw.el), aus: ka, maske: vw.maskeWerte,
           schichten: schichten, verstecken: [vw.el, q], dauer: C.seite.kachelZumViewer,
-          bereit: Promise.all([geladen(vw.stills[1]), kz.abend > 0.5 ? geladen(vw.abende[1]) : null]) });
+          // (whole-picture tile image: the viewer itself shows it under the still until that has loaded – no waiting)
+          bereit: voll ? null : Promise.all([geladen(vw.stills[1]), kz.abend > 0.5 ? geladen(vw.abende[1]) : null]) });
       }
     }
     // viewer → tile (going back to the wall): the real viewer shrinks into the tile, a move back to view 1 plays on
@@ -231,7 +286,7 @@
       if (kachel) {
         var kr = kachel.getBoundingClientRect();
         if (!sichtbar(kr) && kachel.scrollIntoView) { kachel.scrollIntoView({ block: 'center' }); kr = kachel.getBoundingClientRect(); }
-        if (sichtbar(kr)) heimfahren(G.viewerFuer(zurueckFlug.produkt), zurueckFlug.r, kachel);
+        if (sichtbar(kr)) heimfahren(zurueckFlug.v || G.viewerFuer(zurueckFlug.produkt), zurueckFlug.r, kachel);
       }
     }
     document.title = titel(r);

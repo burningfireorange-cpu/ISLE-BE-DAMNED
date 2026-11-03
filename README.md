@@ -48,10 +48,12 @@ Hinter einem feinen Trenner stehen die Werkzeuge der jeweiligen Seite:
 | Seite | Werkzeuge | Inhalt der Seite |
 |---|---|---|
 | Products | Code-Filter `OBJ_TYPE_SIZE_NUMBER` (siehe unten) | Kachelraster über die volle Breite, die Leiste liegt darüber |
-| Produkt | View 1 · 2 · 3 … · Glühbirne (nur Leuchten) · → Customize · ← | das Bild über den ganzen Bildschirm (siehe unten) |
-| Customize | → To Order · ← | Axonometrie links, schmales Feld für Regler/Optionen (noch leer) |
-| To Order | → Payment · ← | Kachelbild, Name, Platzhalter für Maße/Optionen und Preis |
+| Produkt | View 1 · 2 · 3 … · Glühbirne (nur Leuchten) · Trennstrich · ← · → Customize | das Bild über den ganzen Bildschirm (siehe unten) |
+| Customize | ← · → To Order | Axonometrie links, schmales Feld für Regler/Optionen (noch leer) |
+| To Order | ← · → Payment | Kachelbild, Name, Platzhalter für Maße/Optionen und Preis |
 | Payment | ← | Platzhalter mit deaktiviertem „Pay“ |
+
+**Handy (ohne Hover):** Der aktive Bereich der Leiste wird weich breiter und zeigt Symbol und Namen, die anderen bleiben reine Symbole (`leiste.aktivName`). Langes Drücken (`leiste.langDruck`, 450 ms) auf ein Symbol zeigt dessen Namensschild, ohne es auszulösen. Zwischen den View-Nummern und den Pfeilen steht ein feiner Trennstrich.
 
 **Code-Filter (Products):** Der Text `OBJ_TYPE_SIZE_NUMBER` ist der Filter. Platzhalter sind hellgrau, gewählte Werte schwarz und kräftiger, z. B. `OBJ_LT_SIZE_NUMBER`. Jedes Segment ist klickbar und öffnet darüber eine kleine Glasleiste mit den Möglichkeiten. Nach der Wahl (oder Klick daneben, `Esc`) fährt sie wieder ein.
 - **TYPE:** All · TB · ST · SH · LT (Namensschilder Tables, Seating, Storage, Lighting)
@@ -66,10 +68,15 @@ Hinter einem feinen Trenner stehen die Werkzeuge der jeweiligen Seite:
 **Anzeigenamen:** Unter den Kacheln, im Titel und in allen Beschriftungen steht der Produktcode `OBJ_<Typ>_<Größe>_<Nummer>`, z. B. `OBJ_TB_M_01`, `OBJ_SH_M_02`, `OBJ_LT_M_03`, `OBJ_SH_M_04`, `OBJ_ST_M_05`. Er kommt aus dem Feld `anzeigename` von `produkte.json`, die Kategorie (Filter TYPE) aus `typ`. Fehlt eines davon, rechnet das Bau-Skript den Code wie früher aus `_Import/produkte-zusatz.json` und meldet das am Ende. Ordner, Dateinamen und Adressen bleiben `Object_0N`.
 
 **Produktbild (Viewer):**
-- **Vollbild:** Bilder und Videos haben das volle Format 88:45 (3520 × 1800 / 2112 × 1080): 16:9 in der Mitte, links und rechts gleich breite Reserve, Bildmitte = Komposition. Das Bild füllt den ganzen Bildschirm (cover), auch hinter der Leiste. Seine Mitte sitzt in der Mitte der freien Fläche: vom linken Rand bis zum Leistenbereich samt Randabstand, auf dem Handy über den Leisten. Die Breite ist gerade so groß, dass das Bild von dieser Mitte aus alle Ränder erreicht – bei jeder Fenstergröße, reines CSS, gerechnet mit `format` aus `produkte.json`. Geprüft von 320 × 568 bis 3440 × 1440: nirgends ein Rand ohne Bild. (Baum-Modus: der 16:9-Ausschnitt, mittig.)
-- **Aus der Kachel:** Die Kachel zeigt den 4:3-Ausschnitt (`format.kachel`). Beim Klick zoomt sie nahtlos ins Vollbild, und das Bild öffnet sich dabei seitlich wie ein Fenster auf das volle, verschobene Bild. Das kleine Kachelbild fliegt an seinem Platz im breiten Bild mit, das große Standbild darüber, sobald es geladen ist (bis dahin sind die Seiten kurz grau). Zeigte die Kachel beim Klick gerade das Abendbild (Hover bei Leuchten), öffnet das Produkt mit eingeschalteter Lampe.
+- **Vollbild:** Bilder und Videos haben das volle Format 12:5 (4320 × 1800 / 2592 × 1080), gerechnet wird immer mit `format` aus `produkte.json`. Die Lage berechnet `G.buehne()` in `js/kern.js` bei jeder Fenstergröße:
+  - **Normal:** Das Bild füllt den ganzen Bildschirm, auch hinter der Leiste. Seine Mitte sitzt in der Mitte der freien Fläche (links bis zum Leistenbereich samt Randabstand, auf dem Handy über den Leisten).
+  - **Möbel nie angeschnitten:** Aus `bildinfo` (Möbelbereich je Bild) kennt die Seite die Box des Möbels. Würde eine Box (die nicht schon im Rendering angeschnitten ist) aus der freien Fläche ragen, wird das Bild so weit verkleinert, dass alle Views eines Produkts mit `viewer.moebelRand` (20 px) Luft hineinpassen – einheitlich, damit beim View-Wechsel nichts springt.
+  - **Ultrawide (21:9, 32:9) und zu kleine Bilder:** volle Höhe bleibt, das Bild endet seitlich (oder oben/unten) und läuft weich in die Hintergrundfarbe aus (`viewer.auslaufen`, 10 % der Bildbreite). Nie ein harter Rand.
+  - Geprüft von 320 × 568 bis 5120 × 1440. (Baum-Modus: der 16:9-Ausschnitt, mittig.)
+- **Aus der Kachel – nie grau:** Die Kachelbilder sind jetzt das ganze 12:5-Bild in klein (600 px hoch); die Kachel zeigt davon den 4:3-Ausschnitt (`format.kachel`). Beim Klick zoomt sie nahtlos ins Vollbild, und das Bild öffnet sich seitlich – die Seiten sind sofort mit dem bereits geladenen Kachelbild gefüllt. Das große Standbild blendet weich darüber, sobald es geladen ist. Schon beim Überfahren (bzw. Antippen) einer Kachel wird das große Cam1-Bild vorgeladen. Zeigte die Kachel beim Klick gerade das Abendbild (Hover bei Leuchten), öffnet das Produkt mit eingeschalteter Lampe.
+- **Hochformat (vorbereitet, Daten kommen mit dem nächsten Renderlauf):** Am Handy senkrecht werden die Felder `bilder_hoch`, `format_hoch`, `fahrten_hoch`, `abendfahrten_hoch` verwendet (Dateien `…_hoch`): volle Breite, oben bündig, die Leisten liegen unten über dem Boden. Ist das Handy schlanker als 1:2, wird auf volle Höhe vergrößert und seitlich gleichmäßig beschnitten. Die Kachel zoomt genauso nahtlos ins Vollbild. Beim Drehen wechselt die Seite zwischen Hoch- und Breitbild, die View bleibt. Solange die Felder leer sind (jetzt): wie bisher das breite Bild, bildfüllend. Abschalten: `viewer.hochformat: false`.
 - **Zurück zu Products:** Der echte Viewer schrumpft in seine Kachel. War eine andere View als 1 aktiv, startet die Fahrt zurück zu Cam1 sofort in normaler Geschwindigkeit und läuft in der schrumpfenden Kachel weiter, dort als 4:3-Ausschnitt des Videos. Sie endet auf dem Cam1-Standbild, danach blendet der Viewer in das gleiche Kachelbild aus (`viewer.heimAusblenden`). Bei View 1 schrumpft das Bild nur.
-- **View-Wechsel:** Das Standbild blendet in 0,1 s ins erste Videobild, die Fahrt läuft in der richtigen Richtung, und am Ende blendet das letzte Videobild in 0,1 s ins Standbild der Zielkamera. Die Leiste zeigt nur die vorhandenen Views (Object_01: 4, die anderen 3).
+- **View-Wechsel:** Das Standbild blendet in 0,1 s ins erste Videobild, die Fahrt läuft in der richtigen Richtung, und am Ende blendet das letzte Videobild in 0,1 s ins Standbild der Zielkamera. Das Zielstandbild liegt schon während der Fahrt geladen hinter dem Video; am Ende wird nur das Video ausgeblendet (kein heller Blitz auf dem iPhone). Die Leiste zeigt nur die vorhandenen Views (Object_01: 4, die anderen 3).
 - **Fahrt noch nicht geladen:** Das Standbild bleibt stehen, im View-Symbol der Leiste füllt sich ein feiner Ring, danach startet die Fahrt. Wählt man währenddessen eine andere View, wird die wartende Fahrt aufgegeben. Lädt sie gar nicht, wird überblendet.
 - **Lampe (Abendmodus):** Ist die Lampe an, bleibt sie beim View-Wechsel an: Die passende Abendfahrt (`Move_CamA_CamB_abend`) spielt, am Ende steht das Abendbild der Zielkamera – kein Zurückspringen auf Tag. Fehlt zu einem Übergang eine Abendfahrt, gilt das frühere Verhalten (erst weich auf Tag, dann die normale Fahrt, danach wieder Abendbild). Zurück zu Products im Abendmodus: Abendfahrt zu Cam1 in der Kachel, danach zeigt die Kachel wieder das Tagbild, die Lampe ist aus.
 - **Handy / schmale Fenster:** Videos aus `video/klein/`.
@@ -109,6 +116,8 @@ media/galerie/…       optimierte Galerie-Fotos – vom Bau-Skript erzeugt
 _Import/Galerie/      HIER Fotos ablegen (Originale, werden nicht veröffentlicht)
 _Import/produkte-zusatz.json   Maße je Produkt; Kategorie nur als Rückfall (sonst typ/anzeigename aus produkte.json)
 _Papierkorb/          was das Bau-Skript beiseitegelegt hat (nicht in Git, von Hand leeren)
+Reports/              Bericht der letzten Runde (BERICHT_aktuell.md), ältere unter Reports/Archiv/
+CLAUDE.md             Arbeitsgrundlage und Regeln für Claude
 bau/aktualisieren.ps1 Bau-Skript (bau/aktualisieren.cmd = Doppelklick-Version)
 fonts/logo/           Logo-Schrift
 lizenzen/             Lizenzen und Hinweise
@@ -135,7 +144,7 @@ Jede Spalte ist eine eigene Endlosfolge mit eigenem Startversatz. So gibt es nir
 
 Die Produkte kommen ausschließlich aus `C:\Unity\website steel furniture\Website_Test\` (nicht aus `Renders\`). Das Skript liest dort nur und ändert nie etwas.
 
-1. In Unity wie bisher exportieren: Eintrag in `produkte.json` (mit `typ`, `anzeigename`, `format`, `kacheln`, bei Lampen `abendfahrten`), Ordner `Object_XX/bilder/` und `Object_XX/video/` (+ `video/klein/`).
+1. In Unity wie bisher exportieren: Eintrag in `produkte.json` (mit `typ`, `anzeigename`, `format`, `bildinfo`, bei Lampen `abendfahrten`, später die Hochformat-Felder), Ordner `Object_XX/bilder/` und `Object_XX/video/` (+ `video/klein/`).
 2. Nur noch als **Rückfall**: In `_Import/produkte-zusatz.json` stehen Maße und – falls `typ` / `anzeigename` in `produkte.json` leer sind – die Kategorie:
    ```json
    "Object_06": { "kategorie": "seating", "masse": "W 500 × D 520 × H 780 mm" }
@@ -146,7 +155,9 @@ Die Produkte kommen ausschließlich aus `C:\Unity\website steel furniture\Websit
 **Was das Skript übernimmt:**
 - **Bilder:** genau die Bilder aus dem Feld `bilder` von `produkte.json`, nicht abgeleitet aus `perspektiven`. Die Views sind die Kameras dieser Standbilder, nach Nummer sortiert (weicht `perspektiven` ab, steht es im Bericht).
 - **Format:** `format` (volle Größe, Lage des 16:9-Ausschnitts `bildschirm` und des 4:3-Ausschnitts `kachel`) → `format`, `bildschirm`, `kachelAusschnitt` in `data/produkte.js`. Passt die Angabe nicht zum Standbild, gilt das Standbild.
-- **Kachelbilder:** das erste Bild aus `kacheln` (4:3), bei Lampen zusätzlich `Still_Cam1_abend_kachel`. Die Quelle liefert sie in voller Größe (2400 px, ~700 KB); das Skript legt eine kleine Kopie nach `bilder/kachel/` (800 px, ~35 KB, `-KachelBreite`), damit der Startbildschirm schnell bleibt.
+- **Möbelbereich:** aus `bildinfo` je Standbild die Box des Möbels (`moebel`, `angeschnitten`) → `moebel` / `moebelAbend` in `data/produkte.js`. Fehlt sie, gilt das bisherige Verhalten (reines Füllen).
+- **Kachelbilder:** das Skript rechnet selbst eine kleine Kopie des **ganzen** Cam1-Standbilds (bei Lampen auch des Abendbilds) nach `bilder/kachel/` (600 px hoch, ~60 KB, `-KachelHoehe`; Hochformat 600 px breit, `-KachelHochBreite`). Die Kachel zeigt davon den 4:3-Ausschnitt, der Viewer füllt damit sofort die Seiten. Das Feld `kacheln` wird nicht mehr gebraucht.
+- **Hochformat:** `bilder_hoch`, `format_hoch`, `fahrten_hoch`, `abendfahrten_hoch` → `hoch` in `data/produkte.js` (nur wenn jede Kamera ein Hochformat-Standbild hat; sonst `null` und ein Hinweis). `handykameras` wird durchgereicht.
 - **Typ und Anzeigename:** aus `typ` und `anzeigename`; leer → Rückfall auf `produkte-zusatz.json`, im Bericht gemeldet.
 - **Abendbilder:** `Still_CamN_abend.jpg` nur bei `"abendbilder": true`.
 - **Fahrten:** alle Fahrten zwischen den vorhandenen Kameras, in beiden Richtungen, als `.mp4` und `.webm`, aus `video/` und `video/klein/`. Bei Lampen zusätzlich die Abendfahrten aus `abendfahrten` (`Move_CamA_CamB_abend`, ebenfalls beide Formate und klein).
@@ -159,14 +170,15 @@ Die Produkte kommen ausschließlich aus `C:\Unity\website steel furniture\Websit
 - **Neu laden:** Jede Produktdatei trägt eine Versionsmarke (`?v=…`), die sich mit den Dateien ändert. So lädt auch ein Browser mit Cache die neue Fassung.
 - **Fehlende Dateien:** Am Ende listet das Skript alle Dateien, die gefehlt haben, z. B. ein Bild aus `bilder`, das es nicht gibt, oder eine fehlende Fahrt/Richtung/Größe.
 
-Optionen des Skripts: `-OhneGalerie`, `-OhneProdukte`, `-NurDaten` (nur `data/produkte.js`, keine Medien kopieren), `-Neu` (Galerie-Bilder neu rechnen), `-Quelle <Ordner>`.
+Optionen des Skripts: `-OhneGalerie`, `-OhneProdukte`, `-NurDaten` (nur `data/produkte.js`, keine Medien kopieren), `-Neu` (Galerie-Bilder neu rechnen), `-Quelle <Ordner>`, `-KachelHoehe`, `-KachelHochBreite`.
 
 **Dateinamen** (pro Produkt unter `media/produkte/<Name>/`, gleich wie in Unity):
 
 | Datei | Bedeutung |
 |---|---|
-| `bilder/Still_Cam1.jpg` … | Standbild je View, volles Format 88:45 |
-| `bilder/kachel/Still_Cam1_kachel.jpg` (+ `Still_Cam1_abend_kachel.jpg`) | Kachelbild: kleine Kopie des ersten Bilds aus `kacheln` (4:3, 800 px breit, vom Skript erzeugt, `-KachelBreite`) |
+| `bilder/Still_Cam1.jpg` … | Standbild je View, volles Format 12:5 |
+| `bilder/kachel/Still_Cam1.jpg` (+ `Still_Cam1_abend.jpg`) | Kachelbild: kleine Kopie des ganzen Cam1-Standbilds (600 px hoch, vom Skript erzeugt, `-KachelHoehe`) |
+| `bilder/Still_Cam1_hoch.jpg`, `video/Move_Cam1_Cam2_hoch.mp4` … | Hochformat fürs Handy (ab dem nächsten Renderlauf) |
 | `bilder/Still_Cam1_abend.jpg` … | Abendbild je View (nur Produkte mit Leuchtmittel) |
 | `bilder/Axonometrie.jpg` | Axonometrie für Customize (noch nicht im Unity-Export: bis dahin Platzhalter, von Hand ablegen möglich) |
 | `video/Move_Cam1_Cam2.mp4` / `.webm` | Fahrt von View 1 nach View 2 |
@@ -175,7 +187,7 @@ Optionen des Skripts: `-OhneGalerie`, `-OhneProdukte`, `-NurDaten` (nur `data/pr
 
 **Platzhalter → echte Dateien:** Die Seite verwendet genau die Dateien, die das Skript in `data/produkte.js` eingetragen hat. Produkte ohne Bilder (z. B. ein neuer Eintrag in `produkte.json` ohne Renderings und die Dummies) zeigen graue Platzhalter. Fehlende Fahrten werden zu einem schlichten Überblenden. Fehlt eine Fahrt nur in einer Größe, wird die andere Größe genommen. Abschalten lässt sich das mit `echteDateienVerwenden: false` in `js/config.js`.
 
-Die Größenklasse aus `produkte.json` (`"klasse": "L" | "M" | "S"`; fehlt sie dort, `klasse` in `produkte-zusatz.json`) benutzen der Größen-Filter und der Code. Die Nummer im Namen (Object_**03**) bestimmt die Reihenfolge (neueste = höchste Nummer zuerst) und das Ende des Codes. Das Bau-Skript schreibt je Produkt `code` (= `anzeigename`), `kategorie` (= `typ`), `format`, `bildschirm`, `kachelAusschnitt`, `kachel` / `kachelAbend` und `fahrtenAbend` / `fahrtenAbendKlein` in `data/produkte.js`.
+Die Größenklasse aus `produkte.json` (`"klasse": "L" | "M" | "S"`; fehlt sie dort, `klasse` in `produkte-zusatz.json`) benutzen der Größen-Filter und der Code. Die Nummer im Namen (Object_**03**) bestimmt die Reihenfolge (neueste = höchste Nummer zuerst) und das Ende des Codes. Das Bau-Skript schreibt je Produkt `code` (= `anzeigename`), `kategorie` (= `typ`), `format`, `bildschirm`, `kachelAusschnitt`, `kachel` / `kachelAbend` (`kachelVoll`), `moebel` / `moebelAbend`, `formatVideo`, `fahrtenAbend` / `fahrtenAbendKlein`, `handykameras` und `hoch` in `data/produkte.js`.
 
 **Dummy-Produkte:** `data/dummies.js` enthält 8 klar markierte Testprodukte über alle Kategorien und Größen. Abschalten: `dummiesZeigen: false` in `js/config.js`.
 
@@ -207,6 +219,8 @@ Alles steht in **`js/config.js`** (kommentiert). Speichern, Seite neu laden, fer
 | `leiste.klappfeld` | die kleine Optionsleiste eines Code-Segments fährt aus / ein |
 | `leiste.codeVollstaendig` | NUMBER gewählt: so lange steht der vollständige Code, dann öffnet die Produktseite |
 | `leiste.hoverZoom`, `leiste.namensschild` | Symbol beim Hover etwas größer, Namensschilder an/aus |
+| `leiste.aktivName`, `leiste.namenWechsel` | nur Handy: aktiver Bereich zeigt Symbol + Namen, Dauer des weichen Wechsels |
+| `leiste.langDruck`, `leiste.schildNachLangDruck` | nur Handy: so lange drücken, bis das Namensschild erscheint; so lange bleibt es stehen |
 | `baum.*` | nur im Baum-Modus |
 | `layout.*` | nur im Baum-Modus (Breite des Inhalts, Rand, Baumbreite) |
 | `seite.kachelZumViewer` | Dauer, mit der die Kachel ins Vollbild zoomt (zurück: 85 % davon) |
@@ -223,6 +237,9 @@ Alles steht in **`js/config.js`** (kommentiert). Speichern, Seite neu laden, fer
 | `viewer.lampeNachFahrtWiederAn` | nach einem View-Wechsel bei eingeschalteter Lampe wieder ins Abendbild |
 | `viewer.heimAusblenden` | zurück in der Kachel und auf View 1: der Viewer blendet in das gleiche Kachelbild aus |
 | `viewer.ringVoll` | Fahrt war noch nicht geladen: so lange steht der volle Ring, dann startet die Fahrt |
+| `viewer.moebelRand` | Mindestabstand des Möbels (Box aus `bildinfo`) zum Rand der freien Fläche |
+| `viewer.auslaufen`, `viewer.auslaufenWechsel` | weicher Auslauf der Bildkanten in die Hintergrundfarbe (Anteil der Bildbreite), Dauer beim Ändern |
+| `viewer.hochformat` | am Handy senkrecht die Hochformat-Bilder verwenden, sobald es sie gibt |
 | `galerie.spalten` | Spalten je Fensterbreite (5 / 4 / 3 / 2) |
 | `galerie.fugenAbstand` | Spaltenkanten näher als dieser Abstand gelten als „gleiche Höhe“ und werden vermieden |
 | `vorladen.*` | Vorladen: Kachel- und Galeriebilder im Ladebalken, danach Standbilder und Fahrten im Hintergrund, beim Hover |

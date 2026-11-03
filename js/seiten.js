@@ -43,6 +43,8 @@
         abend = G.platzhalter({ pfad: G.pfade.kachelAbend(p), text: p.code + ' · View 1 · evening', abend: true, klasse: 'k-abend', alt: p.code + ', evening' });
         a.appendChild(abend);
       }
+      // the tile image is the whole wide picture: the tile shows exactly its 4:3 crop
+      a.style.setProperty('--kpos', G.kachelPosition(p));
       if (C.vorladen.startbilder) { tag.laden(20); if (abend) abend.laden(20); }
       var oeffnen = function (e) {
         if (e.metaKey || e.ctrlKey || e.shiftKey) return;
@@ -50,7 +52,10 @@
         G.app.produktOeffnen(p, a);
       };
       a.addEventListener('click', oeffnen);
-      a.addEventListener('mouseenter', function () { if (C.vorladen.beimHover) G.viewerFuer(p).vorladen('hover'); });
+      // hover (phone: the first touch): the big still of view 1 loads at once, past the queue – a click finds it ready
+      var vorab = function () { if (C.vorladen.beimHover && !p.dummy) G.viewerFuer(p).vorladen('hover'); };
+      a.addEventListener('mouseenter', vorab);
+      a.addEventListener('touchstart', vorab, { passive: true });
       var n = G.el('a', 'name', p.code);
       n.href = a.href;
       n.tabIndex = -1;
@@ -241,6 +246,14 @@
             liste.push(G.bildBereit(ph, 40));
           });
         });
+        // phone upright with portrait pictures: their small copies too (a tile then opens upwards into the portrait picture)
+        G.produkte.forEach(function (p) {
+          var u = !p.dummy && G.formatFuer(p) === 'hoch' ? G.pfade.kachel(p, 'hoch') : null;
+          if (!u) return;
+          var j = G.lader.bild(u, 40);
+          G.lader.sofort(j);
+          liste.push(new Promise(function (ok) { j.dann(function () { ok(); }); }));
+        });
         return liste;
       },
       seite: function () { return s; },
@@ -261,8 +274,9 @@
 
   /* =================================================================
      PRODUCT PAGE – one page with four modes, all inside the FREE area (left screen edge up to the bars):
-       produkt    ONLY the image/video. Glass bar: the full picture (88:45) covers the whole screen, also behind the bar,
-                  its centre in the middle of the free area (css .nav-leiste .p-buehne). Tree mode: the 16:9 crop, centred.
+       produkt    ONLY the image/video. Glass bar: the full picture (12:5, from format) covers the whole screen, also behind the bar,
+                  its centre in the middle of the free area; furniture never cut, ultrawide fades out (G.buehne, legen()).
+                  Tree mode: the 16:9 crop, centred.
        customize  axonometry large on the left, next to it a separate narrow field for sliders/options (empty for now)
        order      "To Order": overview – tile image, name, placeholders for dimensions/options and price
        payment    placeholder with a disabled "Pay" button
@@ -271,6 +285,37 @@
     var s, frei, buehne, axoHuelle, ordBild, ordName, ordWerte, payName, viewer = null, produkt = null, aktiv = false;
 
     function el(tag, cls, text, eltern) { var e = G.el(tag, cls, text); if (eltern) eltern.appendChild(e); return e; }
+
+    /** Glass bar: lay the picture onto the screen (G.buehne – covers, ultrawide with soft sides, furniture never cropped). */
+    function cssPx(name) { return parseFloat(document.documentElement.style.getPropertyValue(name)) || 0; }
+    /** The phone was turned (or the window changed shape): the other picture format – a viewer with those pictures
+        takes over view and lamp. During a move: afterwards. */
+    function formatPruefen() {
+      var f = G.formatFuer(produkt);
+      if (f === viewer.format || viewer.el.parentNode !== buehne) return;
+      if (viewer.belegt) { var v0 = viewer; v0.wennRuhig(function () { if (viewer === v0) legen(); }); return; }
+      var alt = viewer, neu = G.viewerFuer(produkt, f);
+      alt.onwechsel = null;
+      buehne.removeChild(alt.el);
+      neu.uebernehmen(alt.aktuell, alt.lampe);
+      viewer = neu;
+      viewer.onwechsel = function () { G.app.viewerGeaendert(); };
+      buehne.appendChild(viewer.el);
+      if (aktiv) viewer.vorladen('aktiv');
+      G.app.viewerGeaendert();
+    }
+    function legen() {
+      if (!G.LEISTE || !produkt || !viewer) return;
+      formatPruefen();
+      var W = window.innerWidth, H = window.innerHeight;
+      var m = G.buehne(produkt, viewer.format, W, H, cssPx('--frei-r'), cssPx('--frei-u'));
+      var st = buehne.style;
+      st.left = m.left + 'px'; st.top = m.top + 'px'; st.width = m.width + 'px'; st.height = m.height + 'px';
+      st.transform = 'none';
+      buehne.dataset.art = m.art;
+      if (viewer.el.parentNode === buehne) viewer.maske(m.maske);
+      return m;
+    }
 
     /* placeholders: in bar mode the order shows "to be chosen", in tree mode the tree's parameter values */
     function werteFuellen() {
@@ -297,12 +342,14 @@
       viewer.onwechsel = function () { G.app.viewerGeaendert(); };
       buehne.appendChild(viewer.el);
       s.style.setProperty('--a', String(G.anzeige(p).verhaeltnis));   // the stage covers the screen in the pictures' aspect ratio
+      legen();
       // axonometry (customize) and tile image (order) – placeholders that know their future file
       axoHuelle.textContent = '';
       axoHuelle.appendChild(G.platzhalter({ pfad: G.pfade.axo(p), text: p.code + ' · axonometry' + (p.dummy ? ' · dummy' : ''), klasse: 'p-axo-bild', alt: p.code + ', axonometry' }));
       ordBild.textContent = '';
       var kb = G.platzhalter({ pfad: G.pfade.kachel(p), text: p.code + ' · View 1', fuge: true, klasse: 'p-ord-ph', alt: p.code });
       ordBild.appendChild(kb);
+      ordBild.style.setProperty('--kpos', G.kachelPosition(p));
       kb.laden(30);
       ordName.textContent = p.code + (p.dummy ? ' (dummy)' : '');
       payName.textContent = p.code;
@@ -356,7 +403,9 @@
       },
       zeigen: function (r) {
         aktiv = true;
-        if (r.produkt !== produkt) produktSetzen(r.produkt);
+        var andersGedreht = viewer && viewer.format !== G.formatFuer(r.produkt) && viewer.el.parentNode === buehne;
+        if (r.produkt !== produkt || andersGedreht) produktSetzen(r.produkt);
+        else legen();
         s.dataset.modus = r.seite;
         werteFuellen();
         viewer.vorladen('aktiv');
@@ -366,12 +415,16 @@
       verbergen: function () { aktiv = false; s.classList.remove('aktiv'); },
       info: function () { return viewer && aktiv ? viewer.info() : null; },
       viewer: function () { return aktiv ? viewer : null; },
+      /** The viewer on the stage (also when the page is hidden) – e.g. for the way back into the tile. */
+      viewerObj: function () { return viewer; },
       viewerEl: function () { return viewer ? viewer.el : null; },
       /** A viewer comes back from its tile: onto the stage if its product is shown, otherwise out of the page. */
       viewerHolen: function (v) {
-        if (v === viewer) { if (v.el.parentNode !== buehne) buehne.appendChild(v.el); }
+        if (v === viewer) { if (v.el.parentNode !== buehne) buehne.appendChild(v.el); legen(); }
         else if (v.el.parentNode) v.el.parentNode.removeChild(v.el);
       },
+      /** Window or bar changed: lay the picture anew. Returns the layout (or undefined). */
+      legen: legen,
       parameterGeaendert: werteFuellen,
       /** (tree mode) where the active branch docks */
       andock: function () {

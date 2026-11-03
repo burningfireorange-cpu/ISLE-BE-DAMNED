@@ -22,15 +22,19 @@
     el.classList.remove('sofort');
   }
 
-  function Viewer(p) {
+  function Viewer(p, format) {
     this.p = p;
     this.n = p.views;
+    // 'breit' = the wide pictures (12:5), 'hoch' = the portrait pictures (phone held upright, fields bilder_hoch …)
+    this.format = format === 'hoch' && p.hoch ? 'hoch' : 'breit';
+    var fmt = this.format;
     this.el = G.el('div', 'viewer');
     this.el.setAttribute('role', 'img');
     this.el.setAttribute('aria-label', p.code);
-    // aspect ratio of what it shows (full 88:45 picture) and where the 4:3 tile crop lies in it – inside a tile
+    this.el.dataset.format = fmt;
+    // aspect ratio of what it shows (full 12:5 or 1:2 picture) and where the 4:3 tile crop lies in it – inside a tile
     // (way back to the wall) the viewer is laid out so that exactly this crop fills the tile
-    var an = G.anzeige(p);
+    var an = G.anzeige(p, fmt);
     this.kachelAnteil = an.kachel;
     this.el.style.setProperty('--a', String(an.verhaeltnis));
     this.el.style.setProperty('--kx', String(an.kachel.x));
@@ -49,20 +53,46 @@
     this.belegt = false;   // a lamp fade before a move or a move is running
 
     for (var v = 1; v <= this.n; v++) {
-      var s = G.platzhalter({ pfad: G.pfade.still(p, v), text: p.code + ' · View ' + v, fuge: true, klasse: 'v-still', alt: p.code + ', view ' + v });
+      var s = G.platzhalter({ pfad: G.pfade.still(p, v, fmt), text: p.code + ' · View ' + v, fuge: true, klasse: 'v-still', alt: p.code + ', view ' + v });
       this.el.appendChild(s);
       this.stills[v] = s;
       if (p.leuchtmittel) {
-        var a = G.platzhalter({ pfad: G.pfade.abend(p, v), text: p.code + ' · View ' + v + ' · evening', fuge: true, abend: true, klasse: 'v-abend', alt: p.code + ', view ' + v + ', evening' });
+        var a = G.platzhalter({ pfad: G.pfade.abend(p, v, fmt), text: p.code + ' · View ' + v + ' · evening', fuge: true, abend: true, klasse: 'v-abend', alt: p.code + ', view ' + v + ', evening' });
         this.el.appendChild(a);
         this.abende[v] = a;
       }
     }
+    // view 1: the small tile image (the whole picture, already loaded with the tiles) lies under the still until the big
+    // still has loaded – the still then fades in over it. So the opened product never shows a grey surface.
+    var passt = fmt === 'hoch' ? true : p.kachelVoll;
+    this.vorschau(this.stills[1], G.pfade.kachel(p, fmt), passt);
+    if (this.abende[1]) this.vorschau(this.abende[1], G.pfade.kachelAbend(p, fmt), passt);
     this.hinten = G.el('div', 'v-laden');
     this.hinten.appendChild(G.el('i'));
     this.el.appendChild(this.hinten);
     this.stills[1].classList.add('sichtbar');
   }
+
+  /** A small copy of the same picture as background of a still placeholder (shown until the still itself has loaded). */
+  Viewer.prototype.vorschau = function (ph, url, passt) {
+    if (!ph || !url || !passt || !C.echteDateienVerwenden) return;
+    G.lader.bild(url, 35);              // (wide: already loaded with the tiles; portrait: small, early in the queue)
+    ph.style.backgroundImage = 'url("' + url + '")';
+    ph.style.backgroundSize = 'cover';          // like the still itself (object-fit: cover) – also the 16:9 crop of tree mode
+    ph.style.backgroundPosition = 'center';
+    ph.classList.add('mit-vorschau');
+  };
+
+  /** Soft edges (G.buehne: maske, px of the picture) – an edge of the picture inside the window fades into the
+      background colour. null = no fade (e.g. on the way back into the tile). The widths change softly (CSS). */
+  Viewer.prototype.maske = function (m) {
+    var el = this.el, an = !!(m && (m.l > 0 || m.r > 0 || m.t > 0 || m.b > 0));
+    ['l', 'r', 't', 'b'].forEach(function (k) { el.style.setProperty('--m' + k, (an ? Math.round(m[k]) : 0) + 'px'); });
+    clearTimeout(this.maskeUhr);
+    if (an) el.classList.add('maske');
+    else if (el.classList.contains('maske')) this.maskeUhr = setTimeout(function () { el.classList.remove('maske'); }, G.blende(V.auslaufenWechsel || 0) + 60);
+    this.maskeWerte = an ? { l: m.l, r: m.r, t: m.t, b: m.b } : null;
+  };
 
   /** Small videos on phones and in narrow windows (decided anew for every move, so resizing switches over). */
   Viewer.prototype.klein = function () { return window.innerWidth <= V.handyBreite; };
@@ -72,7 +102,7 @@
     if (klein == null) klein = this.klein();
     var satz = this.videos[klein ? 'k' : 'g'], key = a + '-' + b + (abend ? '-abend' : '');
     if (key in satz) return satz[key];
-    var url = C.echteDateienVerwenden ? G.pfade.fahrt(this.p, a, b, klein, abend) : null;
+    var url = C.echteDateienVerwenden ? G.pfade.fahrt(this.p, a, b, klein, abend, this.format) : null;
     if (!url) return (satz[key] = null);
     if (this.perUrl[url]) return (satz[key] = this.perUrl[url]);   // the other size stood in for a missing file
     var vid = document.createElement('video');
@@ -91,7 +121,7 @@
 
   /** Is there an evening move a → b (lamps; field abendfahrten of produkte.json)? */
   Viewer.prototype.hatAbendFahrt = function (a, b) {
-    return !!(this.p.leuchtmittel && C.echteDateienVerwenden && G.pfade.fahrt(this.p, a, b, false, true));
+    return !!(this.p.leuchtmittel && C.echteDateienVerwenden && G.pfade.fahrt(this.p, a, b, false, true, this.format));
   };
   Viewer.prototype.videoJob = function (a, b, prio, abend) {
     var v = this.video(a, b, null, abend);
@@ -127,8 +157,9 @@
     var von = stufe === 'aktiv' ? this.aktuell : 1;
     var k = 0;
     function prio() { return basis + 9 - (k++) * 0.01; }
-    this.bildJob(this.stills[von], prio());
+    var sj = this.bildJob(this.stills[von], prio());
     if (this.abende[von]) this.bildJob(this.abende[von], prio());
+    if (stufe === 'hover' && sj) G.lader.sofort(sj);      // hover over the tile: the big still loads right now
     if (stufe === 'start') return;
     for (var b = 1; b <= this.n; b++) {
       if (b === von) continue;
@@ -345,10 +376,28 @@
         var tRaus = G.blende(V.standbildRaus), tRein = G.blende(V.standbildRein);
         var beendet = false, wachhund = null, gestartet = false;
 
+        // the target still lies ready UNDER the video while it plays (loaded and painted) – at the end only the video
+        // fades out. (Fading the still in over the video at the end gave a short white flash on iPhones.)
+        var unten = false;
+        function unterLegen() {
+          if (beendet || unten || (stillJob && !(stillJob.zustand === 'fertig'))) return;
+          unten = true;
+          img.classList.remove('raus', 'rein');
+          img.classList.add('unter'); sofort(img, true);
+          if (abend) { tagNach.classList.add('unter'); sofort(tagNach, true); }
+        }
+        function unterWeg(sichtbarLassen) {
+          img.classList.remove('unter');
+          if (abend) tagNach.classList.remove('unter');
+          if (!sichtbarLassen) { sofort(img, false); if (abend) sofort(tagNach, false); }
+          unten = false;
+        }
+
         function abbrechen() {          // cannot play: fade without a move
           if (beendet) return;
           beendet = true;
           clearTimeout(wachhund);
+          if (unten) unterWeg(false);
           v.pause();
           v.classList.remove('sichtbar');
           still.classList.remove('raus');
@@ -357,7 +406,8 @@
           ueberblenden();
         }
 
-        // 3. end: the target still fades in over the last video frame (both show the same view); wait for it at most 4 s
+        // 3. end: the last video frame fades out (0.1 s) and uncovers the target still that lies ready below it (both
+        //    show the same view); if the still is not there yet, wait for it at most 4 s
         function ende() {
           if (beendet) return;
           beendet = true;
@@ -366,17 +416,24 @@
           function zeigen() {
             if (gezeigt) return;
             gezeigt = true;
-            img.classList.remove('raus');
-            img.classList.add('rein', 'sichtbar');
-            setTimeout(function () {
-              if (abend) sofort(tagNach, true);      // the day still of the target lies ready below the evening still
+            if (!unten) {            // (not yet below the video – e.g. it only just loaded)
+              unten = true;
+              img.classList.remove('raus', 'rein');
+              img.classList.add('unter'); sofort(img, true);
+              if (abend) { tagNach.classList.add('unter'); sofort(tagNach, true); }
+            }
+            requestAnimationFrame(function () {
+              v.classList.add('raus');
               v.classList.remove('sichtbar');
-              v.pause();
-              try { v.currentTime = 0; } catch (e) {}
-              img.classList.remove('rein');
-              still.classList.remove('raus');
-              fertig();
-            }, tRein + 40);
+              setTimeout(function () {
+                v.pause();
+                try { v.currentTime = 0; } catch (e) {}
+                v.classList.remove('raus');
+                unterWeg(true);          // the still goes back to its own layer – the video is gone, nothing changes
+                still.classList.remove('raus');
+                fertig();
+              }, tRein + 40);
+            });
           }
           if (!stillJob || stillJob.zustand === 'fertig') { zeigen(); return; }
           stillJob.dann(zeigen);
@@ -389,6 +446,9 @@
           v.onended = ende;
           var pr = v.play();
           if (pr && pr.catch) pr.catch(abbrechen);
+          // once the video really plays (its frames are on screen), the target still goes below it
+          var drunter = function () { setTimeout(function () { if (stillJob && stillJob.zustand !== 'fertig') stillJob.dann(unterLegen); else unterLegen(); }, 120); };
+          if (pr && pr.then) pr.then(drunter, function () {}); else drunter();
           var dauer = isFinite(v.duration) && v.duration > 0 ? v.duration : 2;
           wachhund = setTimeout(ende, (dauer + 4) * 1000);   // in case "ended" never comes
         }
@@ -402,7 +462,7 @@
           still.classList.remove('sichtbar');
           setTimeout(abspielen, tRaus + 20);
         }
-        v.classList.add('sichtbar');   // lies below the still
+        sofort(v, true);               // lies below the still (at once – the still above hides it)
         if (v.currentTime !== 0) { try { v.currentTime = 0; } catch (e) {} }
         if (v.readyState >= 2 && !v.seeking) {
           // first frame is there (preloaded): show it under the still, then fade
@@ -428,10 +488,23 @@
     });
   };
 
-  /* ---- cache: one viewer per product, kept so loaded videos stay loaded ---- */
+  /** Take over view and lamp of another viewer of the same product (the phone was turned: other picture format). */
+  Viewer.prototype.uebernehmen = function (aktuell, lampe) {
+    lampe = !!(lampe && this.p.leuchtmittel);
+    this.stills.forEach(function (s, v) { if (s) { s.classList.remove('raus', 'rein', 'unter'); sofort(s, v === aktuell); } });
+    this.abende.forEach(function (a, v) { if (a) sofort(a, lampe && v === aktuell); });
+    this.aktuell = aktuell; this.lampe = lampe; this.wartend = null;
+    this.bildJob(this.stills[aktuell], 100);
+    if (lampe) this.bildJob(this.abende[aktuell], 100);
+    this.melden();
+  };
+
+  /* ---- cache: one viewer per product and picture format, kept so loaded videos stay loaded ---- */
   var cache = {};
-  G.viewerFuer = function (p) {
-    if (!cache[p.id]) cache[p.id] = new Viewer(p);
-    return cache[p.id];
+  /** format: 'breit' | 'hoch' – without it the format that fits the window right now (G.formatFuer). */
+  G.viewerFuer = function (p, format) {
+    var f = format || G.formatFuer(p), k = p.id + ':' + f;
+    if (!cache[k]) cache[k] = new Viewer(p, f);
+    return cache[k];
   };
 })();

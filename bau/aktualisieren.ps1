@@ -9,17 +9,27 @@
                Metadaten entfernt, Drehung (EXIF) berücksichtigt, Transparenz auf Seitenfarbe  →  data\galerie.js
   2. Produkte: <Quelle>\produkte.json  →  media\produkte\produkte.json (Kopie)
                je Produkt  <Quelle>\<Name>\bilder\   nur die Bilder aus dem Feld "bilder" (Abendbilder nur bei "abendbilder": true)
-                           Kachelbild = erstes Bild aus "kacheln" (+ Abendversion bei Lampen), verkleinert nach bilder\kachel\
+                           Kachelbild = ganzes Standbild von View 1 (+ Abend-/Hochformat), verkleinert nach bilder\kachel\
                            <Quelle>\<Name>\video\    Move_CamX_CamY.mp4 + .webm zwischen den vorhandenen Kameras, beide Richtungen,
                                                      bei Lampen zusätzlich die Abendfahrten aus "abendfahrten" (Move_CamX_CamY_abend)
                            <Quelle>\<Name>\video\klein\  dasselbe in klein (Handy / schmale Fenster)
                →  media\produkte\<Name>\...  →  data\produkte.js
-               Typ und Anzeigename aus "typ" / "anzeigename", Bildformat und Ausschnitte aus "format".
+               Typ und Anzeigename aus "typ" / "anzeigename", Bildformat und Ausschnitte aus "format" (Videos: "format.video"),
+               Möbelbereich je Standbild aus "bildinfo".
+               Hochformat (Handy): "bilder_hoch", "format_hoch", "fahrten_hoch", "abendfahrten_hoch" (Dateien *_hoch) – nur
+               übernommen, wenn jede View ein Hochformat-Bild hat; sonst "hoch": null (Website zeigt das breite Bild).
                Fehlt eines davon: Rückfall auf _Import\produkte-zusatz.json (Kategorie, Maße) – steht am Ende im Bericht.
                "raum_leer" und der Ordner Raum_leer werden nicht verwendet.
                Die Quelle (Unity-Projekt) wird NUR gelesen – dort wird nie etwas geändert.
                Am Ende steht eine Liste aller Dateien, die gefehlt haben.
   Dummy-Produkte stehen in data\dummies.js und werden hier nicht angefasst (an/aus in js\config.js: dummiesZeigen).
+
+  SICHERHEITSREGEL (gilt für jede Änderung an diesem Skript, siehe auch CLAUDE.md):
+    - Kein Löschen außerhalb der eigenen Zielordner (media\produkte\<Produkt>\bilder|bilder\kachel|video|video\klein,
+      media\produkte für verwaiste Produktordner, media\galerie\klein|gross) – nie im Projekt-Hauptordner, nie in der Quelle.
+    - Vor jedem Löschen den Pfad prüfen (Funktion Beiseitelegen: erlaubter Ordner, direkt darin, keine Junction/Symlink).
+    - Lieber verschieben als löschen: alles Überzählige wandert nach _Papierkorb\<Datum_Uhrzeit>\. Kein Remove-Item auf Dateien
+      oder Ordner mit Inhalt – neue Aufräumschritte immer über Beiseitelegen.
 
   Einzelne Perspektive neu gerendert?  Einfach noch einmal ausführen – nur die geänderten Dateien werden ersetzt,
   und die Website lädt sie neu (jede Produktdatei bekommt eine Versionsmarke ?v=…, die sich mit der Datei ändert).
@@ -44,7 +54,8 @@ param(
   [int]$Klein = 800,
   [int]$Gross = 2000,
   [int]$Qualitaet = 3,          # ffmpeg JPEG-Qualität: 2 = sehr gut … 5 = kleiner
-  [int]$KachelBreite = 800,     # Breite der kleinen Kachelbilder (Products lädt beim Start nur diese)
+  [int]$KachelHoehe = 600,      # Höhe der kleinen Kachelbilder (ganzes 12:5-Bild → 1440 × 600; Products lädt beim Start nur diese)
+  [int]$KachelHochBreite = 600, # Breite der kleinen Hochformat-Kopie (600 × 1200)
   [switch]$OhneGalerie,
   [switch]$OhneProdukte,
   [switch]$NurDaten,
@@ -374,39 +385,113 @@ if (-not $OhneProdukte) {
     }
     if (-not $bildschirm -and $format.Count) { $bildschirm = @(0, 0, $format[0], $format[1]) }
     if (-not $kachelAus -and $format.Count) { $kw = [int][Math]::Round($format[1] * 4 / 3); $kachelAus = @([int](($format[0] - $kw) / 2), 0, $kw, $format[1]) }
+    # Videos: eigene Größe (format.video, z. B. 2592 × 1080) – die Website legt sie auf dieselbe Fläche wie die Standbilder,
+    # das Seitenverhältnis muss also gleich sein
+    $formatVideo = @()
+    $fov = Wert $fo 'video'
+    if ($fov -and (Wert $fov 'breite') -and (Wert $fov 'hoehe')) {
+      $formatVideo = @([int](Wert $fov 'breite'), [int](Wert $fov 'hoehe'))
+      if ($format.Count -and [Math]::Abs($formatVideo[0] / $formatVideo[1] - $format[0] / $format[1]) -gt 0.005) {
+        [void]$rueckfall.Add("$name  format.video $($formatVideo[0])×$($formatVideo[1]) hat ein anderes Seitenverhältnis als die Standbilder $($format[0])×$($format[1]) – Videos werden gestreckt")
+      }
+    } else { [void]$rueckfall.Add("$name  format.video fehlt → Videos im Seitenverhältnis der Standbilder angenommen") }
 
-    $bilderJs = @(); $abendJs = @()
+    # ---- bildinfo: je Standbild der Bildbereich des Möbels (Pixel im vollen Bild) und ob es schon angeschnitten ist ----
+    #      → "moebel" / "moebelAbend" (parallel zu bilder / abend): [x, y, b, h, angeschnitten 0|1] oder null
+    $bildinfo = @{}
+    $biListe = @(@(Wert $p 'bildinfo') | Where-Object { $_ })
+    if (-not $biListe.Count) { [void]$rueckfall.Add("$name  bildinfo fehlt → kein Möbelbereich, das Bild wird nur nach dem Fenster gelegt") }
+    foreach ($e in $biListe) { $nm = Split-Path -Leaf ([string](Wert $e 'bild')); if ($nm) { $bildinfo[$nm] = $e } }
+    function MoebelJs([string]$datei) {
+      $e = $bildinfo[$datei]
+      if (-not $e) { if ($biListe.Count) { [void]$rueckfall.Add("$name  bildinfo: kein Eintrag für $datei") }; return 'null' }
+      $r = Rechteck (Wert $e 'moebel')
+      if (-not $r) { [void]$rueckfall.Add("$name  bildinfo: $datei ohne Feld moebel"); return 'null' }
+      return '[' + ($r -join ', ') + ', ' + $(if ([bool](Wert $e 'angeschnitten')) { '1' } else { '0' }) + ']'
+    }
+
+    $bilderJs = @(); $abendJs = @(); $moebelJs = @(); $moebelAbendJs = @()
     foreach ($c in $kameras) {
       $f = $tag[$c]; $bildDateien[$f.Name] = $true; $bilderJs += 'bilder/' + $f.Name
+      $moebelJs += MoebelJs $f.Name
       Spiegeln $f (Join-Path $zielOrdner ('bilder\' + $f.Name))
       [void]$versionText.Append("$($f.Name)|$($f.Length)|$($f.LastWriteTimeUtc.Ticks);")
       if ($abend.ContainsKey($c)) {
         $fa = $abend[$c]; $bildDateien[$fa.Name] = $true; $abendJs += 'bilder/' + $fa.Name
+        $moebelAbendJs += MoebelJs $fa.Name
         Spiegeln $fa (Join-Path $zielOrdner ('bilder\' + $fa.Name))
         [void]$versionText.Append("$($fa.Name)|$($fa.Length)|$($fa.LastWriteTimeUtc.Ticks);")
-      } else { $abendJs += $null }
+      } else { $abendJs += $null; $moebelAbendJs += 'null' }
     }
 
-    # ---- Kachelbilder: das erste Bild aus "kacheln" (4:3) und bei Lampen seine Abendversion (Still_Cam1_abend_kachel) ----
-    #      Die Quelle liefert sie in voller Größe (2400 px, ~700 KB) – für die Übersicht wird eine kleine Kopie erzeugt
-    #      (KachelBreite, ~35 KB), damit der Startbildschirm schnell bleibt.  → bilder\kachel\<Name aus kacheln>
-    $kachelListe = @(@(Wert $p 'kacheln') | Where-Object { $_ })
-    if (-not $kachelListe.Count) { [void]$rueckfall.Add("$name  kacheln leer → Kachelbild aus Still_Cam1") }
-    $kachelTag = $null; $kachelAbend = $null
-    foreach ($eintrag in $kachelListe) {
-      $nm = Split-Path -Leaf ([string]$eintrag)
-      if (-not $kachelTag -and $nm -notmatch '_abend') { $kachelTag = [string]$eintrag }
-      if ($mitAbend -and -not $kachelAbend -and $kameras.Count -and $nm -match ('^Still_Cam' + $kameras[0] + '_abend_kachel\.')) { $kachelAbend = [string]$eintrag }
+    # ---- Hochformat (Handy senkrecht): bilder_hoch, format_hoch, fahrten_hoch, abendfahrten_hoch ----
+    #      Nur wenn JEDE View ein Hochformat-Standbild hat (sonst gemischte Formate) – sonst bleibt "hoch": null und
+    #      die Website zeigt am Handy wie bisher das breite Bild.  Dateien: Still_CamN_hoch.jpg, Still_CamN_abend_hoch.jpg,
+    #      video\Move_CamA_CamB_hoch.mp4|webm (+ _abend_hoch), video\klein\ dasselbe.
+    $tagH = @{}; $abendH = @{}
+    foreach ($eintrag in @(Wert $p 'bilder_hoch')) {
+      if (-not $eintrag) { continue }
+      $f = QuellDatei ([string]$eintrag)
+      if (-not $f) { [void]$fehlend.Add("$name  $eintrag  (steht in bilder_hoch, Datei fehlt)"); continue }
+      if ($f.Name -notmatch '^Still_Cam(\d+)(_abend)?_hoch\.(jpe?g|png|webp)$') { Melden "  ! $name  unbekannter Hochformat-Name $($f.Name) – übersprungen" 'Yellow'; continue }
+      if ($matches[2]) { if ($mitAbend) { $abendH[[int]$matches[1]] = $f } } else { $tagH[[int]$matches[1]] = $f }
     }
-    if ($kachelListe.Count -and [string]$kachelListe[0] -ne $kachelTag) { [void]$rueckfall.Add("$name  erstes Bild in kacheln ist kein Tagbild – nehme $kachelTag") }
+    $hochJs = 'null'; $mitHoch = $false; $formatHoch = @(); $kachelHoch = $null
+    if ($tagH.Count) {
+      $ohne = @($kameras | Where-Object { -not $tagH.ContainsKey($_) })
+      if ($ohne.Count) {
+        [void]$rueckfall.Add("$name  bilder_hoch: Hochformat fehlt für Cam $($ohne -join ', ') – Hochformat nicht verwendet (Handy zeigt das breite Bild)")
+      } else {
+        $mitHoch = $true
+        $foh = Wert $p 'format_hoch'
+        if ($foh -and (Wert $foh 'breite') -and (Wert $foh 'hoehe')) {
+          $formatHoch = @([int](Wert $foh 'breite'), [int](Wert $foh 'hoehe'))
+          $kachelHoch = Rechteck (Wert $foh 'kachel')
+        }
+        $bild = [System.Drawing.Image]::FromFile($tagH[$kameras[0]].FullName)
+        try {
+          if (-not $formatHoch.Count) { [void]$rueckfall.Add("$name  format_hoch fehlt → Größe aus dem ersten Hochformat-Bild"); $formatHoch = @([int]$bild.Width, [int]$bild.Height) }
+          elseif ($bild.Width -ne $formatHoch[0] -or $bild.Height -ne $formatHoch[1]) { [void]$rueckfall.Add("$name  format_hoch $($formatHoch[0])×$($formatHoch[1]), Bild ist $($bild.Width)×$($bild.Height) – es gilt das Bild"); $formatHoch = @([int]$bild.Width, [int]$bild.Height) }
+        } finally { $bild.Dispose() }
+        # Lage der 4:3-Kachel im Hochformat: aus bildinfo des Cam1-Hochformats (gilt für genau dieses Bild), sonst format_hoch.kachel
+        $e1 = $bildinfo[$tagH[$kameras[0]].Name]
+        if ($e1 -and (Rechteck (Wert $e1 'kachel'))) { $kachelHoch = Rechteck (Wert $e1 'kachel') }
+        if (-not $kachelHoch) { [void]$rueckfall.Add("$name  format_hoch.kachel fehlt → Kachel = volle Breite, 4:3, oben bei 750/4800"); $kh = [int][Math]::Round($formatHoch[0] * 3 / 4); $kachelHoch = @(0, [int][Math]::Round($formatHoch[1] * 750 / 4800), $formatHoch[0], $kh) }
+        $hb = @(); $ha = @(); $hm = @(); $hma = @()
+        foreach ($c in $kameras) {
+          $f = $tagH[$c]; $bildDateien[$f.Name] = $true; $hb += 'bilder/' + $f.Name; $hm += MoebelJs $f.Name
+          Spiegeln $f (Join-Path $zielOrdner ('bilder\' + $f.Name))
+          [void]$versionText.Append("$($f.Name)|$($f.Length)|$($f.LastWriteTimeUtc.Ticks);")
+          if ($abendH.ContainsKey($c)) {
+            $fa = $abendH[$c]; $bildDateien[$fa.Name] = $true; $ha += 'bilder/' + $fa.Name; $hma += MoebelJs $fa.Name
+            Spiegeln $fa (Join-Path $zielOrdner ('bilder\' + $fa.Name))
+            [void]$versionText.Append("$($fa.Name)|$($fa.Length)|$($fa.LastWriteTimeUtc.Ticks);")
+          } else {
+            $ha += $null; $hma += 'null'
+            if ($mitAbend) { [void]$fehlend.Add("$name  bilder\Still_Cam${c}_abend_hoch.jpg  (Lampe: Hochformat-Abendbild fehlt)") }
+          }
+        }
+      }
+    } elseif ($kameras.Count) {
+      [void]$rueckfall.Add("$name  bilder_hoch leer → am Handy senkrecht das breite Bild (wie bisher)")
+    }
+
+    # ---- Kachelbilder (seit Runde 8): eine kleine Kopie des GANZEN Standbilds von View 1 (12:5, KachelHoehe px hoch,
+    #      ~60 KB) und bei Lampen seiner Abendversion. Die Kachel zeigt davon den 4:3-Ausschnitt (format.kachel); beim
+    #      Öffnen ist so sofort das ganze breite Bild da (unscharf), bis das große Standbild geladen ist – nie grau.
+    #      Mit Hochformat zusätzlich eine kleine Kopie des Hochformat-Bilds von View 1 (Handy senkrecht).
+    #      → bilder\kachel\Still_Cam1.jpg, Still_Cam1_abend.jpg, Still_Cam1_hoch.jpg, Still_Cam1_abend_hoch.jpg
+    #      (Das Feld "kacheln" – 4:3-Ausschnitte in voller Größe – wird dafür nicht mehr gebraucht.)
     $paare = @()
-    if ($kachelTag) { $q = QuellDatei $kachelTag; if ($q) { $paare += @{ q = $q; js = 'tag' } } else { [void]$fehlend.Add("$name  $kachelTag  (steht in kacheln, Datei fehlt)") } }
-    elseif ($kameras.Count) { $paare += @{ q = $tag[$kameras[0]]; js = 'tag'; mitte = $true } }
-    if ($mitAbend) {
-      if ($kachelAbend) { $q = QuellDatei $kachelAbend; if ($q) { $paare += @{ q = $q; js = 'abend' } } else { [void]$fehlend.Add("$name  $kachelAbend  (steht in kacheln, Datei fehlt)") } }
-      elseif ($kameras.Count) { [void]$fehlend.Add("$name  Still_Cam$($kameras[0])_abend_kachel.jpg  (Lampe: Abend-Kachelbild fehlt in kacheln)") }
+    if ($kameras.Count) {
+      $paare += @{ q = $tag[$kameras[0]]; js = 'tag'; vf = "scale=-2:${KachelHoehe}" }
+      if ($mitAbend -and $abend.ContainsKey($kameras[0])) { $paare += @{ q = $abend[$kameras[0]]; js = 'abend'; vf = "scale=-2:${KachelHoehe}" } }
+      if ($mitHoch) {
+        $paare += @{ q = $tagH[$kameras[0]]; js = 'hochTag'; vf = "scale=${KachelHochBreite}:-2" }
+        if ($mitAbend -and $abendH.ContainsKey($kameras[0])) { $paare += @{ q = $abendH[$kameras[0]]; js = 'hochAbend'; vf = "scale=${KachelHochBreite}:-2" } }
+      }
     }
-    $kachelJs = $null; $kachelAbendJs = $null; $kachelDateien = @{}
+    $kachelJs = $null; $kachelAbendJs = $null; $kachelHochJs = $null; $kachelHochAbendJs = $null; $kachelDateien = @{}
     $kachelOrdner = Join-Path $zielOrdner 'bilder\kachel'
     foreach ($pa in $paare) {
       $q = $pa.q
@@ -415,16 +500,17 @@ if (-not $OhneProdukte) {
       if (-not $NurDaten) {
         if (-not (Test-Path -LiteralPath $kachelOrdner)) { New-Item -ItemType Directory -Force $kachelOrdner | Out-Null }
         if ($Neu -or -not (Test-Path -LiteralPath $aus) -or (Get-Item -LiteralPath $aus).LastWriteTimeUtc -lt $q.LastWriteTimeUtc) {
-          # (nur im Notfall ohne kacheln: aus dem vollen Standbild den 4:3-Ausschnitt schneiden)
-          $vf = if ($pa.mitte -and $kachelAus) { "crop=$($kachelAus[2]):$($kachelAus[3]):$($kachelAus[0]):$($kachelAus[1])," } else { '' }
-          & $FFmpeg -hide_banner -loglevel error -y -i $q.FullName -vf "${vf}scale=${KachelBreite}:-2:flags=lanczos" -frames:v 1 -update 1 -q:v 4 -map_metadata -1 $aus
+          & $FFmpeg -hide_banner -loglevel error -y -i $q.FullName -vf "$($pa.vf):flags=lanczos" -frames:v 1 -update 1 -q:v 4 -map_metadata -1 $aus
           if ($LASTEXITCODE -ne 0) { throw "ffmpeg-Fehler beim Kachelbild $name $($q.Name)" }
           $stat.neu++
         }
       }
       if (Test-Path -LiteralPath $aus) {
-        [void]$versionText.Append("kachel\$($q.Name)|$($q.Length)|$($q.LastWriteTimeUtc.Ticks);")
-        if ($pa.js -eq 'tag') { $kachelJs = 'bilder/kachel/' + $q.Name } else { $kachelAbendJs = 'bilder/kachel/' + $q.Name }
+        [void]$versionText.Append("kachel\$($q.Name)|$($q.Length)|$($q.LastWriteTimeUtc.Ticks)|$($pa.vf);")
+        switch ($pa.js) {
+          'tag' { $kachelJs = 'bilder/kachel/' + $q.Name } 'abend' { $kachelAbendJs = 'bilder/kachel/' + $q.Name }
+          'hochTag' { $kachelHochJs = 'bilder/kachel/' + $q.Name } 'hochAbend' { $kachelHochAbendJs = 'bilder/kachel/' + $q.Name }
+        }
       }
     }
     Aufraeumen $kachelOrdner $kachelDateien '\.(jpe?g|png|webp)$'
@@ -452,14 +538,25 @@ if (-not $OhneProdukte) {
       else { Melden "  ! $name  unbekannter Name in abendfahrten: $nm – übersprungen" 'Yellow' }
     }
     if ($abendPaare.Count -and -not $mitAbend) { [void]$rueckfall.Add("$name  abendfahrten vorhanden, aber abendbilder: false – Abendfahrten nicht übernommen"); $abendPaare = @{} }
+    # Hochformat-Fahrten: Move_CamA_CamB_hoch (+ _abend_hoch bei Lampen) – zwischen denselben Kameras wie die breiten
+    $abendHochPaare = @{}
+    foreach ($eintrag in @(Wert $p 'abendfahrten_hoch')) {
+      if (-not $eintrag) { continue }
+      $nm = Split-Path -Leaf ([string]$eintrag)
+      if ($nm -match '^Move_Cam(\d+)_Cam(\d+)_abend_hoch\.(mp4|webm)$') { $abendHochPaare["$([int]$matches[1])-$([int]$matches[2])"] = $true }
+      else { Melden "  ! $name  unbekannter Name in abendfahrten_hoch: $nm – übersprungen" 'Yellow' }
+    }
+    $nFahrtenHochFeld = @(@(Wert $p 'fahrten_hoch') | Where-Object { $_ }).Count
     $fahrtenJs = @{}
     foreach ($stufe in @(@{ ordner = 'video'; js = 'fahrten' }, @{ ordner = 'video\klein'; js = 'fahrtenKlein' })) {
-      $vorhanden = @{}; $eintraege = @(); $eintraegeAbend = @()
+      $vorhanden = @{}; $eintraege = @(); $eintraegeAbend = @(); $eintraegeHoch = @(); $eintraegeAbendHoch = @()
       foreach ($a in $kameras) {
         foreach ($b in $kameras) {
           if ($a -eq $b) { continue }
-          foreach ($art in @('', '_abend')) {
-            if ($art -and -not $abendPaare.ContainsKey("$a-$b")) { continue }
+          foreach ($art in @('', '_abend', '_hoch', '_abend_hoch')) {
+            if ($art -eq '_abend' -and -not $abendPaare.ContainsKey("$a-$b")) { continue }
+            if ($art -eq '_hoch' -and -not $mitHoch) { continue }
+            if ($art -eq '_abend_hoch' -and -not ($mitHoch -and $mitAbend -and $abendHochPaare.ContainsKey("$a-$b"))) { continue }
             $formate = @()
             foreach ($endung in @('webm', 'mp4')) {
               $datei = "Move_Cam${a}_Cam${b}$art.$endung"
@@ -476,7 +573,7 @@ if (-not $OhneProdukte) {
             }
             if ($formate.Count) {
               $e = '"' + $a + '-' + $b + '": ' + (JsListe $formate)
-              if ($art) { $eintraegeAbend += $e } else { $eintraege += $e }
+              switch ($art) { '' { $eintraege += $e } '_abend' { $eintraegeAbend += $e } '_hoch' { $eintraegeHoch += $e } '_abend_hoch' { $eintraegeAbendHoch += $e } }
             }
           }
         }
@@ -484,8 +581,23 @@ if (-not $OhneProdukte) {
       Aufraeumen (Join-Path $zielOrdner $stufe.ordner) $vorhanden '\.(mp4|webm)$'
       $fahrtenJs[$stufe.js] = '{' + ($eintraege -join ', ') + '}'
       $fahrtenJs[$stufe.js + 'Abend'] = '{' + ($eintraegeAbend -join ', ') + '}'
+      $fahrtenJs[$stufe.js + 'Hoch'] = '{' + ($eintraegeHoch -join ', ') + '}'
+      $fahrtenJs[$stufe.js + 'AbendHoch'] = '{' + ($eintraegeAbendHoch -join ', ') + '}'
     }
     LeerenOrdnerEntfernen $kachelOrdner
+    if ($mitHoch) {
+      $nH = ([regex]::Matches($fahrtenJs.fahrtenHoch, '"\d+-\d+"')).Count
+      if ($nFahrtenHochFeld -and $nFahrtenHochFeld -ne $nH) { [void]$rueckfall.Add("$name  fahrten_hoch nennt $nFahrtenHochFeld Datei(en), gefunden wurden $nH Hochformat-Fahrten") }
+      $hochJs = "{ ""format"": " + (JsListe $formatHoch) + ', "kachelAusschnitt": ' + (JsListe $kachelHoch) +
+        ', "bilder": ' + (JsListe $hb) + ', "abend": ' + $(if ($mitAbend) { JsListe $ha } else { '[]' }) +
+        ",`n        ""moebel"": [" + ($hm -join ', ') + '], "moebelAbend": [' + $(if ($mitAbend) { $hma -join ', ' } else { '' }) + ']' +
+        ",`n        ""kachel"": " + (JsText $kachelHochJs) + ', "kachelAbend": ' + (JsText $kachelHochAbendJs) +
+        ",`n        ""fahrten"": " + $fahrtenJs.fahrtenHoch + ', "fahrtenKlein": ' + $fahrtenJs.fahrtenKleinHoch +
+        ",`n        ""fahrtenAbend"": " + $fahrtenJs.fahrtenAbendHoch + ', "fahrtenAbendKlein": ' + $fahrtenJs.fahrtenKleinAbendHoch + ' }'
+    } elseif ((@(Wert $p 'fahrten_hoch') | Where-Object { $_ }).Count -or $abendHochPaare.Count) {
+      [void]$rueckfall.Add("$name  fahrten_hoch / abendfahrten_hoch vorhanden, aber keine vollständigen bilder_hoch – nicht übernommen")
+    }
+    $handyKameras = @(@(Wert $p 'handykameras') | Where-Object { $null -ne $_ } | ForEach-Object { [int]$_ })
 
     # Versionsmarke: ändert sich, sobald sich eine Datei des Produkts ändert → der Browser lädt sie neu
     $hash = $md5.ComputeHash([Text.Encoding]::UTF8.GetBytes($versionText.ToString()))
@@ -496,22 +608,28 @@ if (-not $OhneProdukte) {
     $nV = ([regex]::Matches($fahrtenJs.fahrten, '"\d+-\d+"')).Count
     $nVk = ([regex]::Matches($fahrtenJs.fahrtenKlein, '"\d+-\d+"')).Count
     $nA = ([regex]::Matches($fahrtenJs.fahrtenAbend, '"\d+-\d+"')).Count
-    Melden ("  {0,-12} {1,-12} {2,-9} {3}  {4} View(s){5}   Bilder: {6}{7}   Fahrten: {8} / klein {9}{10}   Format {11}" -f $name, $code, $kat, $kl, $views,
+    Melden ("  {0,-12} {1,-12} {2,-9} {3}  {4} View(s){5}   Bilder: {6}{7}   Fahrten: {8} / klein {9}{10}   Format {11}{12}" -f $name, $code, $kat, $kl, $views,
       $(if ($licht) { '  Licht' } else { '' }), $kameras.Count, $(if ($abend.Count) { " + $($abend.Count) Abend" } else { '' }), $nV, $nVk,
-      $(if ($nA) { " + $nA Abend" } else { '' }), $(if ($format.Count) { "$($format[0])×$($format[1])" } else { '?' }))
+      $(if ($nA) { " + $nA Abend" } else { '' }), $(if ($format.Count) { "$($format[0])×$($format[1])" } else { '?' }),
+      $(if ($mitHoch) { "   Hochformat $($formatHoch[0])×$($formatHoch[1]), Fahrten $(([regex]::Matches($fahrtenJs.fahrtenHoch, '"\d+-\d+"')).Count)" } else { '   Hochformat: –' }))
 
     $zeilen += '    { "name": ' + (JsText $name) + ', "code": ' + (JsText $code) + ', "nummer": ' + $nummer + ', "kategorie": ' + (JsText $kat) + ', "klasse": ' + (JsText $kl) +
       ', "views": ' + $views + ', "leuchtmittel": ' + $(if ($licht) { 'true' } else { 'false' }) + ', "masse": ' + (JsText $masse) +
       ",`n      ""ordner"": " + (JsText ("media/produkte/" + $name + "/")) + ', "version": ' + (JsText $version) +
       ', "kameras": ' + (JsListe $kameras) + ', "axo": ' + (JsText $axo) +
       ",`n      ""format"": " + (JsListe $format) + ', "bildschirm": ' + $(if ($bildschirm) { JsListe $bildschirm } else { 'null' }) + ', "kachelAusschnitt": ' + $(if ($kachelAus) { JsListe $kachelAus } else { 'null' }) +
-      ",`n      ""kachel"": " + (JsText $kachelJs) + ', "kachelAbend": ' + (JsText $kachelAbendJs) +
+      ",`n      ""kachel"": " + (JsText $kachelJs) + ', "kachelAbend": ' + (JsText $kachelAbendJs) + ', "kachelVoll": true' +
       ",`n      ""bilder"": " + (JsListe $bilderJs) +
       ",`n      ""abend"": " + $(if ($licht) { JsListe $abendJs } else { '[]' }) +
+      ",`n      ""moebel"": [" + ($moebelJs -join ', ') + ']' +
+      ",`n      ""moebelAbend"": [" + $(if ($licht) { $moebelAbendJs -join ', ' } else { '' }) + ']' +
+      ",`n      ""formatVideo"": " + (JsListe $formatVideo) +
       ",`n      ""fahrten"": " + $fahrtenJs.fahrten +
       ",`n      ""fahrtenKlein"": " + $fahrtenJs.fahrtenKlein +
       ",`n      ""fahrtenAbend"": " + $fahrtenJs.fahrtenAbend +
-      ",`n      ""fahrtenAbendKlein"": " + $fahrtenJs.fahrtenKleinAbend + ' }'
+      ",`n      ""fahrtenAbendKlein"": " + $fahrtenJs.fahrtenKleinAbend +
+      ",`n      ""handykameras"": " + (JsListe $handyKameras) +
+      ",`n      ""hoch"": " + $hochJs + ' }'
   }
 
   # Ordner von Produkten, die nicht mehr in produkte.json stehen, entfernen
@@ -528,10 +646,15 @@ if (-not $OhneProdukte) {
         "   Paths are relative to ""ordner"". bilder[i] / abend[i] = still of view i+1 (camera kameras[i]), abend entry null = no evening image.`n" +
         "   fahrten / fahrtenKlein: ""a-b"" = move from camera a to camera b, with the formats that exist.`n" +
         "   fahrtenAbend / fahrtenAbendKlein: the same for the evening moves of a lamp (Move_CamA_CamB_abend, field abendfahrten).`n" +
-        "   kachel / kachelAbend = small copy of the first image of ""kacheln"" (4:3) and its evening version, for the tiles (bilder/kachel/).`n" +
-        "   format = [width, height] of the stills and videos (full picture, e.g. 88:45); bildschirm / kachelAusschnitt = [x, y, w, h] of the`n" +
+        "   kachel / kachelAbend = small copy of the WHOLE still of view 1 (12:5, kachelVoll) and its evening version (bilder/kachel/) –`n   the tile shows its 4:3 crop (kachelAusschnitt); opening a product shows it at once until the big still has loaded.`n" +
+        "   format = [width, height] of the stills and videos (full picture, e.g. 12:5); bildschirm / kachelAusschnitt = [x, y, w, h] of the`n" +
         "   16:9 and 4:3 crops in it (both centred – the picture centre is the composition centre; the reserve left/right lets the`n" +
         "   product page move the centre into the middle of the free area).`n" +
+        "   formatVideo = [width, height] of the moves (same aspect ratio, e.g. 2592 × 1080 for 4320 × 1800 stills).`n" +
+        "   moebel / moebelAbend[i] = [x, y, w, h, cut] – pixel box of the furniture in still i (field bildinfo), which the page`n" +
+        "   never crops; cut = 1: the furniture already touches the picture edge (close-up) – the box is not enforced.`n" +
+        "   hoch = the portrait version for phones held upright (fields bilder_hoch, format_hoch, fahrten_hoch, abendfahrten_hoch)`n" +
+        "   or null while it does not exist for every view – the phone then shows the wide picture.`n" +
         "   code = display name (field anzeigename, e.g. OBJ_ST_M_05), kategorie = field typ; typen = the type abbreviations.`n" +
         "   name = internal name (folders, files, URLs). */`n" +
         "window.GAUGE_PRODUKTE = {`n  ""erzeugt"": " + (JsText $zeit) + ",`n" +
