@@ -1,0 +1,32 @@
+﻿== neu_handy_fast4g.txt (5 Produkte)
+  einzeln   n=15  Markierung med 0 / max 1 ms  Fahrtstart med 668 / max 825 ms  fertig med 3047 / max 3160 ms  Markierung sprang: 0  nicht erreicht: 0  grau: 0
+  schnell   n= 5  Markierung med 0 / max 1 ms  Fahrtstart med - / max - ms  fertig med 270 / max 284 ms  Markierung sprang: 0  nicht erreicht: 0  grau: 0
+  waehrend  n= 5  Markierung med 0 / max 0 ms  Fahrtstart med - / max - ms  fertig med 329 / max 332 ms  Markierung sprang: 0  nicht erreicht: 0  grau: 0
+== neu_handy_slow4g.txt (5 Produkte)
+  einzeln   n=15  Markierung med 0 / max 0 ms  Fahrtstart med 4682 / max 21999 ms  fertig med 7191 / max 24335 ms  Markierung sprang: 0  nicht erreicht: 0  grau: 0
+  schnell   n= 5  Markierung med 0 / max 0 ms  Fahrtstart med - / max - ms  fertig med 274 / max 276 ms  Markierung sprang: 0  nicht erreicht: 0  grau: 0
+  waehrend  n= 5  Markierung med 1 / max 1 ms  Fahrtstart med - / max - ms  fertig med 323 / max 331 ms  Markierung sprang: 0  nicht erreicht: 0  grau: 0
+== neu_handy_slow4g_lampe.txt (1 Produkte)
+  einzeln   n= 3  Markierung med 0 / max 0 ms  Fahrtstart med 1830 / max 2482 ms  fertig med 4252 / max 5239 ms  Markierung sprang: 0  nicht erreicht: 0  grau: 0
+  schnell   n= 1  Markierung med 0 / max 0 ms  Fahrtstart med - / max - ms  fertig med 272 / max 272 ms  Markierung sprang: 0  nicht erreicht: 0  grau: 0
+  waehrend  n= 1  Markierung med 1 / max 1 ms  Fahrtstart med - / max - ms  fertig med 336 / max 336 ms  Markierung sprang: 0  nicht erreicht: 0  grau: 0
+== neu_pc_fast4g.txt (5 Produkte)
+  einzeln   n=15  Markierung med 0 / max 0 ms  Fahrtstart med 840 / max 1973 ms  fertig med 3174 / max 4345 ms  Markierung sprang: 0  nicht erreicht: 0  grau: 0
+  schnell   n= 5  Markierung med 0 / max 1 ms  Fahrtstart med - / max - ms  fertig med 270 / max 275 ms  Markierung sprang: 0  nicht erreicht: 0  grau: 0
+  waehrend  n= 5  Markierung med 0 / max 1 ms  Fahrtstart med - / max - ms  fertig med 327 / max 333 ms  Markierung sprang: 0  nicht erreicht: 0  grau: 0
+== neu_pc_fast4g_lampe.txt (1 Produkte)
+  einzeln   n= 3  Markierung med 0 / max 0 ms  Fahrtstart med 735 / max 745 ms  fertig med 3050 / max 3058 ms  Markierung sprang: 0  nicht erreicht: 0  grau: 0
+  schnell   n= 1  Markierung med 1 / max 1 ms  Fahrtstart med - / max - ms  fertig med 262 / max 262 ms  Markierung sprang: 0  nicht erreicht: 0  grau: 0
+  waehrend  n= 1  Markierung med 0 / max 0 ms  Fahrtstart med - / max - ms  fertig med 323 / max 323 ms  Markierung sprang: 0  nicht erreicht: 0  grau: 0
+== neu_pc_slow4g.txt (5 Produkte)
+  einzeln   n=15  Markierung med 0 / max 0 ms  Fahrtstart med 6896 / max 24913 ms  fertig med 9475 / max 27240 ms  Markierung sprang: 0  nicht erreicht: 0  grau: 0
+  schnell   n= 5  Markierung med 0 / max 0 ms  Fahrtstart med - / max - ms  fertig med 274 / max 281 ms  Markierung sprang: 0  nicht erreicht: 0  grau: 0
+  waehrend  n= 5  Markierung med 1 / max 1 ms  Fahrtstart med - / max - ms  fertig med 327 / max 334 ms  Markierung sprang: 0  nicht erreicht: 0  grau: 0
+== runde11_handy_fast4g.txt (5 Produkte)
+  einzeln   n=15  Markierung med 0 / max 0 ms  Fahrtstart med 33 / max 1232 ms  fertig med 2405 / max 6941 ms  Markierung sprang: 3  nicht erreicht: 0  grau: 0
+  schnell   n= 5  Markierung med 1758 / max 1778 ms  Fahrtstart med 1767 / max 1799 ms  fertig med 4087 / max 4088 ms  Markierung sprang: 0  nicht erreicht: 0  grau: 0
+  waehrend  n= 5  Markierung med 1742 / max 1743 ms  Fahrtstart med 1749 / max 1766 ms  fertig med 4034 / max 4145 ms  Markierung sprang: 0  nicht erreicht: 0  grau: 0
+== runde11_handy_slow4g.txt (5 Produkte)
+  einzeln   n=15  Markierung med 0 / max 0 ms  Fahrtstart med 14716 / max 15200 ms  fertig med 18314 / max 25500 ms  Markierung sprang: 13  nicht erreicht: 0  grau: 9
+  schnell   n= 5  Markierung med 1753 / max 1757 ms  Fahrtstart med 1782 / max 1782 ms  fertig med 4070 / max 4091 ms  Markierung sprang: 0  nicht erreicht: 0  grau: 4
+  waehrend  n= 5  Markierung med 1724 / max 1752 ms  Fahrtstart med 1765 / max 1783 ms  fertig med 4049 / max 4133 ms  Markierung sprang: 0  nicht erreicht: 0  grau: 5

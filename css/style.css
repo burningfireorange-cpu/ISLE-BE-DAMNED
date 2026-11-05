@@ -172,6 +172,8 @@ body.baum-an .seite-galerie .spalte {
   transition: opacity var(--t-ueberblenden) linear;
 }
 .ph.echt .ph-bild { opacity: 1; }
+/* product viewer, slow net: the last frame of a move stands in for a still that has not loaded yet (viewer.js ersatz) */
+.ph-ersatz { position: absolute; inset: 0; width: 100%; height: 100%; display: block; }
 /* a real image is on its way: an evening layer stays transparent until it has loaded (the day image shows through) */
 .ph-abend.ph-folgt { background: transparent; }
 .ph.echt .ph-text, .ph.echt .ph-fuge, .ph.echt .ph-licht { visibility: hidden; }
@@ -534,6 +536,9 @@ html.eigener-zeiger .g-feld:hover { background: transparent; }   /* the pointer 
 .g-ring circle { fill: none; stroke-width: 1.4; vector-effect: non-scaling-stroke; }
 .g-ring-spur { stroke: rgba(0, 0, 0, .12); }
 .g-ring-wert { stroke: var(--text); stroke-dasharray: 100 100; stroke-dashoffset: 100; stroke-linecap: round; transition: stroke-dashoffset .2s linear; }
+/* the tapped view is marked at once (dark field) – its ring fills light on it */
+.g-feld.aktiv .g-ring-spur { stroke: rgba(255, 255, 255, .22); }
+.g-feld.aktiv .g-ring-wert { stroke: rgba(255, 255, 255, .92); }
 
 /* name plates on hover – always towards the screen centre: above the symbol (bar at the bottom), left of it (bar right) */
 .glas .schild, .glas-oben .schild, .g-optionen .schild {

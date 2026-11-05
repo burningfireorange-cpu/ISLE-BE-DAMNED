@@ -389,7 +389,7 @@
       var kb = G.platzhalter({ pfad: G.pfade.kachel(p), text: p.code + ' · View 1', fuge: true, klasse: 'p-ord-ph', alt: p.code });
       ordBild.appendChild(kb);
       ordBild.style.setProperty('--kpos', G.kachelPosition(p));
-      kb.laden(30);
+      // (loads only when "To Order" opens – on the product page the line belongs to the views)
       ordName.textContent = p.code + (p.dummy ? ' (dummy)' : '');
       payName.textContent = p.code;
     }
@@ -449,6 +449,7 @@
         werteFuellen();
         viewer.vorladen('aktiv');
         if (r.seite === 'customize') { var ph = axoHuelle.firstChild; if (ph && ph.laden) ph.laden(60); }
+        if (r.seite === 'order') { var ob = ordBild.firstChild; if (ob && ob.laden) ob.laden(70); }
         s.classList.add('aktiv');
       },
       verbergen: function () { aktiv = false; s.classList.remove('aktiv'); },

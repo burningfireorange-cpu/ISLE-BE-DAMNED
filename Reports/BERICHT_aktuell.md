@@ -1,9 +1,11 @@
 # Bericht – Runde 9: Hochformat fürs Handy, nahtloser Zoom mit `kachel_breit`, Veröffentlichung (2026-11-05)
 
+> **Neu: Nachtrag Runde 13 (View-Wechsel hängt online – Ursache, Lösung, Hochladen) ganz am Ende.** Davor die Nachträge Runde 10 und 11.
+>
 > **Nachträge Runde 10 und Runde 11 (Zoom am iPhone) stehen am Ende dieses Berichts.** Teile von Kapitel 1–4 zum Zoom
 > („Zwei-Stufen-Fenster“) und zur Möbel-Regel gelten nicht mehr, ebenso der Zoom-Teil von Runde 10.
 
-**Online-Adresse (nach dem Hochladen):** https://burningfireorange-cpu.github.io/gauge/
+**Online-Adresse:** https://burningfireorange-cpu.github.io/ISLE-BE-DAMNED/ (korrigiert in Runde 13; ein Repo `gauge` gibt es nicht)
 Noch **nicht online geprüft**: Du lädst selbst über GitHub Desktop hoch (Schritte siehe Kapitel 3). Sag mir Bescheid, dann prüfe ich die Seite online.
 
 ## 1. Ergebnis in Kürze
@@ -326,3 +328,151 @@ Aufbau:
 ### Offene Frage
 
 - Passt die Überblendzeit von 200 ms (`seite.hochBlende`)? Kürzer wirkt härter, länger lässt das Kachelbild länger stehen.
+
+
+---
+
+## Nachtrag – Runde 13: View-Wechsel hängt online (2026-11-06)
+
+### 1. Ergebnis in Kürze
+
+- **Beim Hochladen ist nichts kaputt.**
+  - Online liegt genau der Stand aus `C:\websites\gauge`: gleiche Dateinamen (auch Groß-/Kleinschreibung), gleicher Inhalt.
+  - Alle 270 Pfade, die die Seite braucht, liefern online `200`.
+  - `.gitignore` schließt keine Datei aus, die die Seite braucht.
+- **Die Verzögerung kam von der Wartelogik beim View-Wechsel.**
+  - Lokal fällt sie nicht auf, weil `file://` alles sofort liefert.
+  - Unter echtem Netz (online gemessen ca. 3–7,5 Mbit/s) hat sie gewartet, die Markierung springen lassen und Taps in eine Warteschlange gestellt.
+- **Behoben:**
+  - Die angetippte Nummer ist **sofort** markiert, gemessen 0–2 ms (gefordert: unter 50 ms), und bleibt markiert.
+  - Lädt die Fahrt noch, bleibt das Standbild stehen, und der Ladering füllt sich in der markierten Nummer. Die Fahrt startet, sobald sie durchspielen kann.
+  - Am Ende der Fahrt gibt es kein Warten und kein Grau mehr: Das letzte Videobild bleibt stehen, das Standbild blendet darüber ein.
+  - Mehrfach-Tippen bricht sauber ab, es gibt keine Warteschlange mehr.
+- **Gedrosselter Test** (kalter Cache, Handy und PC, alle 5 Produkte, alle Views, Lampe), alter gegen neuen Stand:
+
+  | | alter Stand (= online) | neuer Stand |
+  |---|---|---|
+  | Fahrtstart, Slow 4G, Handy | 14,6 s | 2,5–3,5 s |
+  | Fahrtstart, Slow 4G, PC | 15,2 s | ca. 7 s |
+  | Mehrfach-Tippen | 1,75 s bis zur Markierung | 0,27 s bis zum Ziel |
+  | Fehler | 40 Probleme | 0 Probleme, 0 × 404 |
+
+- **Du kannst hochladen.** Der Kopierweg bleibt wie bisher, neu ist nur ein Prüf-Doppelklick vor dem Push (siehe 3).
+
+### 2. Was gemacht wurde (mit Commits)
+
+**Zuerst: der GitHub-Desktop-Ordner (Zusatzauftrag 1–2).**
+
+- Der Ordner heißt `C:\Users\Martin\Documents\GitHub\ISLE-BE-DAMNED`.
+- **Ich habe dort nie etwas geändert**, weder in dieser noch in früheren Sitzungen. Eine Sitzung vom 4.11. hat ihn nur gelesen. `git status` dort: sauber, HEAD `b0ae003`.
+- Vergleich mit `C:\websites\gauge`:
+  - 587 = 587 Dateien, exakt gleiche Namen und gleicher Inhalt.
+  - Nur `_Papierkorb` (10 alte Kacheln) wird von `.gitignore` ausgeschlossen; das ist richtig so.
+  - `git ls-files` und `origin/main` (577 Dateien) stimmen exakt mit den Namen auf der Platte überein. Es gibt keine Endung in Großbuchstaben und keine Datei, deren Name sich nur in der Schreibweise geändert hat.
+  - Online (Pages) entspricht `b0ae003`.
+- **Die Verzögerung kommt also nicht vom Kopierweg.** (Commit `c0b9c14`)
+
+**Ursache** (`863839e`; geprüft gegen den Stand vor Runde 12, `3664876`):
+
+1. **Markierung:** Beim Antippen zeigte das Symbol kurz die neue Nummer und sprang dann zurück auf die alte, solange die Fahrt lud (`werkzeuge.js`: `info.laden ? aktuell …`). Das war das „komische Markieren“.
+2. **Leitung geteilt:** Die angetippte Fahrt musste sich die Leitung teilen:
+   - mit dem 1,5-MB-Standbild von View 1, das der Zoom mit höchster Priorität anfordert;
+   - mit Hintergrund-Ladevorgängen anderer Produkte. Die Warteschlange kannte keinen Vorrang und keinen Abbruch.
+
+   Ergebnis: Die Fahrt startete erst nach 4–15 s statt nach ca. 0,5 s.
+3. **Ende der Fahrt:** Bis zu 4 s wurde auf das Zielstandbild gewartet, danach blieb die Fläche grau. Alter Stand bei Slow 4G: 26 von 40 Wechseln endeten grau.
+4. **Tippen während einer Fahrt:** Die Taps kamen in eine Warteschlange (erst die laufende Fahrt zu Ende, dann die nächste). Die Markierung kam erst nach ca. 1,7 s.
+
+**Ehrlich dazu:** Runde 12 hat diese Logik nicht verändert. Runde 11 ist unter derselben Drosselung genauso langsam (Messung `runde11_*`).
+- Wahrscheinlich fiel es jetzt auf, weil nach dem Hochladen viele neue Dateien nicht im Cache lagen (kalter Cache).
+- Dazu kam ein Rest aus Runde 12: Am Handy wurden die breiten Kacheln für die Order-Seite zusätzlich zu den Hochformat-Kacheln geladen.
+
+**Lösung:**
+
+- **`7edee0e` (Hauptteil):**
+  - `werkzeuge.js`: Die Markierung folgt sofort dem Ziel (`ziel || aktuell`). Der Ladering liegt hell in der markierten Nummer (`style.css`).
+  - `kern.js` (Lade-Warteschlange):
+    - Eine angetippte Datei (Vorrang „sofort“) lädt allein. Laufende niedrigere Dateien gehen zurück in die Warteschlange, statt mitzulaufen.
+    - Dateien des offenen Produkts verdrängen den Hintergrund.
+    - Eine langsame Datei gibt nur ihre Leitung frei und scheitert nicht.
+  - `viewer.js`:
+    - Die angetippte Fahrt startet bei `canplaythrough`. Ihr Rest lädt danach noch allein, höchstens `viewer.nachlaufen` = 8 s (neu in `config.js`).
+    - Beim Antippen treten die Standbilder zurück. Das Zielstandbild lädt erst nach der Fahrt; bis dahin steht das letzte Videobild ein.
+    - Umlenken ist in jeder Phase möglich:
+      - während der Lampen-Blende: nur das Ziel ändern;
+      - während des Ladens: aufgeben und die neue Fahrt nehmen;
+      - während einer laufenden Fahrt: das Bild hält an, das Standbild der neuen View blendet darüber ein.
+  - `seiten.js`: Das Kachelbild der Order-Seite lädt erst beim Öffnen von „To Order“. Am Handy kommen so keine breiten Kacheln mehr mit.
+  - README: Bedienung des View-Wechsels, Einstellung `viewer.nachlaufen`, Hochladen mit Prüfskript.
+- **`5e83936`** (Nachbesserung aus den Tests):
+  - Vorgeladene Videos behalten ihre Leitung, bis ihr Rest da ist. Sonst stapelten sich unsichtbare Downloads.
+  - Ein Video gibt erst auf, wenn `wartenJeDateiMs` lang gar nichts ankommt.
+- **`29cfdaa`:** Auf der Produktseite laden zuerst die Fahrten ab der aktuellen View, danach erst ihr großes Standbild. Die kleine Kopie bzw. das letzte Videobild steht bis dahin ein.
+- **Formate:** Es wird nur das nötige Format geladen. Im Test lud das Handy senkrecht nie ein breites Bild oder großes Video und der PC nie ein Hochformat oder kleines Video.
+- **Handy-Zoom** (Runde 11/12): unverändert. Rauchtest hin und zurück bestanden: kein weißer Rand, kein Sprung, die Kachelbilder kommen zurück.
+
+**Weitere Commits:**
+
+- **Zusatzauftrag (`38adc03`):**
+  - Feste Regel in `CLAUDE.md`: nur in `C:\websites\gauge` arbeiten, den GitHub-Ordner nur lesen, nie `git push`, Hochladen über GitHub Desktop.
+  - Im Abschnitt „Veröffentlichung“ korrigiert: Repo ISLE-BE-DAMNED, Kopierweg, die `core.ignorecase`-Falle, Repo-Größe.
+  - Neu: `bau\hochladen-pruefen.cmd` (liest nur, siehe 3).
+- **Nachgeholt aus Runde 12:** Code und Übersichten des Handy-Zooms lagen schon online, waren hier aber nicht committet (`5fd0219`, `9f1860e`). Einen Nachtrag zu Runde 12 gab es in diesem Bericht nicht.
+- **Tests:** Messungen und Testskripte liegen in `Reports/netz/runde13/` (`109893b`).
+
+**Test** (eigener Drosselserver: eine gemeinsame Bandbreite + Latenz wie ein echter Anschluss; Edge headless; kalter Cache; Handy 390 × 664, PC 1536 × 730; Slow 4G = 1,6 Mbit/s / 560 ms, Fast 4G = 9 Mbit/s / 165 ms):
+
+| Lauf | alter Stand (= online) | neuer Stand |
+|---|---|---|
+| Slow 4G Handy | Fahrtstart Median 14,6 s, 40 Probleme: Markierung sprang 13×, grau 18×, Mehrfach-Tippen 1,75 s | Fahrtstart Median 3,5 s / max 6,0 s; nach `29cfdaa` 2,5 s / max 4,1 s (2 Produkte) |
+| Slow 4G PC (große Videos) | Fahrtstart 15,2 s, 40 Probleme | Fahrtstart Median 6,7 s / max 12,6 s; nach `29cfdaa` ca. 7,0 s / max 7,6 s |
+| Fast 4G Handy | 13 Probleme, Mehrfach-Tippen 1,75 s | Fahrtstart Median 0,67 s, fertig ca. 3,0 s |
+| Fast 4G PC | 13 Probleme | Fahrtstart Median 0,84 s |
+| Lampe (Object_03) | – | 0 Probleme, die Lampe bleibt an |
+| alle Läufe neu | – | Markierung 0–2 ms, Mehrfach-Tippen ca. 270 ms, Tippen während Fahrt ca. 330 ms, 0 JS-Fehler, 0 × 404, kein falsches Format |
+
+Außerdem bestanden:
+- Rauchtest „Bewegung reduzieren“: nur Blenden, keine Fahrten.
+- Desktop unverändert.
+- Baum-Modus funktioniert.
+
+### 3. Was du zuerst ausprobieren sollst
+
+1. **Hochladen wie gewohnt:**
+   1. In `C:\websites\gauge` Strg+A und kopieren.
+   2. Im GitHub-Ordner alles löschen und einfügen.
+   3. **Neu:** In `C:\websites\gauge\bau` (nicht im GitHub-Ordner – es vergleicht beide) `hochladen-pruefen.cmd` doppelklicken. Es liest nur und braucht ca. 10 s. Es meldet:
+      - fehlende oder anders geschriebene Datenpfade;
+      - Dateien, die sich nur in der Groß-/Kleinschreibung unterscheiden;
+      - Dateien, die `.gitignore` ausschließt;
+      - Dateien über 100 MB;
+      - die Gesamtgröße.
+
+      Steht dort „ERGEBNIS: alles in Ordnung“: in GitHub Desktop committen und **„Push origin“** drücken.
+2. **Was du sonst beachten musst:**
+   - Im Explorer **versteckte Elemente ausgeblendet lassen**. Dann werden die beiden `.git`-Ordner weder gelöscht noch kopiert. Das ist wichtig: Sonst würde das lokale git das GitHub-git ersetzen.
+   - Nie nur die Groß-/Kleinschreibung eines Dateinamens ändern (das macht auch das Bau-Skript nicht).
+3. **Am Handy online**, am besten im Mobilnetz statt im WLAN:
+   - Ein Produkt öffnen, sofort View 2 antippen: Die 2 ist sofort markiert, der Ring füllt sich, dann fährt die Kamera.
+   - Schnell 3 → 1 → 2 tippen: Es landet ohne Nachlaufen auf 2.
+   - Während einer Fahrt eine andere Nummer tippen: Das Bild hält an und blendet zur neuen View.
+4. Bei der Lampe dasselbe mit eingeschaltetem Licht.
+
+### 4. Was auffällig ist
+
+- **Slow 4G am PC:** Die großen Fahrten (2592 × 1080) brauchen ca. 7 s, bis sie spielen. Das liegt an der Dateigröße, nicht am Code. Markierung und Ring reagieren sofort. Kleinere Dateien wären nur über eine stärkere Kompression möglich; das habe ich nicht angefasst.
+- **Fehler in meinem eigenen Testserver:** Er hat zuerst auch pausierte Verbindungen beschrieben. Das ergab Phantom-Bandbreite und wachsende Ausreißer bis 22 s. Ich habe den Fehler behoben (Gegendruck) und neu gemessen.
+  - Die Slow-4G-Zahlen oben stammen vom korrigierten Server.
+  - Die Fast-4G-Zahlen stammen noch vom ersten Server. Die Zeiten sind dort eher zu lang als zu kurz.
+- **Abgebrochener Vergleichslauf:** Der letzte große Vergleichslauf mit Fast 4G und korrigiertem Server wurde vom System wegen Speichermangels abgebrochen. Auf dem Rechner liefen gleichzeitig fremde Simulationen. Ich habe ihn nicht von selbst neu gestartet. Mit korrigiertem Server ist Fast 4G nur für 2 Produkte gemessen (Handy: Fahrtstart 0,55–0,68 s). Auf Wunsch wiederhole ich ihn vollständig.
+- **Repo-Größe:** ISLE-BE-DAMNED hat 768 MB, weil es alle alten Stände behält. Die Grenze liegt bei ca. 1 GB. Diese Runde fügt nur Code und kleine Messdateien hinzu (unter 1 MB). Ein neuer Renderlauf mit neuen Videos würde aber knapp.
+- **Falsche Adresse im Kopf dieses Berichts:** Dort stand bisher die Adresse `…/gauge/`. Die richtige Adresse ist https://burningfireorange-cpu.github.io/ISLE-BE-DAMNED/ (oben korrigiert).
+
+### 5. Offene Fragen
+
+- **Nicht getestet:**
+  - ein echtes iPhone. Safari geht mit `canplaythrough`/`preload` eigenwillig um; die Logik fällt dort auf „spielbar“ bzw. den Video-Wecker zurück.
+  - der neue Stand online, denn er ist noch nicht hochgeladen.
+
+  Sobald du gepusht hast, messe ich gern direkt gegen die Online-Adresse nach.
+- **Repo zu groß?** Soll ich vor dem nächsten Renderlauf vorschlagen, wie das Repo wieder kleiner wird? Das ginge z. B. mit frischer Historie wie in Runde 9. Das müsstest du in GitHub Desktop selbst auslösen.

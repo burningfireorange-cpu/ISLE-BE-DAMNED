@@ -82,7 +82,10 @@ Hinter einem feinen Trenner stehen die Werkzeuge der jeweiligen Seite:
   - **Abendmodus:** Abendfahrten im Hochformat; Abend-Handy-Kachel beim Öffnen und Zurück, danach geht das Licht in der Kachel weich aus (wie beim Breitbild).
 - **Zurück zu Products:** Der echte Viewer schrumpft in seine Kachel. War eine andere View als 1 aktiv, startet die Fahrt zurück zu Cam1 sofort in normaler Geschwindigkeit und läuft in der schrumpfenden Kachel weiter, dort als 4:3-Ausschnitt des Videos. Sie endet auf dem Cam1-Standbild, danach blendet der Viewer in das gleiche Kachelbild aus (`viewer.heimAusblenden`). Bei View 1 schrumpft das Bild nur.
 - **View-Wechsel:** Das Standbild blendet in 0,1 s ins erste Videobild, die Fahrt läuft in der richtigen Richtung, und am Ende blendet das letzte Videobild in 0,1 s ins Standbild der Zielkamera. Das Zielstandbild liegt schon während der Fahrt geladen hinter dem Video; am Ende wird nur das Video ausgeblendet (kein heller Blitz auf dem iPhone). Die Leiste zeigt nur die vorhandenen Views (Object_01: 4, die anderen 3).
-- **Fahrt noch nicht geladen:** Das Standbild bleibt stehen, im View-Symbol der Leiste füllt sich ein feiner Ring, danach startet die Fahrt. Wählt man währenddessen eine andere View, wird die wartende Fahrt aufgegeben. Lädt sie gar nicht, wird überblendet.
+- **Antippen einer View (seit Runde 13):** Die Nummer ist **sofort** markiert, nie erst nach dem Laden.
+  - **Fahrt noch nicht geladen** (langsames Netz, online): Das Standbild bleibt stehen, im markierten View-Symbol füllt sich ein feiner heller Ring. Die Fahrt lädt dabei **allein** (alles andere wartet oder wird zurückgestellt) und startet, sobald sie ohne Stocken abspielbar ist. Den Rest der Datei lädt sie noch höchstens `viewer.nachlaufen` (8 s) allein, dann laden die übrigen Dateien weiter. Lädt sie gar nicht, wird überblendet.
+  - **Ende der Fahrt:** Es wird nie auf das Zielstandbild gewartet. Ist es noch nicht da, steht das letzte Videobild dafür ein (dasselbe Bild), und das scharfe Standbild blendet darüber ein, sobald es geladen ist. Keine graue Fläche.
+  - **Schnelles Mehrfach-Tippen:** keine Warteschlange, die letzte Wahl gilt sofort. Während die Fahrt noch lädt, wird sie aufgegeben und die neue geladen. Läuft die Fahrt schon, hält das Bild an, und das Standbild der neuen View blendet weich darüber (0,26 s).
 - **Lampe (Abendmodus):** Ist die Lampe an, bleibt sie beim View-Wechsel an: Die passende Abendfahrt (`Move_CamA_CamB_abend`) spielt, am Ende steht das Abendbild der Zielkamera – kein Zurückspringen auf Tag. Fehlt zu einem Übergang eine Abendfahrt, gilt das frühere Verhalten (erst weich auf Tag, dann die normale Fahrt, danach wieder Abendbild). Zurück zu Products im Abendmodus: Abendfahrt zu Cam1 in der Kachel, danach zeigt die Kachel wieder das Tagbild, die Lampe ist aus.
 - **Handy / schmale Fenster:** Videos aus `video/klein/`.
 - **Vorladen:** zuerst die Fahrten ab der aktuellen View, dann die übrigen, die Abendfahrten erst danach (bei eingeschalteter Lampe die ab der aktuellen View gleich nach deren normalen Fahrten).
@@ -244,6 +247,7 @@ Alles steht in **`js/config.js`** (kommentiert). Speichern, Seite neu laden, fer
 | `viewer.lampeNachFahrtWiederAn` | nach einem View-Wechsel bei eingeschalteter Lampe wieder ins Abendbild |
 | `viewer.heimAusblenden` | zurück in der Kachel und auf View 1: der Viewer blendet in das gleiche Kachelbild aus |
 | `viewer.ringVoll` | Fahrt war noch nicht geladen: so lange steht der volle Ring, dann startet die Fahrt |
+| `viewer.nachlaufen` | angetippte Fahrt läuft schon, ihr Rest lädt noch: so lange (höchstens) lädt nichts anderes daneben (8000 ms) |
 | `viewer.moebelRand` | Mindestabstand des Möbels (Box aus `bildinfo`) zum Rand der freien Fläche |
 | `viewer.auslaufen`, `viewer.auslaufenWechsel` | weicher Auslauf der Bildkanten in die Hintergrundfarbe (Anteil der Bildbreite), Dauer beim Ändern |
 | `viewer.hochformat` | am Handy senkrecht die Hochformat-Bilder verwenden (`false` = immer das breite Bild) |
@@ -260,3 +264,13 @@ Farben und Schriftgrößen stehen oben in `css/style.css` (`:root`).
 - **Logo-Schrift:** In `fonts/logo/` lag keine Lizenzdatei, und die Schrift erlaubt laut ihren Metadaten nur eingeschränkte Einbettung. Vor einer Veröffentlichung klären, siehe `lizenzen/SCHRIFT-WESTERNIC-HINWEIS.txt`.
 - **Icons:** Lucide (ISC-Lizenz), siehe `lizenzen/LUCIDE-LICENSE.txt`.
 - Videos: WebM (AV1), wenn der Browser es sicher kann, sonst MP4 (H.264), genau wie im bisherigen Test.
+- **Hochladen (GitHub Pages):** Online liegt die Seite im Repo `ISLE-BE-DAMNED` → https://burningfireorange-cpu.github.io/ISLE-BE-DAMNED/.
+  1. In `C:\websites\gauge` alles markieren und kopieren, im GitHub-Ordner `Documents\GitHub\ISLE-BE-DAMNED` alles markieren und löschen, dann einfügen. Versteckte Ordner (`.git`) dabei ausgeblendet lassen, damit sie nicht mitkopiert bzw. gelöscht werden.
+  2. **Doppelklick auf `bau\hochladen-pruefen.cmd` in `C:\websites\gauge`** (nicht im GitHub-Ordner – es vergleicht beide; liest nur, ca. 10 s). Es prüft:
+     - ob alle Pfade aus den Daten exakt so heißen wie die Dateien (Groß-/Kleinschreibung),
+     - ob die Kopie vollständig und gleich ist,
+     - ob git einen Namen nur in anderer Schreibweise hat (git auf Windows übernimmt das nicht von selbst, online bliebe der alte Name → Datei fehlt),
+     - ob `.gitignore` etwas Nötiges ausschließt,
+     - Dateigrößen.
+  3. Steht dort „alles in Ordnung“: in GitHub Desktop committen und **Push origin**.
+- Der Ordner `_Papierkorb` wird mitkopiert, aber wegen `.gitignore` nicht hochgeladen (so gewollt).

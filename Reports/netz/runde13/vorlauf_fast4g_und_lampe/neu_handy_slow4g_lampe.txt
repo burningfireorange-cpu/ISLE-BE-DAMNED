@@ -1,0 +1,5 @@
+{"id":"object_03","fmt":"hoch","v2":{"mark":0,"zurueck":false,"andereMarkiert":false,"ring":1,"fahrt":1830,"fertig":4252,"ok":true,"ersatz":true,"markEnde":"2","abend":true},"v3":{"mark":0,"zurueck":false,"andereMarkiert":false,"ring":1,"fahrt":1299,"fertig":3597,"ok":true,"ersatz":true,"markEnde":"3","abend":true},"v1":{"mark":0,"zurueck":false,"andereMarkiert":false,"ring":1,"fahrt":2482,"fertig":5239,"ok":true,"ersatz":true,"markEnde":"1","abend":true},"schnell":{"mark":0,"zurueck":false,"andereMarkiert":false,"ring":null,"fahrt":null,"fertig":272,"ok":true,"ersatz":true,"markEnde":"3","abend":true,"fahrtenNachLetztem":1},"waehrend":{"mark":1,"zurueck":false,"andereMarkiert":false,"ring":null,"fahrt":null,"fertig":336,"ok":true,"ersatz":true,"markEnde":"2","abend":true,"lief":true}}
+PROBLEME 0 []
+JS-Fehler []
+404 []
+Format [] []

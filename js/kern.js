@@ -152,8 +152,48 @@
     if (prio && prio > j.prio) { j.prio = prio; weiter(); }
   }
 
+  /* Priorities on a slow net (online): what is needed right now never shares the line with preloading.
+     SOFORT (≥ 100, e.g. the move of a view just tapped): while such a file loads, nothing else starts, and files of
+     lower priority that are loading are put back into the queue (they continue afterwards).
+     A file of the open product (≥ VORRANG) takes the line of a background file (< HINTERGRUND: other products, start). */
+  var SOFORT = 100, VORRANG = 60, HINTERGRUND = 50;
+  function laufendeJobs() { return liste.filter(function (j) { return j.zustand === 'laedt' && !j.frei; }); }   // (a slow image that gave its line free does not count)
+  /* A move needed right now can play once the browser says so ("can play through") – the rest of the file is still
+     coming in while it plays. Until it is complete (at most nachlaufMs) nothing else starts, so that the move never
+     stalls on a slow net. */
+  var nachlauf = [], NACHLAUF_MS = C.viewer.nachlaufen != null ? C.viewer.nachlaufen : 8000;
+  function ganzDa(v) {
+    try { return v.duration > 0 && v.buffered.length && v.buffered.end(v.buffered.length - 1) >= v.duration - 0.05; } catch (e) { return false; }
+  }
+  function nachlaufAktiv() {
+    var jetzt = Date.now();
+    nachlauf = nachlauf.filter(function (n) { return jetzt < n.bis && !ganzDa(n.v) && !n.v.ended; });
+    return nachlauf.length > 0;
+  }
+  /** A video that can play while the browser still fetches its rest keeps its line until it is complete (or the browser
+      pauses fetching, or at most NACHLAUF_MS) – otherwise more and more hidden downloads would share a slow line.
+      sofort: the move just tapped – meanwhile nothing else starts at all. frei: its line was given free already. */
+  var HALT_EV = ['progress', 'suspend', 'ended', 'emptied', 'error'];
+  function halten(v, sofort, frei) {
+    var n = { v: v, bis: Date.now() + NACHLAUF_MS }, aus = false, uhr;
+    if (sofort) nachlauf.push(n);
+    var los = function (e) {
+      if (aus) return;
+      var t = e && e.type;
+      if (!(ganzDa(v) || v.ended || t === 'suspend' || t === 'emptied' || t === 'error' || Date.now() >= n.bis)) return;
+      aus = true;
+      HALT_EV.forEach(function (x) { v.removeEventListener(x, los); });
+      clearTimeout(uhr);
+      var i = nachlauf.indexOf(n); if (i >= 0) nachlauf.splice(i, 1);
+      if (!frei) laufend--;
+      weiter();
+    };
+    HALT_EV.forEach(function (x) { v.addEventListener(x, los); });
+    uhr = setTimeout(los, NACHLAUF_MS + 20);
+  }
   function weiter() {
-    while (laufend < C.viewer.gleichzeitig) {
+    vorrang();
+    for (;;) {
       var best = null;
       for (var i = 0; i < liste.length; i++) {
         var j = liste[i];
@@ -161,41 +201,92 @@
         if (!best || j.prio > best.prio || (j.prio === best.prio && j.nr < best.nr)) best = j;
       }
       if (!best) break;
-      starten(best);
+      var lauf = laufendeJobs();
+      if (best.prio < SOFORT && (lauf.some(function (x) { return x.prio >= SOFORT; }) || nachlaufAktiv())) break;
+      // (a file needed right now starts at once, past the queue – the others then make way, see vorrang)
+      if (laufend < C.viewer.gleichzeitig || best.prio >= SOFORT) { starten(best); vorrang(); continue; }
+      if (best.prio < VORRANG) break;
+      // all lines busy: the background file with the lowest priority makes room
+      var opfer = null;
+      lauf.forEach(function (x) { if (x.prio < HINTERGRUND && x.stoppen && (!opfer || x.prio < opfer.prio)) opfer = x; });
+      if (!opfer || !opfer.stoppen()) break;
     }
+  }
+  /** A file needed right now loads: everything of lower priority that is loading goes back into the queue. */
+  function vorrang() {
+    if (!laufendeJobs().some(function (x) { return x.prio >= SOFORT; })) return;
+    // (also slow images that gave their line free – they would keep sharing it)
+    liste.forEach(function (x) { if (x.zustand === 'laedt' && x.prio < SOFORT && x.stoppen) x.stoppen(); });
   }
 
   function starten(j) {
     j.zustand = 'laedt';
     laufend++;
-    var erledigt = false, uhr;
+    var erledigt = false, uhr, img = null, v = null, hoerer = [];
+    function weg() {          // listeners off (also when the job is put back into the queue)
+      hoerer.forEach(function (h) { v.removeEventListener(h[0], h[1]); });
+      hoerer = [];
+    }
+    function hoere(art, fn) { v.addEventListener(art, fn); hoerer.push([art, fn]); }
+    var frei = false;        // the line was given free already (slow file, see below)
     function fertig(ok) {
       if (erledigt) return;
       erledigt = true;
       clearTimeout(uhr);
+      if (v) weg();
       j.zustand = 'fertig';
       j.ok = !!ok;
-      laufend--;
+      j.stoppen = null;
+      if (v && ok && !ganzDa(v)) halten(v, j.prio >= SOFORT, frei);    // (keeps its line until its rest is there)
+      else if (!frei) laufend--;
       liste.splice(liste.indexOf(j), 1);
       var cbs = j.cbs; j.cbs = [];
       cbs.forEach(function (fn) { try { fn(j.ok); } catch (e) { console.error(e); } });
       weiter();
     }
-    uhr = setTimeout(function () { fertig(j.art === 'video' && j.el && j.el.readyState >= 2); }, C.viewer.wartenJeDateiMs);
+    /** Back into the queue (a more urgent file needs the line) – it loads again later (the browser cache keeps what came). */
+    j.stoppen = function () {
+      if (erledigt) return false;
+      erledigt = true;
+      clearTimeout(uhr);
+      if (!frei) laufend--;
+      j.zustand = 'offen';
+      j.stoppen = null;
+      if (img) { img.onload = img.onerror = null; img.removeAttribute('src'); }
+      if (v) {
+        weg();
+        if (!v.dataset.spielt) { v.preload = 'none'; v.removeAttribute('src'); try { v.load(); } catch (e) {} }
+      }
+      return true;
+    };
+    // A file that takes long: a video gives up only when NOTHING has arrived for wartenJeDateiMs (on a slow net it may
+    // need longer as a whole); an image keeps loading, but gives its line free for the next file (it may still come).
+    function wecker() {
+      clearTimeout(uhr);
+      uhr = setTimeout(function () {
+        if (j.art === 'video') { fertig(j.el && j.el.readyState >= 2); return; }
+        if (!frei) { frei = j.frei = true; laufend--; weiter(); }
+      }, C.viewer.wartenJeDateiMs);
+    }
+    wecker();
     if (j.art === 'bild') {
-      var img = j.el || new Image();
+      img = j.el || new Image();
       img.decoding = 'async';
       img.onload = function () { fertig(true); };
       img.onerror = function () { fertig(false); };
       img.src = j.url;
       if (img.complete && img.naturalWidth) fertig(true);
     } else {
-      var v = j.el;
-      v.addEventListener('canplaythrough', function () { fertig(true); }, { once: true });
-      v.addEventListener('error', function () { v.dataset.fehlt = '1'; fertig(false); }, { once: true });
+      v = j.el;
+      // playable: the browser says it can play through, or the whole file is there (some browsers never say so)
+      var ganz = function () { if (ganzDa(v)) fertig(true); else wecker(); };   // (data arrives: wait on)
+      hoere('canplaythrough', function () { fertig(true); });
+      hoere('progress', ganz);
+      hoere('error', function () { v.dataset.fehlt = '1'; fertig(false); });
       v.preload = 'auto';
-      if (!v.getAttribute('src')) v.src = j.url;
-      v.load();
+      if (!v.getAttribute('src')) { v.src = j.url; v.load(); }
+      else if (v.readyState >= 4) fertig(true);
+      else if (!v.dataset.spielt) { try { v.load(); } catch (e) {} }
     }
   }
 
@@ -203,8 +294,19 @@
     bild: function (url, prio) { return job(url, 'bild', null, prio); },
     video: function (url, el, prio) { return job(url, 'video', el, prio); },
     hochstufen: hochstufen,
-    /** Load right now, past the queue. */
-    sofort: function (j) { j.prio = Math.max(j.prio, 100); if (j.zustand === 'offen') starten(j); }
+    /** Set the priority (also lower – e.g. a move that was tapped but is no longer wanted). */
+    stufe: function (j, prio) { if (j && j.zustand !== 'fertig') { j.prio = prio; weiter(); } },
+    /** A file (by its url) is no longer needed right now: at most this priority (nothing happens if it is not queued). */
+    zurueckstellen: function (url, prio) {
+      var j = url && auftraege[url];
+      if (j && j.zustand !== 'fertig' && j.prio > prio) { j.prio = prio; weiter(); }
+    },
+    /** Load right now, past the queue – alone on the line until it is there. */
+    sofort: function (j) {
+      j.prio = Math.max(j.prio, SOFORT);
+      if (j.zustand === 'offen') starten(j);
+      weiter();
+    }
   };
 
   /* ---------------- Placeholders ----------------

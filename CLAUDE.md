@@ -7,6 +7,14 @@ Test-Website für die Edelstahl-Möbelmarke **gauge** (immer klein geschrieben).
 Reines HTML/CSS/JS ohne Framework und ohne Build-Schritt, nur relative Pfade: funktioniert per Doppelklick (`file://`)
 und auf GitHub Pages. Seitentexte auf **Englisch**, Berichte und Kommentare an den Nutzer auf **Deutsch**.
 
+## Feste Regel: Arbeitsordner und Hochladen (verbindlich)
+
+- **Gearbeitet wird ausschließlich in `C:\websites\gauge`.** Alle Änderungen, Commits, Tests und Berichte nur hier.
+- **Der GitHub-Desktop-Ordner `C:\Users\Martin\Documents\GitHub\ISLE-BE-DAMNED` wird nur GELESEN** – nichts darin
+  ändern, kopieren, löschen, keine git-Befehle mit Schreibwirkung (nur `git --no-optional-locks status/ls-files/log …`).
+- **Nie selbst hochladen: kein `git push`**, kein Remote eintragen, keine Commits im GitHub-Ordner. Das Hochladen macht
+  der Nutzer selbst über **GitHub Desktop** (siehe „Veröffentlichung“).
+
 ## Ordner
 
 ```
@@ -102,12 +110,18 @@ README.md                   ausführliche Beschreibung für den Nutzer (deutsch)
 
 ## Veröffentlichung (GitHub Pages)
 
-- Repo `burningfireorange-cpu/gauge` (öffentlich), Pages aus `main` / root → https://burningfireorange-cpu.github.io/gauge/
-- Der Nutzer veröffentlicht selbst über **GitHub Desktop** (Git in der Konsole hat keine GitHub-Anmeldung).
-- Seit Runde 9 hat `main` eine **frische Historie** (Repo-Größe). Die alte Historie liegt nur lokal im Zweig
-  `historie-bis-runde-9` und am Tag `vor-hochformat` – **nie pushen** (alte Renderings, ~0,75 GB).
-- Grenzen: Seite/Repo höchstens ca. 1 GB, keine Datei über 100 MB. Vor jedem Hochladen prüfen
-  (`git bundle create x.bundle main` ≈ Upload-Größe). Wird es wieder knapp: erneut frische Historie für `main`.
+- **Online:** Repo `burningfireorange-cpu/ISLE-BE-DAMNED` (öffentlich), Pages aus `main` / root →
+  https://burningfireorange-cpu.github.io/ISLE-BE-DAMNED/ (ein Repo `gauge` gibt es nicht).
+- **Kopierweg des Nutzers:** in `C:\websites\gauge` alles markieren und kopieren → im GitHub-Ordner
+  `C:\Users\Martin\Documents\GitHub\ISLE-BE-DAMNED` alles löschen → einfügen → in GitHub Desktop committen und
+  „Push origin“. Der `.git`-Ordner beider Seiten ist versteckt und wird dabei nicht mitkopiert (so muss es bleiben).
+  Das lokale git in `C:\websites\gauge` (eigene Historie, ohne Remote) wird dabei NICHT hochgeladen, nur die Dateien.
+- Darum gilt: Nur Dateien in `C:\websites\gauge`, die die Seite braucht, und **nie einen Dateinamen nur in der
+  Groß-/Kleinschreibung ändern** (git im GitHub-Ordner hat `core.ignorecase=true` und würde online den alten Namen
+  behalten → 404). Vor dem Push kann der Nutzer `bau\hochladen-pruefen.cmd` in `C:\websites\gauge` doppelklicken (liest nur, vergleicht beide Ordner).
+- Grenzen: Seite/Repo höchstens ca. 1 GB, keine Datei über 100 MB. Das Repo ISLE-BE-DAMNED behält alle alten
+  Stände (5.11.2026: 768 MB) – bei neuen Renderläufen die Größe im Bericht melden.
+- Die lokale Historie in `C:\websites\gauge` (Zweig `historie-bis-runde-9`, Tag `vor-hochformat`) ist nur lokal.
 
 ## Arbeitsregeln
 

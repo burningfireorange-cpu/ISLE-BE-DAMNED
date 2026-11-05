@@ -168,6 +168,10 @@ window.GAUGE_CONFIG = {
     gleichzeitig: 2,               // files loading at the same time
     wartenJeDateiMs: 15000,        // give up waiting for one file after this time and continue with the next
     ringVoll: 160,                 // a view clicked before its move has loaded: the ring in the view symbol fills; once full, it stays this long, then the move starts
+                                   //   (the tapped view is marked at once; its move loads alone on the line, the other files wait)
+    nachlaufen: 8000,              // ms – a tapped move starts once it can play through; the rest of its file keeps the line
+                                   //   alone this long at most (so it never stalls on a slow net), then other files load again.
+                                   //   (preloaded moves: their rest keeps its line this long at most, so downloads never pile up)
     handyBreite: 760,              // below this window width small videos from video/klein/ are used
     /* picture of the product page (glass bar): it covers the window as long as it is wide enough. The furniture
        (field bildinfo of produkte.json) is never cropped; in very wide windows (21:9, 32:9) the picture keeps the full

@@ -1,0 +1,16 @@
+﻿== alt_handy_slow4g.txt (5 Produkte)
+  einzeln   n=15  Markierung med 0 / max 1 ms  Fahrtstart med 14616 / max 15199 ms  fertig med 17717 / max 25511 ms  Markierung sprang: 13  nicht erreicht: 0  grau: 9
+  schnell   n= 5  Markierung med 1756 / max 1762 ms  Fahrtstart med 1765 / max 1784 ms  fertig med 4068 / max 4152 ms  Markierung sprang: 0  nicht erreicht: 0  grau: 4
+  waehrend  n= 5  Markierung med 1723 / max 1740 ms  Fahrtstart med 1733 / max 1749 ms  fertig med 4040 / max 4114 ms  Markierung sprang: 0  nicht erreicht: 0  grau: 5
+== alt_pc_slow4g.txt (5 Produkte)
+  einzeln   n=15  Markierung med 0 / max 0 ms  Fahrtstart med 15202 / max 15212 ms  fertig med 19454 / max 25539 ms  Markierung sprang: 13  nicht erreicht: 0  grau: 10
+  schnell   n= 5  Markierung med 1779 / max 1779 ms  Fahrtstart med - / max - ms  fertig med 2110 / max 2131 ms  Markierung sprang: 0  nicht erreicht: 0  grau: 5
+  waehrend  n= 5  Markierung med 0 / max 1747 ms  Fahrtstart med 31 / max 31 ms  fertig med 2065 / max 2393 ms  Markierung sprang: 0  nicht erreicht: 0  grau: 5
+== neu_handy_slow4g.txt (5 Produkte)
+  einzeln   n=15  Markierung med 0 / max 0 ms  Fahrtstart med 3533 / max 5966 ms  fertig med 6179 / max 8303 ms  Markierung sprang: 0  nicht erreicht: 0  grau: 0
+  schnell   n= 5  Markierung med 0 / max 0 ms  Fahrtstart med - / max - ms  fertig med 273 / max 276 ms  Markierung sprang: 0  nicht erreicht: 0  grau: 0
+  waehrend  n= 5  Markierung med 1 / max 1 ms  Fahrtstart med - / max - ms  fertig med 332 / max 336 ms  Markierung sprang: 0  nicht erreicht: 0  grau: 0
+== neu_pc_slow4g.txt (5 Produkte)
+  einzeln   n=15  Markierung med 0 / max 0 ms  Fahrtstart med 6730 / max 12595 ms  fertig med 9293 / max 14885 ms  Markierung sprang: 0  nicht erreicht: 0  grau: 0
+  schnell   n= 5  Markierung med 0 / max 0 ms  Fahrtstart med - / max - ms  fertig med 275 / max 279 ms  Markierung sprang: 0  nicht erreicht: 0  grau: 0
+  waehrend  n= 5  Markierung med 1 / max 1 ms  Fahrtstart med - / max - ms  fertig med 322 / max 326 ms  Markierung sprang: 0  nicht erreicht: 0  grau: 0

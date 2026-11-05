@@ -220,8 +220,8 @@
       wege(el, { name: 'Customize', pfad: 'products/' + p.id + '/customize' });
       function aktualisieren() {
         var info = vw().info();
-        // while the move is still loading, the current view stays marked; the target shows a filling ring
-        var jetzt = info.laden ? info.aktuell : (info.ziel || info.aktuell);
+        // the tapped view is marked at once – never waiting for the net; while its move still loads, a ring fills in it
+        var jetzt = info.ziel || info.aktuell;
         views.forEach(function (b, k) {
           var an = jetzt === k + 1;
           var laedt = !!info.laden && info.laden.ziel === k + 1;
