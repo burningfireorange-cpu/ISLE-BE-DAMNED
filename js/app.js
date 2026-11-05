@@ -126,7 +126,11 @@
       a.onfinish = ende; a.oncancel = ende;
       anims.push(a);
       schichten.forEach(function (s) {
-        if (s.von != null && s.nach != null && s.von !== s.nach) anims.push(s.el.animate([{ opacity: s.von }, { opacity: s.nach }], opts));
+        if (s.von != null && s.nach != null && s.von !== s.nach) {
+          var sa = s.el.animate([{ opacity: s.von }, { opacity: s.nach }], opts);
+          sa._flug = true;               // (a lent tile image: cancelled when it goes back into the tile)
+          anims.push(sa);
+        }
       });
       if (zoom) anims.push(inhalt.animate(zoom, opts));
     }
@@ -143,12 +147,34 @@
     }
     return { k: k, anims: anims, fertig: fertig, ausblenden: ausblenden };
   }
-  /** A copy of a tile image (placeholder with its loaded img) for the flight – never a grey of its own. */
-  function klon(el) {
-    var c = el.cloneNode(true);
-    c.classList.remove('sichtbar', 'raus', 'rein', 'vor-fahrt', 'vor-aufstieg', 'nachglimmen', 'ausglimmen');
-    c.style.backgroundColor = 'transparent';
-    return c;
+  /** The tile's own images, lent to the flight (phone upright) – no copy: a moved <img> keeps its loaded, decoded
+      picture, while a clone may have to fetch it again (memory cache emptied, iPhone) and would show grey until then.
+      zurueck() puts them back into the tile as they were (once; also when the flight is taken away). */
+  function leihen() {
+    var liste = [];
+    return {
+      nimm: function (el) {
+        if (!el) return null;
+        liste.push({ el: el, eltern: el.parentNode, vor: el.nextSibling });
+        el.classList.remove('vor-aufstieg', 'nachglimmen', 'ausglimmen');
+        el.style.backgroundColor = 'transparent';
+        return el;
+      },
+      zurueck: function () {
+        var l = liste;
+        liste = [];
+        // in reverse order, so that every element finds its next sibling back in place
+        for (var i = l.length - 1; i >= 0; i--) {
+          var el = l[i].el, e = l[i].eltern;
+          el.getAnimations().forEach(function (a) { if (a._flug) { try { a.cancel(); } catch (x) {} } });
+          ['position', 'inset', 'left', 'top', 'width', 'height', 'opacity', 'transition', 'backgroundColor'].forEach(function (k) { el.style[k] = ''; });
+          if (!e || el.parentNode === e) continue;
+          // (the tile has switched its images meanwhile – phone turned: these are no longer its own)
+          if (e.querySelector(':scope > .' + (el.classList.contains('k-abend') ? 'k-abend' : 'k-tag'))) { if (el.parentNode) el.parentNode.removeChild(el); continue; }
+          e.insertBefore(el, l[i].vor && l[i].vor.parentNode === e ? l[i].vor : null);
+        }
+      }
+    };
   }
   /** A decoded copy of a picture file (the whole portrait picture, small) – resolves once it can be painted. */
   function kopieBild(url, liste) {
@@ -191,7 +217,7 @@
     if (k.parentNode) k.parentNode.removeChild(k);
   }
   function flug(o) {
-    if (flugEl && flugEl.parentNode) flugEl.parentNode.removeChild(flugEl);
+    flugWeg();        // (a flight still on the screen: away – a phone flight gives its tile images back)
     var r1 = o.gross;
     var anims = [], k;
     var opts = { duration: o.dauer, easing: C.kurve, fill: 'forwards' };
@@ -200,7 +226,10 @@
       var hf = handyFlug(o.hoch);
       if (!hf) return Promise.resolve();
       k = hf.k;
-      k._zeigen = function () { o.verstecken.forEach(function (e) { e.style.visibility = ''; }); };
+      k._zeigen = function () {
+        o.verstecken.forEach(function (e) { e.style.visibility = ''; });
+        if (o.hoch.zurueckgeben) o.hoch.zurueckgeben();       // the tile gets its own images back
+      };
       // the zoom has reached the whole portrait picture: as soon as its full still is decoded (the small copy stays until
       // then), the real viewer comes under the flight and the flight fades out over it
       weiter = hf.fertig.then(function () {
@@ -250,6 +279,7 @@
       return Promise.race([bereit, G.warte(2500)]);
     }).then(function () {
       o.verstecken.forEach(function (e) { e.style.visibility = ''; });
+      if (o.hoch && o.hoch.zurueckgeben) o.hoch.zurueckgeben();     // (once only – also safe after flugWeg)
       if (k.parentNode) k.parentNode.removeChild(k);
       if (flugEl === k) flugEl = null;
     });
@@ -385,6 +415,7 @@
   function sichtbar(r) { return r.width > 0 && r.bottom > 0 && r.top < window.innerHeight; }
   /** Current scale of an element's transform (e.g. the tile's hover zoom, also in the middle of its transition). */
   function skala(el) {
+    if (!el) return 1;
     var t = getComputedStyle(el).transform;
     if (!t || t === 'none') return 1;
     var m = t.match(/matrix\(([^,]+),\s*([^,]+)/);
@@ -481,16 +512,16 @@
         // phone upright: the phone tile is a crop of the portrait picture – the zoom only opens that crop (handyFlug)
         var hoch = null;
         if (vw.format === 'hoch' && q.dataset.format === 'hoch') {
-          var lit = kz.abend > 0.5, dekoder = [], hs = [];
+          var lit = kz.abend > 0.5, dekoder = [], hs = [], leihe = leihen();
           hs.push({ el: kopieBild(G.pfade.kachel(p, 'hoch'), dekoder) });               // the whole picture, small
-          hs.push({ el: klon(q.querySelector('.k-tag')), box: ka });                    // the tile image on its crop
+          hs.push({ el: leihe.nimm(q.querySelector('.k-tag')), box: ka });              // the tile image on its crop
           if (ab && kz.abend > 0.01) {
             hs.push({ el: kopieBild(G.pfade.kachelAbend(p, 'hoch'), dekoder), von: kz.abend, nach: lit ? 1 : 0 });
-            hs.push({ el: klon(ab), box: ka, von: kz.abend, nach: lit ? 1 : 0 });
+            hs.push({ el: leihe.nimm(ab), box: ka, von: kz.abend, nach: lit ? 1 : 0 });
           }
           hoch = { auf: true, T: r0, V: vw.el.getBoundingClientRect(), ka: ka, skala: kz.skala,
             radiusKlein: radiusVon(q), radiusGross: radiusVon(vw.el), dauer: C.seite.kachelZumViewer, schichten: hs,
-            bereit: Promise.all(dekoder),
+            bereit: Promise.all(dekoder), zurueckgeben: leihe.zurueck,
             // (flug: the full still decoded in the viewer, then the flight fades out over it)
             fertigBereit: Promise.all([dekodiert(gs), lit ? dekodiert(ga) : null]) };
         }

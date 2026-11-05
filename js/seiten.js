@@ -151,7 +151,8 @@
         k.z.style.display = drin ? '' : 'none';
         k.war = k.sichtbar;
         k.sichtbar = drin;
-        if (drin) k.a.querySelector('.k-tag').laden(30);
+        var kt = k.a.querySelector('.k-tag');          // (null while a phone flight has lent it – app.js leihen)
+        if (drin && kt) kt.laden(30);
       });
       leer.style.display = liste.length ? 'none' : '';
       if (!t && !tb) return;
@@ -222,7 +223,8 @@
         });
       }
       spaeter.forEach(function (k) {
-        k.a.querySelector('.k-tag').classList.add('vor-aufstieg');
+        var kt = k.a.querySelector('.k-tag');
+        if (kt) kt.classList.add('vor-aufstieg');
         k.name.classList.add('vor-aufstieg');
         beobachter.observe(k.a);
       });
