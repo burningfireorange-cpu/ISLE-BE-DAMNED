@@ -43,7 +43,8 @@ README.md                   ausführliche Beschreibung für den Nutzer (deutsch)
   `anzeigename`, `abendfahrten`, `bildinfo` (Möbel-Box je Bild; bei `_hoch`-Bildern auch `brennweite` und `kachel_breit` =
   Lage der Kachel des breiten Cam1-Bilds im Hochformat, ragt seitlich hinaus), Hochformat `bilder_hoch`, `format_hoch`
   (2400 × 4800), `fahrten_hoch`, `abendfahrten_hoch`, `handykameras` (nur durchgereicht). `kacheln` wird nicht mehr gebraucht:
-  Kachelbilder rechnet das Bau-Skript aus dem ganzen Cam1-Standbild (600 px hoch). Nie mit festen Formaten rechnen.
+  Kachelbilder rechnet das Bau-Skript aus dem ganzen Cam1-Standbild (600 px hoch); die Handy-Kachel aus der kleinen Kopie des
+  Cam1-Hochformats (volle Breite, 4:5, für alle Produkte gleicher Ausschnitt → `hoch.handyAusschnitt`). Nie mit festen Formaten rechnen.
   **`raum_leer` und der Ordner `Raum_leer` nicht verwenden.**
 - Fehlen Felder oder heißen sie anders: Rückfall (z. B. `_Import/produkte-zusatz.json`) und im Bericht melden.
 
@@ -78,11 +79,13 @@ README.md                   ausführliche Beschreibung für den Nutzer (deutsch)
   öffnet sich seitlich zum vollen Bild; zurück: die Fahrt zu Cam1 läuft in der schrumpfenden Kachel weiter.
 - **Handy senkrecht: Hochformat** – IMMER bildfüllend (volle Breite, oben bündig, kein Rand, kein weicher Auslauf, nie
   verkleinert). Die Kameras des Nutzers sind maßgeblich; liegt ein Möbel unter den Leisten, nur melden, nicht ausgleichen.
-  Zoom Kachel ↔ Hochformat über `kachel_breit` (`hochFlug` in app.js): ERST zoomt das breite Kachelbild bis genau in seine
-  Endlage im Hochformat, DANN (Standbild geladen + dekodiert) kurz überblenden (`seite.hochBlende`); zurück umgekehrt.
-  Unter/um das Kachelbild immer Bild (gespiegelte Ränder, kleine Hochformat-Kopie) mit großer Reserve – nie Weiß im
-  Fenster, auch wenn Fenster und Ebenen am iPhone aus dem Takt laufen. Nur transform/opacity animieren, Rundung auf eigenem
-  Element (kein animiertes clip-path / border-radius im selben Effekt wie transform: lief am iPhone nicht synchron).
+  **Handy-Kacheln:** Am Handy senkrecht zeigt Products Kacheln aus dem Hochformat Cam1 (`Still_Cam1_hoch_kachel.jpg`, volle
+  Breite, 4:5, gleicher Ausschnitt für alle Produkte). Zoom (`handyFlug` in app.js): ein Rahmen in Vollbildgröße trägt die kleine
+  Hochformat-Kopie + das Kachelbild auf seinem Ausschnitt (zurück: den echten Viewer); `transform` + `clip-path: inset` öffnen
+  den Ausschnitt in EINER Animation – kein Bildwechsel. Seitliche Insets immer 0, oben/unten schneidet der Clip nur das eigene
+  Bild: laufen Clip und Transform am iPhone auseinander, wird nie Seite frei. Volles Standbild erst nach `img.decode()` (Rahmen
+  blendet darüber aus, `seite.hochBlende`). Zurück von einer anderen View: erst die Fahrt zu Cam1 im vollen Hochformat, dann
+  dasselbe Zusammenziehen.
   Handy quer: breites Format. Desktop darf sich durch Hochformat-Änderungen nicht verändern (A/B gegen alten Stand prüfen).
 - Anzeigenamen sind Codes (`OBJ_LT_M_03`), Ordner/Adressen bleiben `Object_NN`.
 - Baum-Modus (`navigation: 'baum'` in config.js) muss umschaltbar und funktionsfähig bleiben.

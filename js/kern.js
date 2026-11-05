@@ -373,7 +373,11 @@
       moebel: moebelListe(h.format, h.moebel), moebelAbend: moebelListe(h.format, h.moebelAbend),
       fahrten: h.fahrten || {}, fahrtenKlein: h.fahrtenKlein || {},
       fahrtenAbend: h.fahrtenAbend || {}, fahrtenAbendKlein: h.fahrtenAbendKlein || {},
-      kachel: h.kachel || null, kachelAbend: h.kachelAbend || null
+      kachel: h.kachel || null, kachelAbend: h.kachelAbend || null,     // small copy of the whole portrait Cam1 picture
+      // phone tile (Products, phone upright): a full-width crop of the portrait Cam1 picture – the same crop for all
+      // products (handyAusschnitt, shares); the zoom tile ↔ portrait picture only opens / closes this crop
+      handyKachel: h.handyKachel || null, handyKachelAbend: h.handyKachelAbend || null,
+      handyAusschnitt: h.handyKachel ? anteil(h.format, h.handyAusschnitt) : null
     };
   }
   var roh = (window.GAUGE_PRODUKTE && window.GAUGE_PRODUKTE.produkte) || [];
@@ -423,11 +427,9 @@
   /** What the viewer shows of a product: aspect ratio of its box and where the 4:3 tile crop lies in it (shares).
       Glass bar: the full picture (the reserve left/right lets the page move its centre); tree mode: the 16:9 crop. */
   G.anzeige = function (p, format) {
-    if (format === 'hoch' && p.hoch) {
-      // portrait picture: the whole picture. kachel = where the tile lies in it (kachel_breit, may reach outside),
-      // deckend = the 4:3 crop inside the picture with the same centre (format_hoch.kachel)
-      var kh = p.hoch.kachelAusschnitt || { x: 0, y: 750 / 4800, w: 1, h: p.hoch.verhaeltnis * 3 / 4 };
-      return { verhaeltnis: p.hoch.verhaeltnis, kachel: p.hoch.kachelBreit || kh, deckend: kh };
+    if (format === 'hoch' && p.hoch && p.hoch.handyAusschnitt) {
+      // portrait picture: the whole picture; the phone tile is a full-width crop of it (handyAusschnitt)
+      return { verhaeltnis: p.hoch.verhaeltnis, kachel: p.hoch.handyAusschnitt };
     }
     var b = (!G.LEISTE && p.bildschirm) || { x: 0, y: 0, w: 1, h: 1 };
     var verh = p.verhaeltnis * b.w / b.h;
@@ -437,10 +439,8 @@
       var kw = verh >= 4 / 3 ? (4 / 3) / verh : 1, kh2 = verh >= 4 / 3 ? 1 : verh / (4 / 3);   // centred 4:3
       kb = { x: (1 - kw) / 2, y: (1 - kh2) / 2, w: kw, h: kh2 };
     }
-    return { verhaeltnis: verh, kachel: kb, deckend: kb };
+    return { verhaeltnis: verh, kachel: kb };
   };
-  /** Does a share rect reach outside the picture (0…1)? */
-  G.ragtHinaus = function (k) { return !!k && (k.x < -0.001 || k.y < -0.001 || k.x + k.w > 1.001 || k.y + k.h > 1.001); };
   /** Where the picture of the product page lies on the screen (glass bar), in px of the window:
       { left, top, width, height, maske: { l, r, t, b } (px of the picture over which an edge fades out), art }.
       W, H = window, fr / fu = the room the bar takes on the right / at the bottom (incl. its edge distance).
@@ -544,9 +544,23 @@
   /** Which pictures a product shows right now: 'hoch' on a phone held upright (glass bar) if it has portrait pictures,
       otherwise 'breit'. */
   G.formatFuer = function (p) {
-    var hochkant = window.innerWidth <= C.handy.breite && window.innerHeight > window.innerWidth;
-    return C.viewer.hochformat !== false && G.LEISTE && p && p.hoch && hochkant ? 'hoch' : 'breit';
+    return G.handyKacheln() && p && p.hoch && p.hoch.handyKachel ? 'hoch' : 'breit';
   };
+  /** Phone held upright (glass bar, portrait pictures switched on): Products shows the phone tiles (crops of the portrait
+      pictures), products with portrait pictures open into them. (A product without them shows the wide picture.) */
+  G.handyKacheln = function () {
+    var hochkant = window.innerWidth <= C.handy.breite && window.innerHeight > window.innerWidth;
+    return C.viewer.hochformat !== false && G.LEISTE && hochkant;
+  };
+  /** Aspect ratio (width / height) of the phone tiles – the same for all products (build script), 4:5 without data. */
+  G.handySeite = (function () {
+    for (var i = 0; i < G.produkte.length; i++) {
+      var h = G.produkte[i].hoch;
+      if (h && h.handyAusschnitt) return h.verhaeltnis * h.handyAusschnitt.w / h.handyAusschnitt.h;
+    }
+    return 0.8;
+  })();
+  document.documentElement.style.setProperty('--kachel-hoch', String(G.handySeite));
   G.pfade = {
     still: function (p, v, format) { return datei(p, satz(p, format).bilder[v - 1]); },
     abend: function (p, v, format) { return p.leuchtmittel ? datei(p, satz(p, format).abend[v - 1]) : null; },
@@ -558,6 +572,9 @@
       if (!p.leuchtmittel) return null;
       return format === 'hoch' ? (p.hoch ? datei(p, p.hoch.kachelAbend) : null) : (datei(p, p.kachelAbend) || G.pfade.abend(p, 1));
     },
+    /** Phone tile (crop of the portrait Cam1 picture) and its evening version – null without portrait pictures. */
+    handyKachel: function (p) { return p.hoch ? datei(p, p.hoch.handyKachel) : null; },
+    handyKachelAbend: function (p) { return p.leuchtmittel && p.hoch ? datei(p, p.hoch.handyKachelAbend) : null; },
     /** Move from view a to view b (views → cameras); klein = video/klein/. WebM (AV1) only where it surely plays, else MP4.
         If one size is missing, the other one is used. format 'hoch': the portrait moves (Move_CamA_CamB_hoch). */
     fahrt: function (p, a, b, klein, abend, format) {

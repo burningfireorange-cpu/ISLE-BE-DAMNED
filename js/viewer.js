@@ -34,14 +34,11 @@
     this.el.dataset.format = fmt;
     // aspect ratio of what it shows (full 12:5 or 1:2 picture) and where the 4:3 tile crop lies in it – inside a tile
     // (way back to the wall) the viewer is laid out so that exactly this crop fills the tile
-    // (portrait: the tile of the WIDE picture may reach outside the portrait picture – kachelDeckend is the 4:3 crop
-    // inside it with the same centre, used while a move plays on inside the tile)
+    // (portrait: the phone tile – a full-width crop of the portrait picture)
     var an = G.anzeige(p, fmt);
     this.kachelAnteil = an.kachel;
-    this.kachelDeckend = an.deckend || an.kachel;
-    this.kachelRagt = G.ragtHinaus(an.kachel);
     this.el.style.setProperty('--a', String(an.verhaeltnis));
-    this.kachelLegen(false);
+    this.kachelLegen();
     this.stills = [];
     this.abende = [];
     this.videos = { g: {}, k: {} };   // created on demand: g = video/, k = video/klein/
@@ -74,10 +71,9 @@
     this.stills[1].classList.add('sichtbar');
   }
 
-  /** How the viewer lies inside its tile (CSS --kx … – way back to the wall): exactly on the tile crop, or (deckend)
-      on the 4:3 crop inside the picture, so that it fills the tile alone. */
-  Viewer.prototype.kachelLegen = function (deckend) {
-    var k = deckend ? this.kachelDeckend : this.kachelAnteil, st = this.el.style;
+  /** How the viewer lies inside its tile (CSS --kx … – way back to the wall): exactly on the tile crop. */
+  Viewer.prototype.kachelLegen = function () {
+    var k = this.kachelAnteil, st = this.el.style;
     st.setProperty('--kx', String(k.x)); st.setProperty('--ky', String(k.y));
     st.setProperty('--kw', String(k.w)); st.setProperty('--kh', String(k.h));
   };

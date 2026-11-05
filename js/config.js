@@ -128,13 +128,10 @@ window.GAUGE_CONFIG = {
   seite: {
     wechsel: 320,                  // crossfade between pages
     kachelZumViewer: 560,          // tile zooms seamlessly into the viewer (shared element)
-    hochBlende: 200,               // phone upright: once the zoom has reached the portrait picture, the tile image fades
-                                   //   into it in this time (ms; way back: first this fade, then the zoom out)
-    hochWarten: 2500,              // phone upright: at most this long (ms) the tile image waits at the end of the zoom
-                                   //   for the portrait still to load and decode (slow net), then it fades anyway
-    kachelZurueckziehen: 480,      // phone upright, back to the wall after a move: the portrait picture draws back inside
-                                   //   the tile onto the tile crop, the sides of the tile come in (Cam1 upright has a
-                                   //   longer focal length – the tile reaches beyond the portrait picture)
+    hochBlende: 200,               // phone upright: once the phone tile has opened into the whole portrait picture (small
+                                   //   copy), it fades in this time (ms) into the full-size still lying under it
+    hochWarten: 2500,              // phone upright: at most this long (ms) the small copy waits at the end of the zoom
+                                   //   for the full-size still to load and decode (slow net), then it fades anyway
     filter: 260                    // (tree mode) products: filter change
   },
 

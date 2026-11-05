@@ -55,7 +55,13 @@ param(
   [int]$Gross = 2000,
   [int]$Qualitaet = 3,          # ffmpeg JPEG-Qualität: 2 = sehr gut … 5 = kleiner
   [int]$KachelHoehe = 600,      # Höhe der kleinen Kachelbilder (ganzes 12:5-Bild → 1440 × 600; Products lädt beim Start nur diese)
-  [int]$KachelHochBreite = 600, # Breite der kleinen Hochformat-Kopie (600 × 1200)
+  [int]$KachelHochBreite = 600, # Breite der kleinen Hochformat-Kopie (600 × 1200) und der Handy-Kachel (600 × 750)
+  # Handy-Kachel (Handy senkrecht, Products): Ausschnitt aus dem Cam1-Hochformat, volle Bildbreite, für ALLE Produkte gleich
+  # (gleicher Maßstab, Wand/Boden-Fuge auf gleicher Höhe). 4:5 und Oberkante bei 5,5 % der Bildhöhe: 2400 × 3000 ab y = 264
+  # – die Lampe Object_03 (y 663 … 2741) und der tiefste Fuß (Sessel, y 2868) haben darin je ca. 13 % Luft.
+  # Nach einer Änderung einmal mit -Neu bauen (eine andere Kachelhöhe merkt das Skript auch von selbst).
+  [double]$HandyKachelSeite = 0.8,    # Breite : Höhe der Handy-Kachel (0.8 = 4:5)
+  [double]$HandyKachelOben = 0.055,   # Oberkante als Anteil der Hochformat-Höhe
   [switch]$OhneGalerie,
   [switch]$OhneProdukte,
   [switch]$NurDaten,
@@ -286,6 +292,7 @@ if (-not $OhneProdukte) {
   $namen = @{}
   $zeilen = @()
   $rueckfall = New-Object System.Collections.ArrayList     # Felder, die in produkte.json fehlten (→ Bericht)
+  $handyLuft = New-Object System.Collections.ArrayList     # je Produkt: Luft über / unter dem Möbel in der Handy-Kachel
   $typNamen = @{ 'tables' = 'tables'; 'table' = 'tables'; 'seating' = 'seating'; 'seat' = 'seating'; 'storage' = 'storage'; 'lighting' = 'lighting'; 'light' = 'lighting'; 'lamp' = 'lighting' }
   function Rechteck($r) {     # {x,y,breite,hoehe} → [x, y, b, h] (oder $null)
     if ($null -eq $r) { return $null }
@@ -497,27 +504,54 @@ if (-not $OhneProdukte) {
       if ($mitHoch) {
         $paare += @{ q = $tagH[$kameras[0]]; js = 'hochTag'; vf = "scale=${KachelHochBreite}:-2" }
         if ($mitAbend -and $abendH.ContainsKey($kameras[0])) { $paare += @{ q = $abendH[$kameras[0]]; js = 'hochAbend'; vf = "scale=${KachelHochBreite}:-2" } }
+        # Handy-Kachel: derselbe verkleinerte Hochformat-Kopie (600 px breit), daraus der Kachelausschnitt – so ist die
+        # Kachel Pixel für Pixel ein Stück der kleinen Kopie, mit der der Zoom aufzieht. Lage in ganzen Pixeln der Kopie,
+        # in den Daten zurückgerechnet auf das volle Hochformat (handyAusschnitt).
+        $fk = $KachelHochBreite / $formatHoch[0]
+        $kH = [int][Math]::Round($KachelHochBreite / $HandyKachelSeite)
+        $kY = [int][Math]::Round($HandyKachelOben * $formatHoch[1] * $fk)
+        $kopieH = [int][Math]::Round($formatHoch[1] * $fk)
+        if ($kY + $kH -gt $kopieH) { $kY = $kopieH - $kH }
+        $handyAus = @(0, [int][Math]::Round($kY / $fk), [int]$formatHoch[0], [int][Math]::Round($kH / $fk))
+        $vfHandy = "scale=${KachelHochBreite}:-2:flags=lanczos,crop=${KachelHochBreite}:${kH}:0:${kY}"
+        $paare += @{ q = $tagH[$kameras[0]]; js = 'handyTag'; vf = $vfHandy; aus = 'Still_Cam1_hoch_kachel.jpg'; hoehe = $kH }
+        if ($mitAbend -and $abendH.ContainsKey($kameras[0])) { $paare += @{ q = $abendH[$kameras[0]]; js = 'handyAbend'; vf = $vfHandy; aus = 'Still_Cam1_abend_hoch_kachel.jpg'; hoehe = $kH } }
+        # passt das Möbel (bildinfo von Cam1 hoch) mit Luft hinein? – für den Bericht
+        $mb = $null; if ($e1) { $mb = Rechteck (Wert $e1 'moebel') }
+        if ($mb) {
+          $luftO = ($mb[1] - $handyAus[1]) / $handyAus[3]; $luftU = ($handyAus[1] + $handyAus[3] - $mb[1] - $mb[3]) / $handyAus[3]
+          [void]$handyLuft.Add(("{0,-12} Luft oben {1,5:P1}, unten {2,5:P1}" -f $name, $luftO, $luftU))
+          if ($luftO -lt 0.03 -or $luftU -lt 0.03) { [void]$rueckfall.Add(("$name  Handy-Kachel: Möbel hat zu wenig Luft (oben {0:P1}, unten {1:P1}) – HandyKachelSeite / HandyKachelOben anpassen" -f $luftO, $luftU)) }
+        } else { [void]$handyLuft.Add("$name  (keine Möbel-Box in bildinfo für Cam1 hoch)") }
       }
     }
-    $kachelJs = $null; $kachelAbendJs = $null; $kachelHochJs = $null; $kachelHochAbendJs = $null; $kachelDateien = @{}
+    $kachelJs = $null; $kachelAbendJs = $null; $kachelHochJs = $null; $kachelHochAbendJs = $null; $handyJs = $null; $handyAbendJs = $null; $kachelDateien = @{}
     $kachelOrdner = Join-Path $zielOrdner 'bilder\kachel'
     foreach ($pa in $paare) {
       $q = $pa.q
-      $aus = Join-Path $kachelOrdner $q.Name
-      $kachelDateien[$q.Name] = $true
+      $nameAus = if ($pa.aus) { $pa.aus } else { $q.Name }
+      $aus = Join-Path $kachelOrdner $nameAus
+      $kachelDateien[$nameAus] = $true
       if (-not $NurDaten) {
         if (-not (Test-Path -LiteralPath $kachelOrdner)) { New-Item -ItemType Directory -Force $kachelOrdner | Out-Null }
-        if ($Neu -or -not (Test-Path -LiteralPath $aus) -or (Get-Item -LiteralPath $aus).LastWriteTimeUtc -lt $q.LastWriteTimeUtc) {
-          & $FFmpeg -hide_banner -loglevel error -y -i $q.FullName -vf "$($pa.vf):flags=lanczos" -frames:v 1 -update 1 -q:v 4 -map_metadata -1 $aus
-          if ($LASTEXITCODE -ne 0) { throw "ffmpeg-Fehler beim Kachelbild $name $($q.Name)" }
+        $erneuern = $Neu -or -not (Test-Path -LiteralPath $aus) -or (Get-Item -LiteralPath $aus).LastWriteTimeUtc -lt $q.LastWriteTimeUtc
+        if (-not $erneuern -and $pa.hoehe) {      # Handy-Kachel mit anderer Höhe (Einstellung geändert): neu schneiden
+          $vorh = [System.Drawing.Image]::FromFile($aus)
+          try { $erneuern = $vorh.Height -ne $pa.hoehe } finally { $vorh.Dispose() }
+        }
+        if ($erneuern) {
+          $vfVoll = if ($pa.vf -match 'flags=') { $pa.vf } else { "$($pa.vf):flags=lanczos" }
+          & $FFmpeg -hide_banner -loglevel error -y -i $q.FullName -vf $vfVoll -frames:v 1 -update 1 -q:v 4 -map_metadata -1 $aus
+          if ($LASTEXITCODE -ne 0) { throw "ffmpeg-Fehler beim Kachelbild $name $nameAus" }
           $stat.neu++
         }
       }
       if (Test-Path -LiteralPath $aus) {
-        [void]$versionText.Append("kachel\$($q.Name)|$($q.Length)|$($q.LastWriteTimeUtc.Ticks)|$($pa.vf);")
+        [void]$versionText.Append("kachel\$nameAus|$($q.Length)|$($q.LastWriteTimeUtc.Ticks)|$($pa.vf);")
         switch ($pa.js) {
-          'tag' { $kachelJs = 'bilder/kachel/' + $q.Name } 'abend' { $kachelAbendJs = 'bilder/kachel/' + $q.Name }
-          'hochTag' { $kachelHochJs = 'bilder/kachel/' + $q.Name } 'hochAbend' { $kachelHochAbendJs = 'bilder/kachel/' + $q.Name }
+          'tag' { $kachelJs = 'bilder/kachel/' + $nameAus } 'abend' { $kachelAbendJs = 'bilder/kachel/' + $nameAus }
+          'hochTag' { $kachelHochJs = 'bilder/kachel/' + $nameAus } 'hochAbend' { $kachelHochAbendJs = 'bilder/kachel/' + $nameAus }
+          'handyTag' { $handyJs = 'bilder/kachel/' + $nameAus } 'handyAbend' { $handyAbendJs = 'bilder/kachel/' + $nameAus }
         }
       }
     }
@@ -601,6 +635,7 @@ if (-not $OhneProdukte) {
         ', "bilder": ' + (JsListe $hb) + ', "abend": ' + $(if ($mitAbend) { JsListe $ha } else { '[]' }) +
         ",`n        ""moebel"": [" + ($hm -join ', ') + '], "moebelAbend": [' + $(if ($mitAbend) { $hma -join ', ' } else { '' }) + ']' +
         ",`n        ""kachel"": " + (JsText $kachelHochJs) + ', "kachelAbend": ' + (JsText $kachelHochAbendJs) +
+        ",`n        ""handyKachel"": " + (JsText $handyJs) + ', "handyKachelAbend": ' + (JsText $handyAbendJs) + ', "handyAusschnitt": ' + (JsListe $handyAus) +
         ",`n        ""fahrten"": " + $fahrtenJs.fahrtenHoch + ', "fahrtenKlein": ' + $fahrtenJs.fahrtenKleinHoch +
         ",`n        ""fahrtenAbend"": " + $fahrtenJs.fahrtenAbendHoch + ', "fahrtenAbendKlein": ' + $fahrtenJs.fahrtenKleinAbendHoch + ' }'
     } elseif ((@(Wert $p 'fahrten_hoch') | Where-Object { $_ }).Count -or $abendHochPaare.Count) {
@@ -667,6 +702,10 @@ if (-not $OhneProdukte) {
         "   hoch.kachelAusschnitt = 4:3 crop of the portrait Cam1 picture (format_hoch.kachel), hoch.kachelBreit = where the tile`n" +
         "   (4:3 crop of the WIDE Cam1 picture) lies in the portrait Cam1 picture (bildinfo.kachel_breit, may reach outside),`n" +
         "   hoch.brennweite = focal length (mm) per portrait view (bildinfo.brennweite).`n" +
+        "   hoch.kachel / kachelAbend = small copy of the whole portrait Cam1 picture; hoch.handyKachel / handyKachelAbend = the phone`n" +
+        "   tile (Products, phone upright): a full-width crop of that small copy, handyAusschnitt = [x, y, w, h] of the crop in the`n" +
+        "   portrait picture – the same for all products (same scale, wall/floor joint at the same height).`n" +
+        "   handykameras = passed through (field handykameras).`n" +
         "   code = display name (field anzeigename, e.g. OBJ_ST_M_05), kategorie = field typ; typen = the type abbreviations.`n" +
         "   name = internal name (folders, files, URLs). */`n" +
         "window.GAUGE_PRODUKTE = {`n  ""erzeugt"": " + (JsText $zeit) + ",`n" +
@@ -676,6 +715,10 @@ if (-not $OhneProdukte) {
   Melden ("  {0} Produkt(e) → data\produkte.js{1}" -f $zeilen.Count, $(if ($neuGeschrieben) { '' } else { ' (unverändert)' })) 'Green'
   if ($NurDaten) { Melden '  (-NurDaten: keine Dateien kopiert)' 'DarkGray' }
   else { Melden ("  Dateien: {0} neu, {1} ersetzt, {2} unverändert, {3} entfernt" -f $stat.neu, $stat.ersetzt, $stat.gleich, $stat.entfernt) 'Green' }
+  if ($handyLuft.Count) {
+    Melden ("`n  Handy-Kachel (Cam1 hoch, {0:0.###} : 1, Oberkante {1:P1} der Höhe) – Möbel darin:" -f $HandyKachelSeite, $HandyKachelOben) 'Gray'
+    $handyLuft | ForEach-Object { Melden "    $_" 'Gray' }
+  }
   if ($rueckfall.Count) {
     Melden ("`n  Hinweise zu produkte.json ({0}) – Rückfall oder Abweichung:" -f $rueckfall.Count) 'Yellow'
     $rueckfall | ForEach-Object { Melden "    $_" 'Yellow' }

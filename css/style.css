@@ -731,6 +731,8 @@ html.eigener-zeiger .g-seg:hover, html.eigener-zeiger .g-opt:not(.aktiv):hover {
   isolation: isolate;
   outline-offset: 2px;
 }
+/* phone upright: the phone tiles (full-width crops of the portrait pictures, same aspect for all products) */
+.handy-kacheln .kachel { aspect-ratio: var(--kachel-hoch, 0.8); }
 .kachel .ph { position: absolute; inset: 0; border-radius: 0; }
 .kachel { background: var(--ph); }                 /* calm grey surface until the tile has risen */
 .kachel .ph-bild { transition: none; }             /* the image comes with the rising, not with a fade of its own */
@@ -991,15 +993,16 @@ html.eigener-zeiger .g-seg:hover, html.eigener-zeiger .g-opt:not(.aktiv):hover {
   pointer-events: none;
   will-change: transform, clip-path;
 }
-/* phone upright (app.js hochFlug): the window only moves (pure transform); the clip with the corner radius is the
-   element inside it. Picture lies under the whole window all the way – no grey of its own, which would show as a
-   hairline where the window edge is rasterised a pixel wider than its content */
-.flug.flug-hoch { background: transparent; overflow: visible; will-change: transform; }
-.flug-fenster { position: absolute; inset: 0; overflow: hidden; }
-.flug-fenster > .flug-hochbild { display: block; object-fit: cover; max-width: none; }
+/* phone upright (app.js handyFlug): the frame holds ONE picture at the viewer's size (small copy of the whole portrait
+   picture + the tile image on its crop, or the real viewer); transform and clip-path of the frame open the tile crop */
+.flug-inhalt { position: absolute; inset: 0; }
+.flug-inhalt > .flug-hochbild {
+  position: absolute; left: 0; top: 0; width: 100%; height: 100%;
+  display: block; object-fit: cover; max-width: none;
+}
 .flug .ph { position: absolute; inset: 0; border-radius: 0; }
 /* the real viewer on its way home: in the flight frame, then inside its tile (cover) until the move has ended */
-.flug > .viewer, .flug-fenster > .viewer, .kachel > .viewer {
+.flug > .viewer, .flug-inhalt > .viewer, .kachel > .viewer {
   position: absolute; inset: 0;
   width: 100%; height: 100%; aspect-ratio: auto;
   border-radius: 0;
@@ -1013,7 +1016,7 @@ html.eigener-zeiger .g-seg:hover, html.eigener-zeiger .g-opt:not(.aktiv):hover {
 }
 .kachel > .viewer { z-index: 5; pointer-events: none; }
 .kachel > .viewer.heim-raus { opacity: 0; }
-.flug > .viewer .v-laden, .flug-fenster > .viewer .v-laden, .kachel > .viewer .v-laden { display: none; }
+.flug > .viewer .v-laden, .flug-inhalt > .viewer .v-laden, .kachel > .viewer .v-laden { display: none; }
 
 /* ------------------------------------------------------------------
    Phone: the tree becomes a horizontal path line at the bottom

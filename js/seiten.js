@@ -35,17 +35,10 @@
       a.href = '#/' + zielPfad(p);
       a.dataset.id = p.id;
       a.setAttribute('aria-label', p.code);
-      // plain grey placeholder tile – no joint line (side by side it would read as one continuous line)
-      var tag = G.platzhalter({ pfad: G.pfade.kachel(p), text: p.code + ' · View 1' + (p.dummy ? ' · dummy' : ''), klasse: 'k-tag', alt: p.code });
-      a.appendChild(tag);
-      var abend = null;
-      if (p.leuchtmittel) {
-        abend = G.platzhalter({ pfad: G.pfade.kachelAbend(p), text: p.code + ' · View 1 · evening', abend: true, klasse: 'k-abend', alt: p.code + ', evening' });
-        a.appendChild(abend);
-      }
-      // the tile image is the whole wide picture: the tile shows exactly its 4:3 crop
+      // the wide tile image is the whole wide picture: the tile shows exactly its 4:3 crop
       a.style.setProperty('--kpos', G.kachelPosition(p));
-      if (C.vorladen.startbilder) { tag.laden(20); if (abend) abend.laden(20); }
+      var k = { z: z, a: a, p: p, sichtbar: true, anim: [], bilder: {}, format: null };
+      kachelFormat(k, kachelFormatFuer(p), C.vorladen.startbilder ? 20 : 0);
       var oeffnen = function (e) {
         if (e.metaKey || e.ctrlKey || e.shiftKey) return;
         e.preventDefault();
@@ -62,7 +55,50 @@
       n.addEventListener('click', oeffnen);
       z.appendChild(a);
       z.appendChild(n);
-      return { z: z, a: a, name: n, p: p, sichtbar: true, anim: [] };
+      k.name = n;
+      return k;
+    }
+
+    /* ---- tile images: 'breit' = the wide tile (4:3 crop of the wide Cam1 picture, desktop and phone held sideways),
+       'hoch' = the phone tile (phone upright: a full-width crop of the portrait Cam1 picture, the same crop for all
+       products – it opens into the portrait picture by only widening that crop). Turning the phone swaps them. ---- */
+    function kachelFormatFuer(p) { return !p.dummy && G.formatFuer(p) === 'hoch' ? 'hoch' : 'breit'; }
+    function bilderBauen(p, format) {
+      var hoch = format === 'hoch';
+      // plain grey placeholder tile – no joint line (side by side it would read as one continuous line)
+      var tag = G.platzhalter({ pfad: hoch ? G.pfade.handyKachel(p) : G.pfade.kachel(p), text: p.code + ' · View 1' + (p.dummy ? ' · dummy' : ''), klasse: 'k-tag', alt: p.code });
+      var abend = null;
+      if (p.leuchtmittel) abend = G.platzhalter({ pfad: hoch ? G.pfade.handyKachelAbend(p) : G.pfade.kachelAbend(p), text: p.code + ' · View 1 · evening', abend: true, klasse: 'k-abend', alt: p.code + ', evening' });
+      if (hoch) [tag, abend].forEach(function (ph) { if (ph) ph.style.setProperty('--kpos', '50% 50%'); });   // the file is the crop
+      return { tag: tag, abend: abend };
+    }
+    /** Show the tile images of one format (built on first use; prio: load them now). true if it changed. */
+    function kachelFormat(k, format, prio) {
+      if (k.format === format) return false;
+      var alt = k.format && k.bilder[k.format], neu = k.bilder[format] || (k.bilder[format] = bilderBauen(k.p, format));
+      if (alt) [alt.tag, alt.abend].forEach(function (ph) { if (ph && ph.parentNode === k.a) k.a.removeChild(ph); });
+      var vor = k.a.firstChild;
+      k.a.insertBefore(neu.tag, vor);
+      if (neu.abend) k.a.insertBefore(neu.abend, vor);
+      k.format = format;
+      k.a.dataset.format = format;
+      if (prio) {
+        neu.tag.laden(prio); if (neu.abend) neu.abend.laden(prio);
+        // phone tile: the small copy of the whole portrait picture too – the zoom opens the tile on it (also after the
+        // phone was turned upright later, when the start screen had loaded the wide tiles only)
+        if (format === 'hoch') [G.pfade.kachel(k.p, 'hoch'), G.pfade.kachelAbend(k.p, 'hoch')].forEach(function (u) { if (u) G.lader.bild(u, prio); });
+      }
+      return true;
+    }
+    /** Phone turned (or window changed shape): the tiles of the other format; the page rises them again if it shows. */
+    function formatPruefen() {
+      document.documentElement.classList.toggle('handy-kacheln', G.handyKacheln());
+      var anders = false;
+      Object.keys(zellen).forEach(function (id) {
+        var k = zellen[id];
+        if (kachelFormat(k, kachelFormatFuer(k.p), C.vorladen.startbilder || k.sichtbar ? 30 : 0)) anders = true;
+      });
+      if (anders && aktiv) welle();
     }
 
     function spaltenSetzen() {
@@ -219,8 +255,9 @@
         spalte.appendChild(raster);
         spalte.appendChild(leer);
         spaltenSetzen();
+        formatPruefen();
         ordnen(false);
-        window.addEventListener('resize', spaltenSetzen);
+        window.addEventListener('resize', function () { spaltenSetzen(); formatPruefen(); });
       },
       zeigen: function (r, info) {
         aktiv = true;
