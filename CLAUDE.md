@@ -40,8 +40,9 @@ README.md                   ausführliche Beschreibung für den Nutzer (deutsch)
   `Object_NN\bilder\`, `video\`, `video\klein\`.
 - Genutzte Felder von `produkte.json`: `produkt`, `klasse`, `perspektiven`, `abendbilder`, `bilder`,
   `format` (volle Größe 12:5 = 4320 × 1800, Videos 2592 × 1080; Lage von 16:9 `bildschirm` und 4:3 `kachel`), `typ`,
-  `anzeigename`, `abendfahrten`, `bildinfo` (Möbel-Box je Bild), Hochformat `bilder_hoch`, `format_hoch`, `fahrten_hoch`,
-  `abendfahrten_hoch` (ab dem nächsten Renderlauf), `handykameras` (nur durchgereicht). `kacheln` wird nicht mehr gebraucht:
+  `anzeigename`, `abendfahrten`, `bildinfo` (Möbel-Box je Bild; bei `_hoch`-Bildern auch `brennweite` und `kachel_breit` =
+  Lage der Kachel des breiten Cam1-Bilds im Hochformat, ragt seitlich hinaus), Hochformat `bilder_hoch`, `format_hoch`
+  (2400 × 4800), `fahrten_hoch`, `abendfahrten_hoch`, `handykameras` (nur durchgereicht). `kacheln` wird nicht mehr gebraucht:
   Kachelbilder rechnet das Bau-Skript aus dem ganzen Cam1-Standbild (600 px hoch). Nie mit festen Formaten rechnen.
   **`raum_leer` und der Ordner `Raum_leer` nicht verwenden.**
 - Fehlen Felder oder heißen sie anders: Rückfall (z. B. `_Import/produkte-zusatz.json`) und im Bericht melden.
@@ -75,6 +76,9 @@ README.md                   ausführliche Beschreibung für den Nutzer (deutsch)
 - **Produktseite**: Leiste rechts mit Views (nur vorhandene), Lampe (nur Leuchten), Pfeilen. Das Bild füllt den ganzen
   Bildschirm (auch hinter der Leiste), seine Mitte liegt in der Mitte des freien Bereichs. Kachel → Produkt: der 4:3-Ausschnitt
   öffnet sich seitlich zum vollen Bild; zurück: die Fahrt zu Cam1 läuft in der schrumpfenden Kachel weiter.
+- **Handy senkrecht: Hochformat** (volle Breite, oben bündig, Möbel nie unter den Leisten). Zoom Kachel ↔ Hochformat über
+  `kachel_breit` (Rahmen größer als das Hochformat, breites Kachelbild füllt die Seiten, Fenster nie mit leerer Ecke).
+  Handy quer: breites Format. Desktop darf sich durch Hochformat-Änderungen nicht verändern (A/B gegen alten Stand prüfen).
 - Anzeigenamen sind Codes (`OBJ_LT_M_03`), Ordner/Adressen bleiben `Object_NN`.
 - Baum-Modus (`navigation: 'baum'` in config.js) muss umschaltbar und funktionsfähig bleiben.
 
@@ -87,6 +91,15 @@ README.md                   ausführliche Beschreibung für den Nutzer (deutsch)
 - Nichts springt: Bilder erscheinen erst geladen (graue Fläche bis dahin), Kacheln steigen nacheinander auf.
 - Eigener Mauszeiger: kleiner Kreis mit Farbumkehr – so lassen.
 - Textseiten (Bespoke, About Us): Zeilen zentriert, senkrecht mittig zwischen oberem Rand und Leistenoberkante.
+
+## Veröffentlichung (GitHub Pages)
+
+- Repo `burningfireorange-cpu/gauge` (öffentlich), Pages aus `main` / root → https://burningfireorange-cpu.github.io/gauge/
+- Der Nutzer veröffentlicht selbst über **GitHub Desktop** (Git in der Konsole hat keine GitHub-Anmeldung).
+- Seit Runde 9 hat `main` eine **frische Historie** (Repo-Größe). Die alte Historie liegt nur lokal im Zweig
+  `historie-bis-runde-9` und am Tag `vor-hochformat` – **nie pushen** (alte Renderings, ~0,75 GB).
+- Grenzen: Seite/Repo höchstens ca. 1 GB, keine Datei über 100 MB. Vor jedem Hochladen prüfen
+  (`git bundle create x.bundle main` ≈ Upload-Größe). Wird es wieder knapp: erneut frische Historie für `main`.
 
 ## Arbeitsregeln
 

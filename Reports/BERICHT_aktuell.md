@@ -1,114 +1,126 @@
-# Bericht – Runde 8: breite Renderings 12:5, breite Fenster, nie grau, Handy-Fehler, Hochformat vorbereitet (2026-11-03)
+# Bericht – Runde 9: Hochformat fürs Handy, nahtloser Zoom mit `kachel_breit`, Veröffentlichung (2026-11-05)
+
+**Online-Adresse (nach dem Hochladen):** https://burningfireorange-cpu.github.io/gauge/
+Noch **nicht online geprüft**: Du lädst selbst über GitHub Desktop hoch (Schritte siehe Kapitel 3). Sag mir Bescheid, dann prüfe ich die Seite online.
 
 ## 1. Ergebnis in Kürze
 
-- **Die neuen breiten Renderings sind übernommen**, für alle fünf Produkte: Standbilder 4320 × 1800, Fahrten 2592 × 1080 und klein, Abendbilder und Abendfahrten der Lampe (Object_03).
-  - Gerechnet wird immer mit `format` aus `produkte.json`.
-  - Es fehlt keine Datei, alle Felder heißen wie erwartet.
-  - `raum_leer` und `Raum_leer` werden nicht angefasst.
-- **Breite Fenster:**
-  - Das Bild füllt wie bisher den Bildschirm.
-  - Das Möbel wird aber nie mehr angeschnitten: Die Box aus `bildinfo` passt immer in die freie Fläche.
-  - Auf einem normalen Laptopfenster (1536 × 730) ist der Sessel Object_05 mit Füßen ganz zu sehen.
-  - Ultrawide (21:9, 32:9): volle Höhe, seitlich weicher Auslauf in die Hintergrundfarbe.
-- **Nie grau beim Öffnen:** Das Kachelbild ist jetzt das ganze Bild in klein. Beim Klick sind die Seiten sofort gefüllt, das große Bild blendet weich darüber. Cam1 wird schon beim Hover bzw. Antippen geladen.
-- **Handy-Fehler behoben:**
-  - Trennstrich vor den Pfeilen.
-  - Pfeile ← · →.
-  - Kein weißer Blitz nach der Fahrt.
-  - Aktiver Bereich mit Namen.
-  - Langes Drücken zeigt das Namensschild.
-- **Hochformat ist im Code fertig** und mit künstlichen Testdaten geprüft. Solange `bilder_hoch` leer ist, verhält sich die Seite wie bisher.
+- **Hochformat-Renderings übernommen**, für alle fünf Produkte: Standbilder 2400 × 4800, Fahrten, Fahrten klein, die Abendbilder und Abendfahrten der Lampe, `handykameras` und `bildinfo`.
+  - Es fehlt keine Datei. Ein zweiter Lauf des Bau-Skripts meldet „0 neu, 0 ersetzt“.
+  - `raum_leer` wird nicht verwendet.
+- **Handy senkrecht zeigt jetzt das Hochformat:**
+  - Volle Breite, oben bündig, die Leisten liegen unten über dem Boden.
+  - Das Möbel liegt in allen 20 Kombinationen (4 Größen × 5 Produkte) über den Leisten und ist seitlich nie angeschnitten.
+- **Der Zoom Kachel → Vollbild ist nahtlos, obwohl Cam1 im Hochformat 78 mm Brennweite hat.**
+  - Die Lage der Kachel im Hochformat kommt aus `kachel_breit`. Ich habe nachgerechnet: Kachel und Hochformat zeigen pixelgenau dasselbe (PSNR 42 dB).
+  - Beim Öffnen füllt das breite Kachelbild die Seiten, die über das Hochformat hinausragen. Das Fenster schließt sich zuerst seitlich und öffnet sich dann nach oben und unten. So ist nie eine Ecke leer, gemessen in je 21 Zwischenbildern.
+- **Zurück ist ebenso nahtlos**, auch mit einer Fahrt von einer anderen View zu Cam1.
+- **Abendmodus im Hochformat:** Die Abendfahrten im Hochformat laufen, und beim Zurück geht das Licht weich aus (ca. 0,8 s, kein Sprung).
+- **Handy quer** zeigt das breite Format.
+- **Desktop ist unverändert:** Alter und neuer Code liefern mit denselben Bildern pixelgleiche Screenshots und identische Animationen.
+- **Repo:** Für GitHub Pages hat `main` jetzt eine **frische Historie** mit 505 MB statt 739 MB. Die volle Historie bleibt lokal erhalten.
 
 ## 2. Was gemacht wurde (mit Commits)
 
 | Commit | Punkt | Inhalt |
 |---|---|---|
-| `d98e531` | 1 Übernehmen | Bau-Skript gelaufen: 188 Dateien übernommen, zweiter Lauf „0 neu, 0 ersetzt“. Liest jetzt `bildinfo` (Möbel-Box je Bild, `angeschnitten`), `format.video`, die Hochformat-Felder (noch leer) und `handykameras` (nur durchgereicht). |
-| `d952390` | 2 Breite Fenster | Die Lage des Bilds rechnet jetzt `G.buehne()` (kern.js) statt reinem CSS. Erst wird gedeckt wie bisher. Würde eine nicht angeschnittene Möbel-Box aus der freien Fläche ragen, wird verkleinert, und zwar je Produkt einheitlich über alle Views, damit beim Wechsel nichts springt. Kanten im Fenster laufen über eine CSS-Maske weich aus. Neu in config: `viewer.moebelRand` (20 px), `viewer.auslaufen` (10 %), `viewer.auslaufenWechsel`. |
-| `aa08ebf` | 3 Nie grau | Das Bau-Skript rechnet die Kachelbilder aus dem **ganzen** Cam1-Bild (1440 × 600, ~60 KB). Die Kachel zeigt davon den 4:3-Ausschnitt. Der Viewer zeigt es unter Standbild 1, bis das große Bild geladen ist, und der Flug füllt damit sofort die Seiten. Hover bzw. Touchstart auf der Kachel lädt Cam1 sofort. |
-| `dd686cb` | 4a | Feiner Trennstrich zwischen View-Nummern/Lampe und Pfeilen (Handy waagrecht, Desktop senkrecht) |
-| `da213a8` | 4b | Pfeile umgedreht: links ← zurück, rechts → weiter |
-| `fe0de17` | 4c | Weißer Blitz: Das Zielstandbild liegt schon geladen hinter dem laufenden Video, am Ende wird nur das Video ausgeblendet (auch bei Abendfahrten) |
-| `a3ca73d` | 4d | Nur ohne Hover (`@media (hover: none)`): Der aktive Bereich wird weich breiter und zeigt Symbol + Namen. Langes Drücken (450 ms) zeigt das Namensschild, ohne auszulösen. Config: `leiste.aktivName`, `namenWechsel`, `langDruck`, `schildNachLangDruck`. |
-| `c13fea3` | 5 Hochformat | Am Handy senkrecht gilt: volle Breite, oben bündig. Ist das Handy schlanker als 1:2, wird auf volle Höhe vergrößert und seitlich gleichmäßig beschnitten. Die Kachel zoomt nahtlos ins Hochformat. Beim Drehen wird der Viewer getauscht, View und Lampe bleiben erhalten. Das Bau-Skript übernimmt `*_hoch`-Dateien und rechnet Hochformat-Kacheln. Ohne Daten gilt der Rückfall von bisher. Config: `viewer.hochformat`. |
-| `4120512` | 6 Bericht | README (Format, Lage, Kacheln, Hochformat, neue Einstellungen), CLAUDE.md (Felder), Bericht |
+| `75c3aef` + Tag `vor-hochformat` | 0 | Stand vor dem Hochformat markiert (es gab keine offenen Änderungen, deshalb ein leerer Commit). |
+| `ae0a21a` | 1 Übernehmen | Bau-Skript gelaufen: 199 neue Dateien (Hochformat) und 188 ersetzte (Unity hat auch die breiten Fassungen neu gerechnet). Das Skript gibt jetzt zusätzlich `hoch.kachelBreit` (aus `bildinfo.kachel_breit` von Cam1 hoch) und `hoch.brennweite` (je View) weiter. Fehlt `kachel_breit`, greift ein Rückfall mit Hinweis. |
+| `fd2f715` | 2 Handy senkrecht | `G.buehne()`: volle Breite, oben bündig; schlanke Handys werden Richtung volle Höhe vergrößert. Liegt ein Möbel unter den Leisten oder würde es seitlich angeschnitten, wird das Bild kleiner, je Produkt einheitlich und mit weichem Auslauf. Der Flug Kachel → Vollbild bekommt einen Rahmen, der größer ist als das Hochformat. Darin liegt das breite Kachelbild an den Seiten, und das Fenster öffnet sich in zwei Stufen. Zurück: von View 1 derselbe Weg rückwärts. Nach einer anderen View schrumpft das Bild zuerst auf den 4:3-Ausschnitt im Hochformat, dort läuft die Fahrt zu Cam1 weiter. Danach zieht es sich in der Kachel auf den Kachelausschnitt zurück (neu in config: `seite.kachelZurueckziehen`, 480 ms). Das Abendbild der Kachel fliegt im Abendmodus mit. |
+| `a655427` | 3 Testen | Screenshots in `Reports/hochformat/` (siehe unten) |
+| `eb4e482` | 4 Hochladen | `main` neu angelegt, mit frischer Historie (gleicher Inhalt wie `a655427`) |
+| `577ea8b` | 4 Hochladen | Größe geprüft und Entscheidung festgehalten. CLAUDE.md: Abschnitt „Veröffentlichung“. |
+| (dieser) | 5 Bericht | Bericht, README (Hochformat, Zoom, Einstellungen), voriger Bericht nach `Archiv/BERICHT_2026-11-03.md` |
 
-**Getestet** in Edge headless:
+Die Commits `75c3aef` bis `a655427` liegen nach dem Neuanlegen im lokalen Zweig `historie-bis-runde-9`, nicht in `main`.
 
-- **14 Fenstergrößen von 320 × 568 bis 5120 × 1440:** Jede nicht angeschnittene Möbel-Box liegt in der freien Fläche, nirgends ein Rand ohne Bild oder Auslauf.
-- **Öffnen bei gedrosselten 1,5 Mbit:** kein graues Bild.
-- **Fahrten Bild für Bild aufgezeichnet:** 0 Bilder ohne deckende Ebene (Tag und Abend, Desktop und Handy).
-- **Touch-Emulation:** Beschriftung und langes Drücken geprüft.
-- **Hochformat mit künstlichen Daten:** Testkopie im Scratchpad, nie in der Unity-Quelle.
-- **Regression:** Desktop, „Bewegung reduzieren“, Handy und Baum-Modus laufen ohne Fehler.
+**Getestet** in Edge headless (Touch-Emulation, kein Hover) über einen lokalen HTTP-Server:
+
+- **Größen 390 × 780, 390 × 664, 430 × 932, 360 × 640, alle fünf Produkte:**
+  - Zoom Kachel → Vollbild: eingefroren und in 21 Zwischenbildern geprüft. Dabei war jede Stelle ohne Bild magenta eingefärbt, es blieb keine stehen. Das erste Bild entspricht genau der Kachel.
+  - Die Möbel-Regel, View 1, die Nahansicht (letzte View) und beide Wege zurück.
+  - Ergebnis: **291 von 292 Prüfungen grün** (die eine Meldung siehe Kapitel 4).
+- **Gegenprobe:** Mit absichtlich abgeschaltetem Zwei-Stufen-Fenster meldet derselbe Test 6895 freie Pixel. Er erkennt Lücken also wirklich.
+- **Lampe (Object_03):** Die Abendfahrt im Hochformat läuft. Zurück mit Abendfahrt und zurück direkt von View 1 bleiben ohne freie Stelle, und das Licht geht weich aus (größter Sprung je 50 ms: 0,14).
+- **Drehen** hoch → quer → hoch: Format wechselt, View 3 und Lampe bleiben erhalten.
+- **„Bewegung reduzieren“:** kein Flug, nur Blenden, keine Reste.
+- **Baum-Modus:** Desktop und Handy ohne Fehler.
+- **Desktop:** 1536 × 730, 1920 × 1080, 2560 × 1080 und 1366 × 625, je alle fünf Produkte. Verglichen wurde der alte Code (Tag `vor-hochformat`) mit dem neuen, beide mit denselben neuen Bildern:
+  - Produktwand, Zoom-Zwischenbild, View 1 und View 2 sind pixelgleich.
+  - Die Keyframes von Zoom und Rückweg sind identisch.
+- 0 JS-Fehler.
+
+**Screenshots** (`Reports/hochformat/<Größe>/`):
+
+- Je Produkt: `…_view1.jpg`, `…_nah.jpg` (Nahansicht) und `…_zoom.jpg` (Zwischenbild des Kachel-Zooms bei 35 %).
+- Dazu `…_zurueck_view1.jpg` und `…_zurueck_nah.jpg` (Rückweg).
+- Bei 390 × 780 zusätzlich die Lampe: `OBJ_LT_M_03_abend_*.jpg`.
+- Auf einen Blick: `Reports/hochformat/uebersicht_<Größe>.jpg` (Zeilen = Produkte; Spalten = View 1, Nahansicht, Zoom) und `quer_780x390_OBJ_LT_M_03.jpg`.
+
+**Lage im Hochformat** (gemessen, Bildbreite × -höhe in px):
+
+| Größe | Bild | Hinweis |
+|---|---|---|
+| 390 × 780 | 390 × 780 | genau 1:2, alles bildfüllend |
+| 390 × 664 | 390 × 780, unten unter den Leisten beschnitten | **Object_02: 348 × 697**, seitlich weicher Auslauf |
+| 430 × 932 | 466 × 932, seitlich je 18 px beschnitten | **Object_01: 446 × 893**, unten 39 px weicher Auslauf unter den Leisten |
+| 360 × 640 | 360 × 720 | **Object_02: 337 × 675**, seitlich weicher Auslauf |
 
 ## 3. Was du zuerst ausprobieren sollst
 
-1. **Laptop-Fenster, Object_05 (Sessel):** Der Sessel steht mit Füßen ganz im Bild. Dann Views 2 und 3 durchgehen: Die Bildgröße bleibt gleich.
-2. **Fenster sehr breit ziehen (oder Ultrawide-Bildschirm):** Das Bild behält die volle Höhe und läuft seitlich weich aus.
-3. **Products mit leerem Cache** (Strg+F5), dann sofort auf eine Kachel klicken: Die Seiten sind sofort gefüllt, nichts ist grau.
-4. **iPhone, Produktseite:**
-   - Trennstrich und Pfeilrichtung prüfen.
-   - Mehrere Views wechseln und auf einen Blitz am Ende achten.
-   - Die Leiste unten zeigt beim aktiven Bereich den Namen.
-   - Lange auf ein anderes Symbol drücken: Das Schild erscheint, nichts öffnet sich.
+**Zuerst hochladen** (du hattest „selbst hochladen“ gewählt):
+
+1. **GitHub Desktop:** *File → Add local repository…* → `C:\websites\gauge`.
+2. **Publish repository:** Name `gauge`, **„Keep this code private“ abwählen** (GitHub Pages ist bei kostenlosen Konten nur für öffentliche Repos möglich).
+   - Veröffentlicht wird nur der aktuelle Zweig `main` (~0,5 GB, das dauert etwas).
+   - Den Zweig `historie-bis-runde-9` bitte **nicht** veröffentlichen, er enthält die alten Renderings.
+3. **Auf github.com:** *Settings → Pages → Source: Deploy from a branch → `main` / `(root)` → Save*.
+   - Nach 1–2 Minuten ist die Seite unter https://burningfireorange-cpu.github.io/gauge/ erreichbar.
+4. **Sag mir Bescheid:** Ich prüfe dann, ob die Seite online lädt (Bilder, Videos, Hochformat).
+
+**Dann am Handy (senkrecht halten):**
+
+1. **Products → Kachel OBJ_ST_M_05 (Sessel) antippen:** Achte auf den Zoom. Die Kachel öffnet sich ohne Sprung ins Hochformat: erst schließen sich die Seiten, dann wächst das Bild nach oben und unten.
+2. **View 3 (Nahansicht) wählen, dann Products:**
+   - Die Fahrt zu Cam1 läuft im schrumpfenden Bild weiter.
+   - In der Kachel zieht sich das Bild dann ein Stück zurück, und die Seiten der Kachel kommen dazu.
+   - Danach Products direkt von View 1 aus: derselbe Weg wie beim Öffnen, rückwärts.
+3. **OBJ_LT_M_03 (Lampe):** Glühbirne an, View 2 (Abendfahrt im Hochformat), dann Products. Das Licht geht in der Kachel weich aus.
+4. **Handy drehen:** Quer kommt das breite Bild, wieder senkrecht das Hochformat. Die View bleibt.
+5. **OBJ_SH_M_02 (Regal)** auf einem kleineren Handy ansehen (siehe Kapitel 4).
 
 ## 4. Was auffällig ist
 
-- **Object_05 (Sessel), Cam3 hat eine sehr breite Möbel-Box.** Weil die Größe je Produkt einheitlich ist, wird der Sessel in **hohen** Fenstern (z. B. Tablet senkrecht 768 × 1024) in allen Views kleiner gezeigt, mit weichem Auslauf oben und unten. Am Laptop ist das kaum zu merken.
-- **1366 × 625 (kleines Laptopfenster):** Rechts hinter der Leiste bleibt ein schmaler Streifen (20 px), der weich ausläuft, weil das Möbel sonst angeschnitten würde. Er liegt hinter der Leiste und fällt kaum auf.
-- **Handy senkrecht ohne Hochformat-Daten (jetzt):** Hier gilt die Rückfallregel „wie bisher“, also bildfüllend. Das Möbel kann dabei seitlich angeschnitten sein, wie in Runde 7. Das ändert sich mit den Hochformat-Bildern.
-- **Felder:**
-  - Alle Felder heißen wie erwartet; es fehlen keine Dateien.
-  - Einziger Rückfall-Hinweis des Skripts: `bilder_hoch` ist bei allen fünf Produkten leer, deshalb gilt am Handy das breite Bild.
-  - `kacheln` wird nicht mehr gebraucht; die Kachelbilder rechnet das Skript aus dem ganzen Bild.
-  - `format.video` wird nur geprüft.
-  - `handykameras` wird nur durchgereicht, die Seite nutzt es noch nicht.
-- **Echtes iPhone nicht getestet**, nur Emulation (Touch, Größe, kein Hover). Gerade der Blitz (4c) zeigt sich nur auf Safari wirklich.
-- **Repo-Größe:** `.git` 443 MB, `media` 209 MB (vor dieser Runde 235 / 166 MB). Jeder Renderlauf mit neuen Bildern wächst die Historie um die alten Fassungen. Mit Hochformat-Bildern und -Videos kommt noch einmal einiges dazu.
+- **Object_02 (Regal) ist auf kurzen Handys schmaler.**
+  - Bei 390 × 664 und 360 × 640 sind es 348 bzw. 337 px Breite, mit weich auslaufenden Seiten.
+  - Grund: In View 2 steht das Regal so hoch im Bild, dass es sonst unter den Leisten läge. Die Größe ist je Produkt einheitlich (wie am Desktop), deshalb gilt das auch für View 1 und 3.
+- **430 × 932, Object_01:**
+  - Das Bild wird nicht ganz auf volle Höhe vergrößert, sonst wäre der Tisch in View 2 seitlich näher als 20 px am Rand.
+  - Die unteren 39 px laufen deshalb weich aus. Sie liegen ganz unter den Leisten.
+- **Eine Meldung im Test:**
+  - Wo: 360 × 640, Object_02, Rückweg von View 1.
+  - Was: Am oberen und unteren Bildrand erscheint kurz eine Haarlinie unter 1 px (30 Pixel insgesamt). Sie entsteht durch Kantenglättung beim Verkleinern.
+  - In Wirklichkeit ist sie hellgrau statt magenta und kaum zu sehen.
+- **Bei verkleinertem Hochformat** (Object_02 auf kurzen Handys) sieht man im Flug durch die weichen Kanten die Products-Seite. Das entspricht dem Endzustand (Kanten laufen in die Seite aus). Vorher lag dort ein grauer Hintergrund, der am Ende gesprungen wäre.
+- **`bildinfo`:**
+  - Bei Object_03 Cam2 hoch und Object_04 Cam3 hoch ist `kachel_breit` gefüllt, obwohl nur Cam1 eine Kachel hat. Das wird nicht verwendet.
+  - `brennweite` wird nur durchgereicht. Der Zoom braucht nur `kachel_breit`.
+- **`handykameras`** wird weiter nur durchgereicht. Am Handy sind alle Views wählbar.
+- **Größe:**
+  - `media` ist von 209 auf 502 MB gewachsen, vor allem durch die Hochformat-Videos.
+  - Die größte Datei hat 5,1 MB (Grenze 100 MB).
+  - Volle Historie: 739 MB. Frische Historie: 505 MB.
+- **Warum frische Historie:** Die volle Historie wäre mit 0,74 GB knapp unter 1 GB gewesen, und der nächste Renderlauf hätte die Grenze überschritten. Die frische Historie kostet am wenigsten:
+  - Keine Datei geht verloren, die Webseite ist identisch.
+  - Lokal bleibt alles im Zweig `historie-bis-runde-9` und am Tag `vor-hochformat`.
+  - Videos außerhalb von git oder Git LFS wären teurer: LFS-Kontingent, und Pages liefert LFS-Dateien nicht aus.
+- **Nicht getestet:**
+  - Auf einem echten iPhone, nur in der Emulation. Gerade die Kanten beim Zoom und das Drehen bitte am Gerät ansehen.
+  - Online, weil die Seite noch nicht hochgeladen ist.
 
 ## 5. Offene Fragen
 
-1. **Möbel-Regel je View statt je Produkt?** Dann wäre der Sessel in Cam1/Cam2 auch in hohen Fenstern groß, aber das Bild würde beim View-Wechsel die Größe ändern (weich animiert). Im Moment ist es je Produkt einheitlich.
-2. **Handy senkrecht bis zum Renderlauf:** So lassen (bildfüllend, Möbel teils angeschnitten) oder schon jetzt die Möbel-Regel anwenden (Möbel ganz, dann oben und unten Auslauf)?
-3. **Repo-Größe vor GitHub Pages:** GitHub empfiehlt unter 1 GB. Sollen alte Render-Fassungen irgendwann aus der Historie (neues Repo / Squash), oder die Videos außerhalb von git liegen?
-4. Weiter offen aus Runde 7: echte Produktfotos und Galerie-Originale (`_Import/Galerie/`).
-
-## Nachtrag (2026-11-03): Licht geht nach der Abend-Rückfahrt weich aus
-
-**Fehler:** Im Abendmodus der Lampe (Object_03) lief die Abendfahrt zu Cam1 richtig in die Kachel. Danach sprang die Kachel aber in 0,2 s vom Abendbild aufs Tagbild.
-
-**Lösung (Commit `9461ee2`):**
-
-- Am Ende der Abendfahrt übernimmt die Kachel ihr eigenes Abendbild. Es ist eine kleine Kopie desselben Bilds und liegt voll sichtbar unter dem Viewer.
-- Der Viewer blendet hinein, und gleichzeitig geht das Licht in der Kachel weich aus. Dauer und Kurve sind dieselben wie beim Ausschalten mit der Glühbirne (`viewer.lampe`, 1 s).
-- Ist das Abendbild der Kachel ausnahmsweise nicht geladen, geht das Licht zuerst im Viewer aus, dann blendet der Viewer aus.
-- **Unterbrochene Rückfahrt:** Verlässt der Viewer die Kachel, solange er noch Abend zeigt (z. B. schneller Klick, zurück und gleich wieder hin), hält die Kachel ebenfalls das Abendbild und blendet weich aus.
-
-**Gemessen** (Abendanteil des sichtbaren Kachelbilds, alle 50 ms):
-
-| Stand | Übergang Abend → Tag | größter Sprung je 50 ms |
-|---|---|---|
-| vorher | 250 ms | 0,34 |
-| jetzt | ca. 1 s | 0,17 |
-| jetzt, unterbrochene Rückfahrt | ca. 1 s | 0,16 |
-
-**Andere Stellen geprüft:**
-
-- **Browser-Zurück** nimmt denselben Weg wie der Products-Knopf, ist also mitbehoben.
-- **Home-Knopf und andere Bereiche im Abendmodus:** Die Produktseite blendet als Ganzes aus, kein harter Lichtwechsel. Die Lampe bleibt im Viewer gemerkt. Beim nächsten Öffnen aus der Kachel startet er wie die Kachel (Tag), umgestellt wird das, solange er noch unsichtbar ist.
-- **„Bewegung reduzieren“:** Es gibt keine Rückfahrt in die Kachel, nur das Überblenden der Seiten, also keinen Sprung.
-- **View-Wechsel ohne Abendfahrt** und **Lampe aus vor der Rückfahrt:** Diese Wechsel waren schon weich (`viewer.lampeVorFahrt` bzw. 1 s).
-
-**Zum Ausprobieren:** Object_03 öffnen, Glühbirne an, View 2 wählen, dann Products (oder Browser-Zurück). Die Abendfahrt läuft in der Kachel zu Ende, danach geht das Licht über etwa 1 s aus. Steht die Maus dabei auf der Kachel, bleibt sie wie gewohnt im Abendbild (Hover).
-
-## Nach dem nächsten Renderlauf zu tun
-
-1. **`bau\aktualisieren.cmd` ausführen.** Das Skript übernimmt `*_hoch`-Standbilder und -Fahrten (auch klein und webm) und rechnet die Hochformat-Kacheln. Am Ende prüfen, ob „Hochformat: …“ mit Größe und Zahl der Fahrten erscheint.
-2. **Struktur von `format_hoch` prüfen.** Erwartet sind `breite`, `hoehe`, `kachel {x, y, breite, hoehe}`, wie in Kapitel 9 beschrieben. Weicht es ab, das Skript anpassen (Meldung kommt im Bericht).
-3. **`bildinfo` für die `_hoch`-Bilder prüfen:** Daraus kommt der 4:3-Kachelausschnitt im Hochformat und die Möbel-Box.
-4. **Übergang Kachel → Hochformat prüfen:** Die Kachel zeigt den 4:3-Ausschnitt des **breiten** Bilds. Beim Zoom liegt dieser genau auf dem 4:3-Ausschnitt des Hochformats; oben und unten kommt die kleine Hochformat-Kopie, dann das große Standbild. Das ist nur nahtlos, wenn beide Ausschnitte wirklich dasselbe zeigen. Mit der anderen Brennweite des Hochformats an den echten Bildern ansehen.
-5. **Auf dem echten iPhone testen:** Hochformat, Drehen quer ↔ hoch, Abendfahrten der Lampe, Blitz.
-6. **Bei Bedarf** die Möbel-Regel auch im Hochformat anwenden (zurzeit nur: volle Breite oben bündig bzw. volle Höhe).
-7. **`handykameras`:** Klären, ob am Handy nur diese Views gezeigt werden sollen. Im Moment werden sie nur durchgereicht.
+1. **Möbel-Regel je View statt je Produkt?** Dann wäre das Regal (Object_02) in View 1 auch auf kurzen Handys bildfüllend, aber beim Wechsel zu View 2 würde das Bild weich kleiner. Im Moment ist die Größe je Produkt einheitlich.
+2. **`handykameras`:** Sollen am Handy nur diese Views wählbar sein (z. B. Object_03 nur View 3)? Im Moment werden alle gezeigt.
+3. **Alte Historie lokal:** Darf ich den Zweig `historie-bis-runde-9` irgendwann aufräumen (spart lokal ~0,7 GB)? Eilt nicht, er stört nicht.
+4. Weiter offen aus Runde 7/8: echte Produktfotos und Galerie-Originale (`_Import/Galerie/`).

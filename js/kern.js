@@ -361,9 +361,14 @@
   /** Portrait version (phones held upright) – null while it does not exist for every view. */
   function hochDaten(h) {
     if (!h || !h.format || h.format.length !== 2 || !h.format[1] || !(h.bilder || []).length) return null;
+    var kA = anteil(h.format, h.kachelAusschnitt);
     return {
       verhaeltnis: h.format[0] / h.format[1],
-      kachelAusschnitt: anteil(h.format, h.kachelAusschnitt),
+      kachelAusschnitt: kA,         // 4:3 crop INSIDE the portrait Cam1 picture (format_hoch.kachel) – same centre as the tile
+      // where the tile (the 4:3 crop of the WIDE Cam1 picture) lies in the portrait Cam1 picture (bildinfo.kachel_breit):
+      // Cam1 has a longer focal length upright, so the tile reaches out to the sides (shares < 0 or > 1)
+      kachelBreit: anteil(h.format, h.kachelBreit) || kA,
+      brennweite: h.brennweite || [],
       bilder: h.bilder, abend: h.abend || [],
       moebel: moebelListe(h.format, h.moebel), moebelAbend: moebelListe(h.format, h.moebelAbend),
       fahrten: h.fahrten || {}, fahrtenKlein: h.fahrtenKlein || {},
@@ -418,17 +423,24 @@
   /** What the viewer shows of a product: aspect ratio of its box and where the 4:3 tile crop lies in it (shares).
       Glass bar: the full picture (the reserve left/right lets the page move its centre); tree mode: the 16:9 crop. */
   G.anzeige = function (p, format) {
-    if (format === 'hoch' && p.hoch) {        // portrait picture: the whole picture; the tile crop from format_hoch / bildinfo
+    if (format === 'hoch' && p.hoch) {
+      // portrait picture: the whole picture. kachel = where the tile lies in it (kachel_breit, may reach outside),
+      // deckend = the 4:3 crop inside the picture with the same centre (format_hoch.kachel)
       var kh = p.hoch.kachelAusschnitt || { x: 0, y: 750 / 4800, w: 1, h: p.hoch.verhaeltnis * 3 / 4 };
-      return { verhaeltnis: p.hoch.verhaeltnis, kachel: kh };
+      return { verhaeltnis: p.hoch.verhaeltnis, kachel: p.hoch.kachelBreit || kh, deckend: kh };
     }
     var b = (!G.LEISTE && p.bildschirm) || { x: 0, y: 0, w: 1, h: 1 };
     var verh = p.verhaeltnis * b.w / b.h;
-    var k = p.kachelAusschnitt;
-    if (k) return { verhaeltnis: verh, kachel: { x: (k.x - b.x) / b.w, y: (k.y - b.y) / b.h, w: k.w / b.w, h: k.h / b.h } };
-    var kw = verh >= 4 / 3 ? (4 / 3) / verh : 1, kh = verh >= 4 / 3 ? 1 : verh / (4 / 3);   // centred 4:3
-    return { verhaeltnis: verh, kachel: { x: (1 - kw) / 2, y: (1 - kh) / 2, w: kw, h: kh } };
+    var k = p.kachelAusschnitt, kb;
+    if (k) kb = { x: (k.x - b.x) / b.w, y: (k.y - b.y) / b.h, w: k.w / b.w, h: k.h / b.h };
+    else {
+      var kw = verh >= 4 / 3 ? (4 / 3) / verh : 1, kh2 = verh >= 4 / 3 ? 1 : verh / (4 / 3);   // centred 4:3
+      kb = { x: (1 - kw) / 2, y: (1 - kh2) / 2, w: kw, h: kh2 };
+    }
+    return { verhaeltnis: verh, kachel: kb, deckend: kb };
   };
+  /** Does a share rect reach outside the picture (0…1)? */
+  G.ragtHinaus = function (k) { return !!k && (k.x < -0.001 || k.y < -0.001 || k.x + k.w > 1.001 || k.y + k.h > 1.001); };
   /** Where the picture of the product page lies on the screen (glass bar), in px of the window:
       { left, top, width, height, maske: { l, r, t, b } (px of the picture over which an edge fades out), art }.
       W, H = window, fr / fu = the room the bar takes on the right / at the bottom (incl. its edge distance).
@@ -439,15 +451,42 @@
         so nothing jumps between views), its edges then fade out above / below as well.
       Phone upright without portrait pictures (art 'decken'): the wide picture covers the screen as before.
       Portrait picture (art 'hoch', phone upright): full width, top aligned, the bars lie over the floor; on phones
-        slimmer than its aspect ratio it is enlarged to the full height and cropped evenly at the sides (tile centre). */
+        slimmer than its aspect ratio it is enlarged towards the full height and cropped evenly at the sides (tile
+        centre). The furniture box of every view (bildinfo of the _hoch stills, not for close-ups) is never covered by
+        the bars (free area above them, viewer.moebelRand) and never cropped at the sides – if needed the picture gets
+        smaller (the same for all views), still top aligned; edges inside the window fade out softly. */
+  function rand(innen, voll) { return innen > 0.5 ? Math.min(voll, innen * 3) : 0; }
   G.buehne = function (p, format, W, H, fr, fu) {
-    var V = C.viewer, h, w, left, top;
+    var V = C.viewer, h, w, left, top, F = V.auslaufen || 0;
     if (format === 'hoch' && p.hoch) {
       var aH = p.hoch.verhaeltnis, k = p.hoch.kachelAusschnitt, kc = k ? k.x + k.w / 2 : 0.5;
-      w = W; h = W / aH;
-      if (h < H) { h = H; w = H * aH; }
-      left = Math.min(0, Math.max(W - w, W / 2 - kc * w));
-      return { left: left, top: 0, width: w, height: h, maske: { l: 0, r: 0, t: 0, b: 0 }, art: 'hoch' };
+      var mr = V.moebelRand || 0, freiH = H - fu;
+      var boxen = p.hoch.moebel.concat(p.hoch.moebelAbend).filter(function (b) { return b && !b.cut; });
+      var lage = function (w) { return w > W ? Math.min(0, Math.max(W - w, W / 2 - kc * w)) : (W - w) / 2; };
+      var passt = function (w) {
+        var hh = w / aH, l = lage(w);
+        for (var i = 0; i < boxen.length; i++) {
+          var b = boxen[i];
+          if ((b.y + b.h) * hh > freiH - mr + 0.5) return false;                       // under the bars
+          if (w > W + 0.5 && (l + b.x * w < mr - 0.5 || l + (b.x + b.w) * w > W - mr + 0.5)) return false;   // cropped sides
+        }
+        return true;
+      };
+      var groesste = function (a, z) {      // the largest width in [a, z] that fits (a fits)
+        for (var n = 0; n < 24; n++) { var mi = (a + z) / 2; if (passt(mi)) a = mi; else z = mi; }
+        return a;
+      };
+      var wVoll = Math.max(W, H * aH);       // full width – or enlarged to the full height (phone slimmer than the picture)
+      if (passt(wVoll)) w = wVoll;
+      else if (passt(W)) w = groesste(W, wVoll);
+      else {                                  // even full width puts furniture under the bars: smaller
+        w = W;
+        boxen.forEach(function (b) { if (b.y + b.h > 0) w = Math.min(w, (freiH - mr) * aH / (b.y + b.h)); });
+        w = Math.max(w, 40);
+      }
+      h = w / aH; left = lage(w);
+      return { left: left, top: 0, width: w, height: h, art: 'hoch',
+        maske: { l: rand(left, F * w), r: rand(W - left - w, F * w), t: 0, b: rand(H - h, F * h) } };
     }
     var a = p.verhaeltnis, freiW = W - fr, freiH = H - fu, cx = freiW / 2, cy = freiH / 2, art = 'voll';
     h = H + fu; w = h * a;
@@ -467,8 +506,6 @@
     h = w / a;
     left = cx - w / 2; top = cy - h / 2;
     // an edge that lies inside the window fades out softly (the further inside, the wider – up to config viewer.auslaufen)
-    var F = V.auslaufen || 0;
-    function rand(innen, voll) { return innen > 0.5 ? Math.min(voll, innen * 3) : 0; }
     return { left: left, top: top, width: w, height: h, art: art,
       maske: { l: rand(left, F * w), r: rand(W - left - w, F * w), t: rand(top, F * h), b: rand(H - top - h, F * h) } };
   };

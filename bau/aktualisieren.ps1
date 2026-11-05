@@ -457,9 +457,17 @@ if (-not $OhneProdukte) {
         $e1 = $bildinfo[$tagH[$kameras[0]].Name]
         if ($e1 -and (Rechteck (Wert $e1 'kachel'))) { $kachelHoch = Rechteck (Wert $e1 'kachel') }
         if (-not $kachelHoch) { [void]$rueckfall.Add("$name  format_hoch.kachel fehlt → Kachel = volle Breite, 4:3, oben bei 750/4800"); $kh = [int][Math]::Round($formatHoch[0] * 3 / 4); $kachelHoch = @(0, [int][Math]::Round($formatHoch[1] * 750 / 4800), $formatHoch[0], $kh) }
+        # Lage der KACHEL (4:3-Ausschnitt des breiten Cam1-Bilds) im Cam1-Hochformat: bildinfo.kachel_breit – Cam1 hat im
+        # Hochformat eine andere Brennweite, die Kachel ragt dann seitlich über das Hochformat hinaus (negative Werte).
+        # Daraus rechnet die Seite den nahtlosen Zoom Kachel ↔ Hochformat. Fehlt es: Rückfall auf format_hoch.kachel.
+        $kachelBreit = $null
+        if ($e1) { $kachelBreit = Rechteck (Wert $e1 'kachel_breit') }
+        if (-not $kachelBreit) { [void]$rueckfall.Add("$name  bildinfo.kachel_breit für Cam1 hoch fehlt → Kachel = format_hoch.kachel (Zoom nur nahtlos bei gleicher Brennweite)"); $kachelBreit = $kachelHoch }
+        $brennweiten = @()
         $hb = @(); $ha = @(); $hm = @(); $hma = @()
         foreach ($c in $kameras) {
           $f = $tagH[$c]; $bildDateien[$f.Name] = $true; $hb += 'bilder/' + $f.Name; $hm += MoebelJs $f.Name
+          $bw = Wert $bildinfo[$f.Name] 'brennweite'; $brennweiten += $(if ($null -ne $bw) { ([double]$bw).ToString([Globalization.CultureInfo]::InvariantCulture) } else { 'null' })
           Spiegeln $f (Join-Path $zielOrdner ('bilder\' + $f.Name))
           [void]$versionText.Append("$($f.Name)|$($f.Length)|$($f.LastWriteTimeUtc.Ticks);")
           if ($abendH.ContainsKey($c)) {
@@ -589,6 +597,7 @@ if (-not $OhneProdukte) {
       $nH = ([regex]::Matches($fahrtenJs.fahrtenHoch, '"\d+-\d+"')).Count
       if ($nFahrtenHochFeld -and $nFahrtenHochFeld -ne $nH) { [void]$rueckfall.Add("$name  fahrten_hoch nennt $nFahrtenHochFeld Datei(en), gefunden wurden $nH Hochformat-Fahrten") }
       $hochJs = "{ ""format"": " + (JsListe $formatHoch) + ', "kachelAusschnitt": ' + (JsListe $kachelHoch) +
+        ', "kachelBreit": ' + (JsListe $kachelBreit) + ', "brennweite": [' + ($brennweiten -join ', ') + ']' +
         ', "bilder": ' + (JsListe $hb) + ', "abend": ' + $(if ($mitAbend) { JsListe $ha } else { '[]' }) +
         ",`n        ""moebel"": [" + ($hm -join ', ') + '], "moebelAbend": [' + $(if ($mitAbend) { $hma -join ', ' } else { '' }) + ']' +
         ",`n        ""kachel"": " + (JsText $kachelHochJs) + ', "kachelAbend": ' + (JsText $kachelHochAbendJs) +
@@ -655,6 +664,9 @@ if (-not $OhneProdukte) {
         "   never crops; cut = 1: the furniture already touches the picture edge (close-up) – the box is not enforced.`n" +
         "   hoch = the portrait version for phones held upright (fields bilder_hoch, format_hoch, fahrten_hoch, abendfahrten_hoch)`n" +
         "   or null while it does not exist for every view – the phone then shows the wide picture.`n" +
+        "   hoch.kachelAusschnitt = 4:3 crop of the portrait Cam1 picture (format_hoch.kachel), hoch.kachelBreit = where the tile`n" +
+        "   (4:3 crop of the WIDE Cam1 picture) lies in the portrait Cam1 picture (bildinfo.kachel_breit, may reach outside),`n" +
+        "   hoch.brennweite = focal length (mm) per portrait view (bildinfo.brennweite).`n" +
         "   code = display name (field anzeigename, e.g. OBJ_ST_M_05), kategorie = field typ; typen = the type abbreviations.`n" +
         "   name = internal name (folders, files, URLs). */`n" +
         "window.GAUGE_PRODUKTE = {`n  ""erzeugt"": " + (JsText $zeit) + ",`n" +

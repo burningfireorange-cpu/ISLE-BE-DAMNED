@@ -74,7 +74,13 @@ Hinter einem feinen Trenner stehen die Werkzeuge der jeweiligen Seite:
   - **Ultrawide (21:9, 32:9) und zu kleine Bilder:** volle Höhe bleibt, das Bild endet seitlich (oder oben/unten) und läuft weich in die Hintergrundfarbe aus (`viewer.auslaufen`, 10 % der Bildbreite). Nie ein harter Rand.
   - Geprüft von 320 × 568 bis 5120 × 1440. (Baum-Modus: der 16:9-Ausschnitt, mittig.)
 - **Aus der Kachel – nie grau:** Die Kachelbilder sind jetzt das ganze 12:5-Bild in klein (600 px hoch); die Kachel zeigt davon den 4:3-Ausschnitt (`format.kachel`). Beim Klick zoomt sie nahtlos ins Vollbild, und das Bild öffnet sich seitlich – die Seiten sind sofort mit dem bereits geladenen Kachelbild gefüllt. Das große Standbild blendet weich darüber, sobald es geladen ist. Schon beim Überfahren (bzw. Antippen) einer Kachel wird das große Cam1-Bild vorgeladen. Zeigte die Kachel beim Klick gerade das Abendbild (Hover bei Leuchten), öffnet das Produkt mit eingeschalteter Lampe.
-- **Hochformat (vorbereitet, Daten kommen mit dem nächsten Renderlauf):** Am Handy senkrecht werden die Felder `bilder_hoch`, `format_hoch`, `fahrten_hoch`, `abendfahrten_hoch` verwendet (Dateien `…_hoch`): volle Breite, oben bündig, die Leisten liegen unten über dem Boden. Ist das Handy schlanker als 1:2, wird auf volle Höhe vergrößert und seitlich gleichmäßig beschnitten. Die Kachel zoomt genauso nahtlos ins Vollbild. Beim Drehen wechselt die Seite zwischen Hoch- und Breitbild, die View bleibt. Solange die Felder leer sind (jetzt): wie bisher das breite Bild, bildfüllend. Abschalten: `viewer.hochformat: false`.
+- **Hochformat (Handy senkrecht, seit Runde 9):** Am Handy senkrecht zeigt die Seite die Hochformat-Renderings (`bilder_hoch`, `format_hoch` 2400 × 4800, `fahrten_hoch`, `abendfahrten_hoch`, Dateien `…_hoch`):
+  - **Lage:** volle Breite, oben bündig, die Leisten liegen unten über dem Boden. Ist das Handy schlanker als 1:2, wird Richtung volle Höhe vergrößert und seitlich gleichmäßig beschnitten.
+  - **Möbel nie verdeckt:** Die Möbel-Box aus `bildinfo` (der `_hoch`-Bilder, nicht bei Nahansichten) bleibt immer über den Leisten (mit `viewer.moebelRand`) und wird seitlich nie angeschnitten. Passt sie nicht, wird das Bild kleiner – je Produkt einheitlich über alle Views, Kanten laufen weich aus.
+  - **Kachel → Vollbild:** Cam1 hat im Hochformat eine längere Brennweite (78 mm). Die Kachel (4:3-Ausschnitt des **breiten** Bilds) ragt deshalb seitlich über das Hochformat hinaus; ihre Lage im Hochformat steht in `bildinfo.kachel_breit` (auch negative Werte, Bau-Skript → `hoch.kachelBreit`). Beim Zoom liegt das Hochformat genau darauf, das breite Kachelbild füllt die Seiten. Das Fenster schließt sich zuerst seitlich auf das Hochformat und öffnet sich dann nach oben und unten – so ist nie eine Ecke leer.
+  - **Zurück:** Von View 1 derselbe Weg rückwärts. Nach einer anderen View schrumpft das Bild auf den 4:3-Ausschnitt im Hochformat (`format_hoch.kachel`), die Fahrt zu Cam1 läuft darin weiter. Danach zieht sich das Bild in der Kachel auf den Kachelausschnitt zurück, die Seiten der Kachel kommen dazu (`seite.kachelZurueckziehen`), dann blendet es aus.
+  - **Abendmodus:** Abendfahrten im Hochformat; zurück geht das Licht in der Kachel weich aus (wie beim Breitbild).
+  - **Drehen:** Quer gilt das breite Format; View und Lampe bleiben beim Drehen erhalten. Abschalten: `viewer.hochformat: false`.
 - **Zurück zu Products:** Der echte Viewer schrumpft in seine Kachel. War eine andere View als 1 aktiv, startet die Fahrt zurück zu Cam1 sofort in normaler Geschwindigkeit und läuft in der schrumpfenden Kachel weiter, dort als 4:3-Ausschnitt des Videos. Sie endet auf dem Cam1-Standbild, danach blendet der Viewer in das gleiche Kachelbild aus (`viewer.heimAusblenden`). Bei View 1 schrumpft das Bild nur.
 - **View-Wechsel:** Das Standbild blendet in 0,1 s ins erste Videobild, die Fahrt läuft in der richtigen Richtung, und am Ende blendet das letzte Videobild in 0,1 s ins Standbild der Zielkamera. Das Zielstandbild liegt schon während der Fahrt geladen hinter dem Video; am Ende wird nur das Video ausgeblendet (kein heller Blitz auf dem iPhone). Die Leiste zeigt nur die vorhandenen Views (Object_01: 4, die anderen 3).
 - **Fahrt noch nicht geladen:** Das Standbild bleibt stehen, im View-Symbol der Leiste füllt sich ein feiner Ring, danach startet die Fahrt. Wählt man währenddessen eine andere View, wird die wartende Fahrt aufgegeben. Lädt sie gar nicht, wird überblendet.
@@ -144,7 +150,7 @@ Jede Spalte ist eine eigene Endlosfolge mit eigenem Startversatz. So gibt es nir
 
 Die Produkte kommen ausschließlich aus `C:\Unity\website steel furniture\Website_Test\` (nicht aus `Renders\`). Das Skript liest dort nur und ändert nie etwas.
 
-1. In Unity wie bisher exportieren: Eintrag in `produkte.json` (mit `typ`, `anzeigename`, `format`, `bildinfo`, bei Lampen `abendfahrten`, später die Hochformat-Felder), Ordner `Object_XX/bilder/` und `Object_XX/video/` (+ `video/klein/`).
+1. In Unity wie bisher exportieren: Eintrag in `produkte.json` (mit `typ`, `anzeigename`, `format`, `bildinfo`, bei Lampen `abendfahrten`, die Hochformat-Felder), Ordner `Object_XX/bilder/` und `Object_XX/video/` (+ `video/klein/`).
 2. Nur noch als **Rückfall**: In `_Import/produkte-zusatz.json` stehen Maße und – falls `typ` / `anzeigename` in `produkte.json` leer sind – die Kategorie:
    ```json
    "Object_06": { "kategorie": "seating", "masse": "W 500 × D 520 × H 780 mm" }
@@ -157,7 +163,7 @@ Die Produkte kommen ausschließlich aus `C:\Unity\website steel furniture\Websit
 - **Format:** `format` (volle Größe, Lage des 16:9-Ausschnitts `bildschirm` und des 4:3-Ausschnitts `kachel`) → `format`, `bildschirm`, `kachelAusschnitt` in `data/produkte.js`. Passt die Angabe nicht zum Standbild, gilt das Standbild.
 - **Möbelbereich:** aus `bildinfo` je Standbild die Box des Möbels (`moebel`, `angeschnitten`) → `moebel` / `moebelAbend` in `data/produkte.js`. Fehlt sie, gilt das bisherige Verhalten (reines Füllen).
 - **Kachelbilder:** das Skript rechnet selbst eine kleine Kopie des **ganzen** Cam1-Standbilds (bei Lampen auch des Abendbilds) nach `bilder/kachel/` (600 px hoch, ~60 KB, `-KachelHoehe`; Hochformat 600 px breit, `-KachelHochBreite`). Die Kachel zeigt davon den 4:3-Ausschnitt, der Viewer füllt damit sofort die Seiten. Das Feld `kacheln` wird nicht mehr gebraucht.
-- **Hochformat:** `bilder_hoch`, `format_hoch`, `fahrten_hoch`, `abendfahrten_hoch` → `hoch` in `data/produkte.js` (nur wenn jede Kamera ein Hochformat-Standbild hat; sonst `null` und ein Hinweis). `handykameras` wird durchgereicht.
+- **Hochformat:** `bilder_hoch`, `format_hoch`, `fahrten_hoch`, `abendfahrten_hoch` → `hoch` in `data/produkte.js` (nur wenn jede Kamera ein Hochformat-Standbild hat; sonst `null` und ein Hinweis). Aus `bildinfo` des Cam1-Hochformats: `kachel` → `hoch.kachelAusschnitt`, `kachel_breit` → `hoch.kachelBreit` (Lage der Kachel im Hochformat; fehlt es: Rückfall auf `kachel` mit Hinweis), `brennweite` je View → `hoch.brennweite`. `handykameras` wird durchgereicht. `raum_leer` wird nicht verwendet.
 - **Typ und Anzeigename:** aus `typ` und `anzeigename`; leer → Rückfall auf `produkte-zusatz.json`, im Bericht gemeldet.
 - **Abendbilder:** `Still_CamN_abend.jpg` nur bei `"abendbilder": true`.
 - **Fahrten:** alle Fahrten zwischen den vorhandenen Kameras, in beiden Richtungen, als `.mp4` und `.webm`, aus `video/` und `video/klein/`. Bei Lampen zusätzlich die Abendfahrten aus `abendfahrten` (`Move_CamA_CamB_abend`, ebenfalls beide Formate und klein).
@@ -178,7 +184,7 @@ Optionen des Skripts: `-OhneGalerie`, `-OhneProdukte`, `-NurDaten` (nur `data/pr
 |---|---|
 | `bilder/Still_Cam1.jpg` … | Standbild je View, volles Format 12:5 |
 | `bilder/kachel/Still_Cam1.jpg` (+ `Still_Cam1_abend.jpg`) | Kachelbild: kleine Kopie des ganzen Cam1-Standbilds (600 px hoch, vom Skript erzeugt, `-KachelHoehe`) |
-| `bilder/Still_Cam1_hoch.jpg`, `video/Move_Cam1_Cam2_hoch.mp4` … | Hochformat fürs Handy (ab dem nächsten Renderlauf) |
+| `bilder/Still_Cam1_hoch.jpg`, `video/Move_Cam1_Cam2_hoch.mp4` … | Hochformat fürs Handy senkrecht (2400 × 4800, Videos 1440 × 2880) |
 | `bilder/Still_Cam1_abend.jpg` … | Abendbild je View (nur Produkte mit Leuchtmittel) |
 | `bilder/Axonometrie.jpg` | Axonometrie für Customize (noch nicht im Unity-Export: bis dahin Platzhalter, von Hand ablegen möglich) |
 | `video/Move_Cam1_Cam2.mp4` / `.webm` | Fahrt von View 1 nach View 2 |
@@ -224,6 +230,7 @@ Alles steht in **`js/config.js`** (kommentiert). Speichern, Seite neu laden, fer
 | `baum.*` | nur im Baum-Modus |
 | `layout.*` | nur im Baum-Modus (Breite des Inhalts, Rand, Baumbreite) |
 | `seite.kachelZumViewer` | Dauer, mit der die Kachel ins Vollbild zoomt (zurück: 85 % davon) |
+| `seite.kachelZurueckziehen` | Handy senkrecht, zurück nach einer Fahrt: das Hochformat zieht sich in der Kachel auf den Kachelausschnitt zurück |
 | `produkte.raster` | Kacheln pro Reihe je Fensterbreite (5 / 4 / 3 / 2) |
 | `produkte.abstand`, `produkte.abstandHandy` | Abstand zwischen den Kacheln |
 | `produkte.umsortieren`, `produkte.einAusblenden` | Kacheln gleiten an neue Plätze / blenden ein und aus |
@@ -239,7 +246,7 @@ Alles steht in **`js/config.js`** (kommentiert). Speichern, Seite neu laden, fer
 | `viewer.ringVoll` | Fahrt war noch nicht geladen: so lange steht der volle Ring, dann startet die Fahrt |
 | `viewer.moebelRand` | Mindestabstand des Möbels (Box aus `bildinfo`) zum Rand der freien Fläche |
 | `viewer.auslaufen`, `viewer.auslaufenWechsel` | weicher Auslauf der Bildkanten in die Hintergrundfarbe (Anteil der Bildbreite), Dauer beim Ändern |
-| `viewer.hochformat` | am Handy senkrecht die Hochformat-Bilder verwenden, sobald es sie gibt |
+| `viewer.hochformat` | am Handy senkrecht die Hochformat-Bilder verwenden (`false` = immer das breite Bild) |
 | `galerie.spalten` | Spalten je Fensterbreite (5 / 4 / 3 / 2) |
 | `galerie.fugenAbstand` | Spaltenkanten näher als dieser Abstand gelten als „gleiche Höhe“ und werden vermieden |
 | `vorladen.*` | Vorladen: Kachel- und Galeriebilder im Ladebalken, danach Standbilder und Fahrten im Hintergrund, beim Hover |

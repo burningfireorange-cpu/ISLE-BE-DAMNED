@@ -128,6 +128,9 @@ window.GAUGE_CONFIG = {
   seite: {
     wechsel: 320,                  // crossfade between pages
     kachelZumViewer: 560,          // tile zooms seamlessly into the viewer (shared element)
+    kachelZurueckziehen: 480,      // phone upright, back to the wall after a move: the portrait picture draws back inside
+                                   //   the tile onto the tile crop, the sides of the tile come in (Cam1 upright has a
+                                   //   longer focal length – the tile reaches beyond the portrait picture)
     filter: 260                    // (tree mode) products: filter change
   },
 

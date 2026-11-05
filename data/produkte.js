@@ -13,14 +13,17 @@
    never crops; cut = 1: the furniture already touches the picture edge (close-up) – the box is not enforced.
    hoch = the portrait version for phones held upright (fields bilder_hoch, format_hoch, fahrten_hoch, abendfahrten_hoch)
    or null while it does not exist for every view – the phone then shows the wide picture.
+   hoch.kachelAusschnitt = 4:3 crop of the portrait Cam1 picture (format_hoch.kachel), hoch.kachelBreit = where the tile
+   (4:3 crop of the WIDE Cam1 picture) lies in the portrait Cam1 picture (bildinfo.kachel_breit, may reach outside),
+   hoch.brennweite = focal length (mm) per portrait view (bildinfo.brennweite).
    code = display name (field anzeigename, e.g. OBJ_ST_M_05), kategorie = field typ; typen = the type abbreviations.
    name = internal name (folders, files, URLs). */
 window.GAUGE_PRODUKTE = {
-  "erzeugt": "2026-11-03 09:53",
+  "erzeugt": "2026-11-04 23:44",
   "typen": {"tables": "TB", "seating": "ST", "storage": "SH", "lighting": "LT"},
   "produkte": [
     { "name": "Object_01", "code": "OBJ_TB_M_01", "nummer": 1, "kategorie": "tables", "klasse": "M", "views": 4, "leuchtmittel": false, "masse": "L 1800 × D 700 × H 740 mm (placeholder)",
-      "ordner": "media/produkte/Object_01/", "version": "d5fcdd78", "kameras": [1, 2, 3, 4], "axo": null,
+      "ordner": "media/produkte/Object_01/", "version": "e872bd50", "kameras": [1, 2, 3, 4], "axo": null,
       "format": [4320, 1800], "bildschirm": [560, 0, 3200, 1800], "kachelAusschnitt": [960, 0, 2400, 1800],
       "kachel": "bilder/kachel/Still_Cam1.jpg", "kachelAbend": null, "kachelVoll": true,
       "bilder": ["bilder/Still_Cam1.jpg", "bilder/Still_Cam2.jpg", "bilder/Still_Cam3.jpg", "bilder/Still_Cam4.jpg"],
@@ -33,9 +36,13 @@ window.GAUGE_PRODUKTE = {
       "fahrtenAbend": {},
       "fahrtenAbendKlein": {},
       "handykameras": [2, 3, 4],
-      "hoch": null },
+      "hoch": { "format": [2400, 4800], "kachelAusschnitt": [0, 750, 2400, 1800], "kachelBreit": [-672, 246, 3744, 2808], "brennweite": [78, 65, 90, 80], "bilder": ["bilder/Still_Cam1_hoch.jpg", "bilder/Still_Cam2_hoch.jpg", "bilder/Still_Cam3_hoch.jpg", "bilder/Still_Cam4_hoch.jpg"], "abend": [],
+        "moebel": [[175, 1906, 2050, 810, 0], [149, 1616, 2024, 1363, 0], [353, 372, 2047, 4428, 1], [0, 746, 2400, 4054, 1]], "moebelAbend": [],
+        "kachel": "bilder/kachel/Still_Cam1_hoch.jpg", "kachelAbend": null,
+        "fahrten": {"1-2": ["webm", "mp4"], "1-3": ["webm", "mp4"], "1-4": ["webm", "mp4"], "2-1": ["webm", "mp4"], "2-3": ["webm", "mp4"], "2-4": ["webm", "mp4"], "3-1": ["webm", "mp4"], "3-2": ["webm", "mp4"], "3-4": ["webm", "mp4"], "4-1": ["webm", "mp4"], "4-2": ["webm", "mp4"], "4-3": ["webm", "mp4"]}, "fahrtenKlein": {"1-2": ["webm", "mp4"], "1-3": ["webm", "mp4"], "1-4": ["webm", "mp4"], "2-1": ["webm", "mp4"], "2-3": ["webm", "mp4"], "2-4": ["webm", "mp4"], "3-1": ["webm", "mp4"], "3-2": ["webm", "mp4"], "3-4": ["webm", "mp4"], "4-1": ["webm", "mp4"], "4-2": ["webm", "mp4"], "4-3": ["webm", "mp4"]},
+        "fahrtenAbend": {}, "fahrtenAbendKlein": {} } },
     { "name": "Object_02", "code": "OBJ_SH_M_02", "nummer": 2, "kategorie": "storage", "klasse": "M", "views": 3, "leuchtmittel": false, "masse": "W 900 × D 400 × H 1200 mm (placeholder)",
-      "ordner": "media/produkte/Object_02/", "version": "4a3375d7", "kameras": [1, 2, 3], "axo": null,
+      "ordner": "media/produkte/Object_02/", "version": "5f653a11", "kameras": [1, 2, 3], "axo": null,
       "format": [4320, 1800], "bildschirm": [560, 0, 3200, 1800], "kachelAusschnitt": [960, 0, 2400, 1800],
       "kachel": "bilder/kachel/Still_Cam1.jpg", "kachelAbend": null, "kachelVoll": true,
       "bilder": ["bilder/Still_Cam1.jpg", "bilder/Still_Cam2.jpg", "bilder/Still_Cam3.jpg"],
@@ -48,9 +55,13 @@ window.GAUGE_PRODUKTE = {
       "fahrtenAbend": {},
       "fahrtenAbendKlein": {},
       "handykameras": [2, 3],
-      "hoch": null },
+      "hoch": { "format": [2400, 4800], "kachelAusschnitt": [0, 750, 2400, 1800], "kachelBreit": [-672, 246, 3744, 2808], "brennweite": [78, 50, 85], "bilder": ["bilder/Still_Cam1_hoch.jpg", "bilder/Still_Cam2_hoch.jpg", "bilder/Still_Cam3_hoch.jpg"], "abend": [],
+        "moebel": [[490, 1195, 1420, 1450, 0], [332, 927, 1709, 2572, 0], [0, 533, 2104, 4267, 1]], "moebelAbend": [],
+        "kachel": "bilder/kachel/Still_Cam1_hoch.jpg", "kachelAbend": null,
+        "fahrten": {"1-2": ["webm", "mp4"], "1-3": ["webm", "mp4"], "2-1": ["webm", "mp4"], "2-3": ["webm", "mp4"], "3-1": ["webm", "mp4"], "3-2": ["webm", "mp4"]}, "fahrtenKlein": {"1-2": ["webm", "mp4"], "1-3": ["webm", "mp4"], "2-1": ["webm", "mp4"], "2-3": ["webm", "mp4"], "3-1": ["webm", "mp4"], "3-2": ["webm", "mp4"]},
+        "fahrtenAbend": {}, "fahrtenAbendKlein": {} } },
     { "name": "Object_03", "code": "OBJ_LT_M_03", "nummer": 3, "kategorie": "lighting", "klasse": "M", "views": 3, "leuchtmittel": true, "masse": "Ø 120 × H 1700 mm (placeholder)",
-      "ordner": "media/produkte/Object_03/", "version": "8b60179c", "kameras": [1, 2, 3], "axo": null,
+      "ordner": "media/produkte/Object_03/", "version": "38d18505", "kameras": [1, 2, 3], "axo": null,
       "format": [4320, 1800], "bildschirm": [560, 0, 3200, 1800], "kachelAusschnitt": [960, 0, 2400, 1800],
       "kachel": "bilder/kachel/Still_Cam1.jpg", "kachelAbend": "bilder/kachel/Still_Cam1_abend.jpg", "kachelVoll": true,
       "bilder": ["bilder/Still_Cam1.jpg", "bilder/Still_Cam2.jpg", "bilder/Still_Cam3.jpg"],
@@ -63,9 +74,13 @@ window.GAUGE_PRODUKTE = {
       "fahrtenAbend": {"1-2": ["webm", "mp4"], "1-3": ["webm", "mp4"], "2-1": ["webm", "mp4"], "2-3": ["webm", "mp4"], "3-1": ["webm", "mp4"], "3-2": ["webm", "mp4"]},
       "fahrtenAbendKlein": {"1-2": ["webm", "mp4"], "1-3": ["webm", "mp4"], "2-1": ["webm", "mp4"], "2-3": ["webm", "mp4"], "3-1": ["webm", "mp4"], "3-2": ["webm", "mp4"]},
       "handykameras": [3],
-      "hoch": null },
+      "hoch": { "format": [2400, 4800], "kachelAusschnitt": [0, 750, 2400, 1800], "kachelBreit": [-672, 246, 3744, 2808], "brennweite": [78, 85, 85], "bilder": ["bilder/Still_Cam1_hoch.jpg", "bilder/Still_Cam2_hoch.jpg", "bilder/Still_Cam3_hoch.jpg"], "abend": ["bilder/Still_Cam1_abend_hoch.jpg", "bilder/Still_Cam2_abend_hoch.jpg", "bilder/Still_Cam3_abend_hoch.jpg"],
+        "moebel": [[1144, 663, 113, 2078, 0], [969, 1484, 419, 3316, 1], [843, 0, 696, 3598, 1]], "moebelAbend": [[1144, 663, 113, 2078, 0], [969, 1484, 419, 3316, 1], [843, 0, 696, 3598, 1]],
+        "kachel": "bilder/kachel/Still_Cam1_hoch.jpg", "kachelAbend": "bilder/kachel/Still_Cam1_abend_hoch.jpg",
+        "fahrten": {"1-2": ["webm", "mp4"], "1-3": ["webm", "mp4"], "2-1": ["webm", "mp4"], "2-3": ["webm", "mp4"], "3-1": ["webm", "mp4"], "3-2": ["webm", "mp4"]}, "fahrtenKlein": {"1-2": ["webm", "mp4"], "1-3": ["webm", "mp4"], "2-1": ["webm", "mp4"], "2-3": ["webm", "mp4"], "3-1": ["webm", "mp4"], "3-2": ["webm", "mp4"]},
+        "fahrtenAbend": {"1-2": ["webm", "mp4"], "1-3": ["webm", "mp4"], "2-1": ["webm", "mp4"], "2-3": ["webm", "mp4"], "3-1": ["webm", "mp4"], "3-2": ["webm", "mp4"]}, "fahrtenAbendKlein": {"1-2": ["webm", "mp4"], "1-3": ["webm", "mp4"], "2-1": ["webm", "mp4"], "2-3": ["webm", "mp4"], "3-1": ["webm", "mp4"], "3-2": ["webm", "mp4"]} } },
     { "name": "Object_04", "code": "OBJ_SH_M_04", "nummer": 4, "kategorie": "storage", "klasse": "M", "views": 3, "leuchtmittel": false, "masse": null,
-      "ordner": "media/produkte/Object_04/", "version": "fdd54e58", "kameras": [1, 2, 3], "axo": null,
+      "ordner": "media/produkte/Object_04/", "version": "c05f9be2", "kameras": [1, 2, 3], "axo": null,
       "format": [4320, 1800], "bildschirm": [560, 0, 3200, 1800], "kachelAusschnitt": [960, 0, 2400, 1800],
       "kachel": "bilder/kachel/Still_Cam1.jpg", "kachelAbend": null, "kachelVoll": true,
       "bilder": ["bilder/Still_Cam1.jpg", "bilder/Still_Cam2.jpg", "bilder/Still_Cam3.jpg"],
@@ -78,9 +93,13 @@ window.GAUGE_PRODUKTE = {
       "fahrtenAbend": {},
       "fahrtenAbendKlein": {},
       "handykameras": [2],
-      "hoch": null },
+      "hoch": { "format": [2400, 4800], "kachelAusschnitt": [0, 750, 2400, 1800], "kachelBreit": [-672, 246, 3744, 2808], "brennweite": [78, 50, 85], "bilder": ["bilder/Still_Cam1_hoch.jpg", "bilder/Still_Cam2_hoch.jpg", "bilder/Still_Cam3_hoch.jpg"], "abend": [],
+        "moebel": [[284, 1484, 1832, 430, 0], [304, 1399, 1709, 602, 0], [445, 1380, 1955, 1710, 1]], "moebelAbend": [],
+        "kachel": "bilder/kachel/Still_Cam1_hoch.jpg", "kachelAbend": null,
+        "fahrten": {"1-2": ["webm", "mp4"], "1-3": ["webm", "mp4"], "2-1": ["webm", "mp4"], "2-3": ["webm", "mp4"], "3-1": ["webm", "mp4"], "3-2": ["webm", "mp4"]}, "fahrtenKlein": {"1-2": ["webm", "mp4"], "1-3": ["webm", "mp4"], "2-1": ["webm", "mp4"], "2-3": ["webm", "mp4"], "3-1": ["webm", "mp4"], "3-2": ["webm", "mp4"]},
+        "fahrtenAbend": {}, "fahrtenAbendKlein": {} } },
     { "name": "Object_05", "code": "OBJ_ST_M_05", "nummer": 5, "kategorie": "seating", "klasse": "M", "views": 3, "leuchtmittel": false, "masse": null,
-      "ordner": "media/produkte/Object_05/", "version": "c98486ec", "kameras": [1, 2, 3], "axo": null,
+      "ordner": "media/produkte/Object_05/", "version": "d2038c77", "kameras": [1, 2, 3], "axo": null,
       "format": [4320, 1800], "bildschirm": [560, 0, 3200, 1800], "kachelAusschnitt": [960, 0, 2400, 1800],
       "kachel": "bilder/kachel/Still_Cam1.jpg", "kachelAbend": null, "kachelVoll": true,
       "bilder": ["bilder/Still_Cam1.jpg", "bilder/Still_Cam2.jpg", "bilder/Still_Cam3.jpg"],
@@ -93,6 +112,10 @@ window.GAUGE_PRODUKTE = {
       "fahrtenAbend": {},
       "fahrtenAbendKlein": {},
       "handykameras": [2, 3],
-      "hoch": null }
+      "hoch": { "format": [2400, 4800], "kachelAusschnitt": [0, 750, 2400, 1800], "kachelBreit": [-672, 246, 3744, 2808], "brennweite": [78, 50, 85], "bilder": ["bilder/Still_Cam1_hoch.jpg", "bilder/Still_Cam2_hoch.jpg", "bilder/Still_Cam3_hoch.jpg"], "abend": [],
+        "moebel": [[599, 1938, 1228, 930, 0], [455, 1706, 1546, 1406, 0], [0, 949, 1907, 1891, 1]], "moebelAbend": [],
+        "kachel": "bilder/kachel/Still_Cam1_hoch.jpg", "kachelAbend": null,
+        "fahrten": {"1-2": ["webm", "mp4"], "1-3": ["webm", "mp4"], "2-1": ["webm", "mp4"], "2-3": ["webm", "mp4"], "3-1": ["webm", "mp4"], "3-2": ["webm", "mp4"]}, "fahrtenKlein": {"1-2": ["webm", "mp4"], "1-3": ["webm", "mp4"], "2-1": ["webm", "mp4"], "2-3": ["webm", "mp4"], "3-1": ["webm", "mp4"], "3-2": ["webm", "mp4"]},
+        "fahrtenAbend": {}, "fahrtenAbendKlein": {} } }
   ]
 };

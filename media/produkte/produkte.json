@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "raum_leer": { "klasse": "M", "bild": "Raum_leer/bilder/Still_Raum_M.jpg", "kachel": "Raum_leer/bilder/Still_Raum_M_kachel.jpg", "format": { "breite": 4320, "hoehe": 1800, "bildschirm": { "x": 560, "y": 0, "breite": 3200, "hoehe": 1800 }, "kachel": { "x": 960, "y": 0, "breite": 2400, "hoehe": 1800 } }, "bild_hoch": null, "format_hoch": null },
+  "raum_leer": { "klasse": "M", "bild": "Raum_leer/bilder/Still_Raum_M.jpg", "kachel": "Raum_leer/bilder/Still_Raum_M_kachel.jpg", "format": { "breite": 4320, "hoehe": 1800, "bildschirm": { "x": 560, "y": 0, "breite": 3200, "hoehe": 1800 }, "kachel": { "x": 960, "y": 0, "breite": 2400, "hoehe": 1800 } }, "bild_hoch": "Raum_leer/bilder/Still_Raum_M_hoch.jpg", "format_hoch": { "breite": 2400, "hoehe": 4800, "kachel": { "x": 0, "y": 750, "breite": 2400, "hoehe": 1800 } }, "brennweite_hoch": 78, "kachel_breit_hoch": { "x": -672, "y": 246, "breite": 3744, "hoehe": 2808 } },
   "produkte": [
     {
       "produkt": "Object_01",
@@ -13,15 +13,19 @@
       "typ": "Tables",
       "anzeigename": "OBJ_TB_M_01",
       "abendfahrten": [],
-      "bilder_hoch": [],
-      "format_hoch": null,
-      "fahrten_hoch": [],
+      "bilder_hoch": ["Object_01/bilder/Still_Cam1_hoch.jpg", "Object_01/bilder/Still_Cam2_hoch.jpg", "Object_01/bilder/Still_Cam3_hoch.jpg", "Object_01/bilder/Still_Cam4_hoch.jpg"],
+      "format_hoch": { "breite": 2400, "hoehe": 4800, "kachel": { "x": 0, "y": 750, "breite": 2400, "hoehe": 1800 }, "video": { "breite": 1440, "hoehe": 2880, "kachel": { "x": 0, "y": 450, "breite": 1440, "hoehe": 1080 } } },
+      "fahrten_hoch": ["Object_01/video/Move_Cam1_Cam2_hoch.mp4", "Object_01/video/Move_Cam1_Cam3_hoch.mp4", "Object_01/video/Move_Cam1_Cam4_hoch.mp4", "Object_01/video/Move_Cam2_Cam1_hoch.mp4", "Object_01/video/Move_Cam2_Cam3_hoch.mp4", "Object_01/video/Move_Cam2_Cam4_hoch.mp4", "Object_01/video/Move_Cam3_Cam1_hoch.mp4", "Object_01/video/Move_Cam3_Cam2_hoch.mp4", "Object_01/video/Move_Cam3_Cam4_hoch.mp4", "Object_01/video/Move_Cam4_Cam1_hoch.mp4", "Object_01/video/Move_Cam4_Cam2_hoch.mp4", "Object_01/video/Move_Cam4_Cam3_hoch.mp4"],
       "abendfahrten_hoch": [],
       "bildinfo": [
-        { "bild": "Object_01/bilder/Still_Cam1.jpg", "format": "breit", "breite": 4320, "hoehe": 1800, "kachel": { "x": 960, "y": 0, "breite": 2400, "hoehe": 1800 }, "moebel": { "x": 1503, "y": 1064, "breite": 1314, "hoehe": 520 }, "angeschnitten": false },
-        { "bild": "Object_01/bilder/Still_Cam2.jpg", "format": "breit", "breite": 4320, "hoehe": 1800, "kachel": { "x": 960, "y": 0, "breite": 2400, "hoehe": 1800 }, "moebel": { "x": 1180, "y": 372, "breite": 1903, "hoehe": 1256 }, "angeschnitten": false },
-        { "bild": "Object_01/bilder/Still_Cam3.jpg", "format": "breit", "breite": 4320, "hoehe": 1800, "kachel": { "x": 960, "y": 0, "breite": 2400, "hoehe": 1800 }, "moebel": { "x": 1479, "y": 0, "breite": 2841, "hoehe": 1800 }, "angeschnitten": true },
-        { "bild": "Object_01/bilder/Still_Cam4.jpg", "format": "breit", "breite": 4320, "hoehe": 1800, "kachel": { "x": 960, "y": 0, "breite": 2400, "hoehe": 1800 }, "moebel": { "x": 0, "y": 0, "breite": 4320, "hoehe": 1800 }, "angeschnitten": true }
+        { "bild": "Object_01/bilder/Still_Cam1.jpg", "format": "breit", "breite": 4320, "hoehe": 1800, "kachel": { "x": 960, "y": 0, "breite": 2400, "hoehe": 1800 }, "moebel": { "x": 1503, "y": 1064, "breite": 1314, "hoehe": 520 }, "angeschnitten": false, "brennweite": null, "kachel_breit": { "x": 960, "y": 0, "breite": 2400, "hoehe": 1800 } },
+        { "bild": "Object_01/bilder/Still_Cam2.jpg", "format": "breit", "breite": 4320, "hoehe": 1800, "kachel": { "x": 960, "y": 0, "breite": 2400, "hoehe": 1800 }, "moebel": { "x": 1180, "y": 372, "breite": 1903, "hoehe": 1256 }, "angeschnitten": false, "brennweite": null, "kachel_breit": { "x": 960, "y": 0, "breite": 2400, "hoehe": 1800 } },
+        { "bild": "Object_01/bilder/Still_Cam3.jpg", "format": "breit", "breite": 4320, "hoehe": 1800, "kachel": { "x": 960, "y": 0, "breite": 2400, "hoehe": 1800 }, "moebel": { "x": 1479, "y": 0, "breite": 2841, "hoehe": 1800 }, "angeschnitten": true, "brennweite": null, "kachel_breit": { "x": 960, "y": 0, "breite": 2400, "hoehe": 1800 } },
+        { "bild": "Object_01/bilder/Still_Cam4.jpg", "format": "breit", "breite": 4320, "hoehe": 1800, "kachel": { "x": 960, "y": 0, "breite": 2400, "hoehe": 1800 }, "moebel": { "x": 0, "y": 0, "breite": 4320, "hoehe": 1800 }, "angeschnitten": true, "brennweite": null, "kachel_breit": { "x": 960, "y": 0, "breite": 2400, "hoehe": 1800 } },
+        { "bild": "Object_01/bilder/Still_Cam1_hoch.jpg", "format": "hoch", "breite": 2400, "hoehe": 4800, "kachel": { "x": 0, "y": 750, "breite": 2400, "hoehe": 1800 }, "moebel": { "x": 175, "y": 1906, "breite": 2050, "hoehe": 810 }, "angeschnitten": false, "brennweite": 78, "kachel_breit": { "x": -672, "y": 246, "breite": 3744, "hoehe": 2808 } },
+        { "bild": "Object_01/bilder/Still_Cam2_hoch.jpg", "format": "hoch", "breite": 2400, "hoehe": 4800, "kachel": { "x": 0, "y": 750, "breite": 2400, "hoehe": 1800 }, "moebel": { "x": 149, "y": 1616, "breite": 2024, "hoehe": 1363 }, "angeschnitten": false, "brennweite": 65, "kachel_breit": null },
+        { "bild": "Object_01/bilder/Still_Cam3_hoch.jpg", "format": "hoch", "breite": 2400, "hoehe": 4800, "kachel": { "x": 0, "y": 750, "breite": 2400, "hoehe": 1800 }, "moebel": { "x": 353, "y": 372, "breite": 2047, "hoehe": 4428 }, "angeschnitten": true, "brennweite": 90, "kachel_breit": null },
+        { "bild": "Object_01/bilder/Still_Cam4_hoch.jpg", "format": "hoch", "breite": 2400, "hoehe": 4800, "kachel": { "x": 0, "y": 750, "breite": 2400, "hoehe": 1800 }, "moebel": { "x": 0, "y": 746, "breite": 2400, "hoehe": 4054 }, "angeschnitten": true, "brennweite": 80, "kachel_breit": null }
       ],
       "handykameras": [2, 3, 4]
     },
@@ -36,14 +40,17 @@
       "typ": "Storage",
       "anzeigename": "OBJ_SH_M_02",
       "abendfahrten": [],
-      "bilder_hoch": [],
-      "format_hoch": null,
-      "fahrten_hoch": [],
+      "bilder_hoch": ["Object_02/bilder/Still_Cam1_hoch.jpg", "Object_02/bilder/Still_Cam2_hoch.jpg", "Object_02/bilder/Still_Cam3_hoch.jpg"],
+      "format_hoch": { "breite": 2400, "hoehe": 4800, "kachel": { "x": 0, "y": 750, "breite": 2400, "hoehe": 1800 }, "video": { "breite": 1440, "hoehe": 2880, "kachel": { "x": 0, "y": 450, "breite": 1440, "hoehe": 1080 } } },
+      "fahrten_hoch": ["Object_02/video/Move_Cam1_Cam2_hoch.mp4", "Object_02/video/Move_Cam1_Cam3_hoch.mp4", "Object_02/video/Move_Cam2_Cam1_hoch.mp4", "Object_02/video/Move_Cam2_Cam3_hoch.mp4", "Object_02/video/Move_Cam3_Cam1_hoch.mp4", "Object_02/video/Move_Cam3_Cam2_hoch.mp4"],
       "abendfahrten_hoch": [],
       "bildinfo": [
-        { "bild": "Object_02/bilder/Still_Cam1.jpg", "format": "breit", "breite": 4320, "hoehe": 1800, "kachel": { "x": 960, "y": 0, "breite": 2400, "hoehe": 1800 }, "moebel": { "x": 1704, "y": 608, "breite": 912, "hoehe": 930 }, "angeschnitten": false },
-        { "bild": "Object_02/bilder/Still_Cam2.jpg", "format": "breit", "breite": 4320, "hoehe": 1800, "kachel": { "x": 960, "y": 0, "breite": 2400, "hoehe": 1800 }, "moebel": { "x": 1650, "y": 135, "breite": 1148, "hoehe": 1603 }, "angeschnitten": false },
-        { "bild": "Object_02/bilder/Still_Cam3.jpg", "format": "breit", "breite": 4320, "hoehe": 1800, "kachel": { "x": 960, "y": 0, "breite": 2400, "hoehe": 1800 }, "moebel": { "x": 0, "y": 307, "breite": 3229, "hoehe": 1493 }, "angeschnitten": true }
+        { "bild": "Object_02/bilder/Still_Cam1.jpg", "format": "breit", "breite": 4320, "hoehe": 1800, "kachel": { "x": 960, "y": 0, "breite": 2400, "hoehe": 1800 }, "moebel": { "x": 1704, "y": 608, "breite": 912, "hoehe": 930 }, "angeschnitten": false, "brennweite": null, "kachel_breit": { "x": 960, "y": 0, "breite": 2400, "hoehe": 1800 } },
+        { "bild": "Object_02/bilder/Still_Cam2.jpg", "format": "breit", "breite": 4320, "hoehe": 1800, "kachel": { "x": 960, "y": 0, "breite": 2400, "hoehe": 1800 }, "moebel": { "x": 1650, "y": 135, "breite": 1148, "hoehe": 1603 }, "angeschnitten": false, "brennweite": null, "kachel_breit": { "x": 960, "y": 0, "breite": 2400, "hoehe": 1800 } },
+        { "bild": "Object_02/bilder/Still_Cam3.jpg", "format": "breit", "breite": 4320, "hoehe": 1800, "kachel": { "x": 960, "y": 0, "breite": 2400, "hoehe": 1800 }, "moebel": { "x": 0, "y": 307, "breite": 3229, "hoehe": 1493 }, "angeschnitten": true, "brennweite": null, "kachel_breit": { "x": 960, "y": 0, "breite": 2400, "hoehe": 1800 } },
+        { "bild": "Object_02/bilder/Still_Cam1_hoch.jpg", "format": "hoch", "breite": 2400, "hoehe": 4800, "kachel": { "x": 0, "y": 750, "breite": 2400, "hoehe": 1800 }, "moebel": { "x": 490, "y": 1195, "breite": 1420, "hoehe": 1450 }, "angeschnitten": false, "brennweite": 78, "kachel_breit": { "x": -672, "y": 246, "breite": 3744, "hoehe": 2808 } },
+        { "bild": "Object_02/bilder/Still_Cam2_hoch.jpg", "format": "hoch", "breite": 2400, "hoehe": 4800, "kachel": { "x": 0, "y": 750, "breite": 2400, "hoehe": 1800 }, "moebel": { "x": 332, "y": 927, "breite": 1709, "hoehe": 2572 }, "angeschnitten": false, "brennweite": 50, "kachel_breit": null },
+        { "bild": "Object_02/bilder/Still_Cam3_hoch.jpg", "format": "hoch", "breite": 2400, "hoehe": 4800, "kachel": { "x": 0, "y": 750, "breite": 2400, "hoehe": 1800 }, "moebel": { "x": 0, "y": 533, "breite": 2104, "hoehe": 4267 }, "angeschnitten": true, "brennweite": 85, "kachel_breit": null }
       ],
       "handykameras": [2, 3]
     },
@@ -58,17 +65,23 @@
       "typ": "Lighting",
       "anzeigename": "OBJ_LT_M_03",
       "abendfahrten": ["Object_03/video/Move_Cam1_Cam2_abend.mp4", "Object_03/video/Move_Cam1_Cam3_abend.mp4", "Object_03/video/Move_Cam2_Cam1_abend.mp4", "Object_03/video/Move_Cam2_Cam3_abend.mp4", "Object_03/video/Move_Cam3_Cam1_abend.mp4", "Object_03/video/Move_Cam3_Cam2_abend.mp4"],
-      "bilder_hoch": [],
-      "format_hoch": null,
-      "fahrten_hoch": [],
-      "abendfahrten_hoch": [],
+      "bilder_hoch": ["Object_03/bilder/Still_Cam1_hoch.jpg", "Object_03/bilder/Still_Cam2_hoch.jpg", "Object_03/bilder/Still_Cam3_hoch.jpg", "Object_03/bilder/Still_Cam1_abend_hoch.jpg", "Object_03/bilder/Still_Cam2_abend_hoch.jpg", "Object_03/bilder/Still_Cam3_abend_hoch.jpg"],
+      "format_hoch": { "breite": 2400, "hoehe": 4800, "kachel": { "x": 0, "y": 750, "breite": 2400, "hoehe": 1800 }, "video": { "breite": 1440, "hoehe": 2880, "kachel": { "x": 0, "y": 450, "breite": 1440, "hoehe": 1080 } } },
+      "fahrten_hoch": ["Object_03/video/Move_Cam1_Cam2_hoch.mp4", "Object_03/video/Move_Cam1_Cam3_hoch.mp4", "Object_03/video/Move_Cam2_Cam1_hoch.mp4", "Object_03/video/Move_Cam2_Cam3_hoch.mp4", "Object_03/video/Move_Cam3_Cam1_hoch.mp4", "Object_03/video/Move_Cam3_Cam2_hoch.mp4"],
+      "abendfahrten_hoch": ["Object_03/video/Move_Cam1_Cam2_abend_hoch.mp4", "Object_03/video/Move_Cam1_Cam3_abend_hoch.mp4", "Object_03/video/Move_Cam2_Cam1_abend_hoch.mp4", "Object_03/video/Move_Cam2_Cam3_abend_hoch.mp4", "Object_03/video/Move_Cam3_Cam1_abend_hoch.mp4", "Object_03/video/Move_Cam3_Cam2_abend_hoch.mp4"],
       "bildinfo": [
-        { "bild": "Object_03/bilder/Still_Cam1.jpg", "format": "breit", "breite": 4320, "hoehe": 1800, "kachel": { "x": 960, "y": 0, "breite": 2400, "hoehe": 1800 }, "moebel": { "x": 2124, "y": 267, "breite": 72, "hoehe": 1332 }, "angeschnitten": false },
-        { "bild": "Object_03/bilder/Still_Cam2.jpg", "format": "breit", "breite": 4320, "hoehe": 1800, "kachel": { "x": 960, "y": 0, "breite": 2400, "hoehe": 1800 }, "moebel": { "x": 1929, "y": 734, "breite": 419, "hoehe": 1066 }, "angeschnitten": true },
-        { "bild": "Object_03/bilder/Still_Cam3.jpg", "format": "breit", "breite": 4320, "hoehe": 1800, "kachel": { "x": 960, "y": 0, "breite": 2400, "hoehe": 1800 }, "moebel": { "x": 1730, "y": 0, "breite": 837, "hoehe": 1477 }, "angeschnitten": true },
-        { "bild": "Object_03/bilder/Still_Cam1_abend.jpg", "format": "breit", "breite": 4320, "hoehe": 1800, "kachel": { "x": 960, "y": 0, "breite": 2400, "hoehe": 1800 }, "moebel": { "x": 2124, "y": 267, "breite": 72, "hoehe": 1332 }, "angeschnitten": false },
-        { "bild": "Object_03/bilder/Still_Cam2_abend.jpg", "format": "breit", "breite": 4320, "hoehe": 1800, "kachel": { "x": 960, "y": 0, "breite": 2400, "hoehe": 1800 }, "moebel": { "x": 1929, "y": 734, "breite": 419, "hoehe": 1066 }, "angeschnitten": true },
-        { "bild": "Object_03/bilder/Still_Cam3_abend.jpg", "format": "breit", "breite": 4320, "hoehe": 1800, "kachel": { "x": 960, "y": 0, "breite": 2400, "hoehe": 1800 }, "moebel": { "x": 1730, "y": 0, "breite": 837, "hoehe": 1477 }, "angeschnitten": true }
+        { "bild": "Object_03/bilder/Still_Cam1.jpg", "format": "breit", "breite": 4320, "hoehe": 1800, "kachel": { "x": 960, "y": 0, "breite": 2400, "hoehe": 1800 }, "moebel": { "x": 2124, "y": 267, "breite": 72, "hoehe": 1332 }, "angeschnitten": false, "brennweite": null, "kachel_breit": { "x": 960, "y": 0, "breite": 2400, "hoehe": 1800 } },
+        { "bild": "Object_03/bilder/Still_Cam2.jpg", "format": "breit", "breite": 4320, "hoehe": 1800, "kachel": { "x": 960, "y": 0, "breite": 2400, "hoehe": 1800 }, "moebel": { "x": 1929, "y": 734, "breite": 419, "hoehe": 1066 }, "angeschnitten": true, "brennweite": null, "kachel_breit": { "x": 960, "y": 0, "breite": 2400, "hoehe": 1800 } },
+        { "bild": "Object_03/bilder/Still_Cam3.jpg", "format": "breit", "breite": 4320, "hoehe": 1800, "kachel": { "x": 960, "y": 0, "breite": 2400, "hoehe": 1800 }, "moebel": { "x": 1730, "y": 0, "breite": 837, "hoehe": 1477 }, "angeschnitten": true, "brennweite": null, "kachel_breit": { "x": 960, "y": 0, "breite": 2400, "hoehe": 1800 } },
+        { "bild": "Object_03/bilder/Still_Cam1_abend.jpg", "format": "breit", "breite": 4320, "hoehe": 1800, "kachel": { "x": 960, "y": 0, "breite": 2400, "hoehe": 1800 }, "moebel": { "x": 2124, "y": 267, "breite": 72, "hoehe": 1332 }, "angeschnitten": false, "brennweite": null, "kachel_breit": { "x": 960, "y": 0, "breite": 2400, "hoehe": 1800 } },
+        { "bild": "Object_03/bilder/Still_Cam2_abend.jpg", "format": "breit", "breite": 4320, "hoehe": 1800, "kachel": { "x": 960, "y": 0, "breite": 2400, "hoehe": 1800 }, "moebel": { "x": 1929, "y": 734, "breite": 419, "hoehe": 1066 }, "angeschnitten": true, "brennweite": null, "kachel_breit": { "x": 960, "y": 0, "breite": 2400, "hoehe": 1800 } },
+        { "bild": "Object_03/bilder/Still_Cam3_abend.jpg", "format": "breit", "breite": 4320, "hoehe": 1800, "kachel": { "x": 960, "y": 0, "breite": 2400, "hoehe": 1800 }, "moebel": { "x": 1730, "y": 0, "breite": 837, "hoehe": 1477 }, "angeschnitten": true, "brennweite": null, "kachel_breit": { "x": 960, "y": 0, "breite": 2400, "hoehe": 1800 } },
+        { "bild": "Object_03/bilder/Still_Cam1_hoch.jpg", "format": "hoch", "breite": 2400, "hoehe": 4800, "kachel": { "x": 0, "y": 750, "breite": 2400, "hoehe": 1800 }, "moebel": { "x": 1144, "y": 663, "breite": 113, "hoehe": 2078 }, "angeschnitten": false, "brennweite": 78, "kachel_breit": { "x": -672, "y": 246, "breite": 3744, "hoehe": 2808 } },
+        { "bild": "Object_03/bilder/Still_Cam2_hoch.jpg", "format": "hoch", "breite": 2400, "hoehe": 4800, "kachel": { "x": 0, "y": 750, "breite": 2400, "hoehe": 1800 }, "moebel": { "x": 969, "y": 1484, "breite": 419, "hoehe": 3316 }, "angeschnitten": true, "brennweite": 85, "kachel_breit": { "x": 0, "y": 750, "breite": 2400, "hoehe": 1800 } },
+        { "bild": "Object_03/bilder/Still_Cam3_hoch.jpg", "format": "hoch", "breite": 2400, "hoehe": 4800, "kachel": { "x": 0, "y": 750, "breite": 2400, "hoehe": 1800 }, "moebel": { "x": 843, "y": 0, "breite": 696, "hoehe": 3598 }, "angeschnitten": true, "brennweite": 85, "kachel_breit": null },
+        { "bild": "Object_03/bilder/Still_Cam1_abend_hoch.jpg", "format": "hoch", "breite": 2400, "hoehe": 4800, "kachel": { "x": 0, "y": 750, "breite": 2400, "hoehe": 1800 }, "moebel": { "x": 1144, "y": 663, "breite": 113, "hoehe": 2078 }, "angeschnitten": false, "brennweite": 78, "kachel_breit": { "x": -672, "y": 246, "breite": 3744, "hoehe": 2808 } },
+        { "bild": "Object_03/bilder/Still_Cam2_abend_hoch.jpg", "format": "hoch", "breite": 2400, "hoehe": 4800, "kachel": { "x": 0, "y": 750, "breite": 2400, "hoehe": 1800 }, "moebel": { "x": 969, "y": 1484, "breite": 419, "hoehe": 3316 }, "angeschnitten": true, "brennweite": 85, "kachel_breit": { "x": 0, "y": 750, "breite": 2400, "hoehe": 1800 } },
+        { "bild": "Object_03/bilder/Still_Cam3_abend_hoch.jpg", "format": "hoch", "breite": 2400, "hoehe": 4800, "kachel": { "x": 0, "y": 750, "breite": 2400, "hoehe": 1800 }, "moebel": { "x": 843, "y": 0, "breite": 696, "hoehe": 3598 }, "angeschnitten": true, "brennweite": 85, "kachel_breit": null }
       ],
       "handykameras": [3]
     },
@@ -83,14 +96,17 @@
       "typ": "Storage",
       "anzeigename": "OBJ_SH_M_04",
       "abendfahrten": [],
-      "bilder_hoch": [],
-      "format_hoch": null,
-      "fahrten_hoch": [],
+      "bilder_hoch": ["Object_04/bilder/Still_Cam1_hoch.jpg", "Object_04/bilder/Still_Cam2_hoch.jpg", "Object_04/bilder/Still_Cam3_hoch.jpg"],
+      "format_hoch": { "breite": 2400, "hoehe": 4800, "kachel": { "x": 0, "y": 750, "breite": 2400, "hoehe": 1800 }, "video": { "breite": 1440, "hoehe": 2880, "kachel": { "x": 0, "y": 450, "breite": 1440, "hoehe": 1080 } } },
+      "fahrten_hoch": ["Object_04/video/Move_Cam1_Cam2_hoch.mp4", "Object_04/video/Move_Cam1_Cam3_hoch.mp4", "Object_04/video/Move_Cam2_Cam1_hoch.mp4", "Object_04/video/Move_Cam2_Cam3_hoch.mp4", "Object_04/video/Move_Cam3_Cam1_hoch.mp4", "Object_04/video/Move_Cam3_Cam2_hoch.mp4"],
       "abendfahrten_hoch": [],
       "bildinfo": [
-        { "bild": "Object_04/bilder/Still_Cam1.jpg", "format": "breit", "breite": 4320, "hoehe": 1800, "kachel": { "x": 960, "y": 0, "breite": 2400, "hoehe": 1800 }, "moebel": { "x": 1572, "y": 793, "breite": 1176, "hoehe": 276 }, "angeschnitten": false },
-        { "bild": "Object_04/bilder/Still_Cam2.jpg", "format": "breit", "breite": 4320, "hoehe": 1800, "kachel": { "x": 960, "y": 0, "breite": 2400, "hoehe": 1800 }, "moebel": { "x": 1399, "y": 605, "breite": 1555, "hoehe": 538 }, "angeschnitten": false },
-        { "bild": "Object_04/bilder/Still_Cam3.jpg", "format": "breit", "breite": 4320, "hoehe": 1800, "kachel": { "x": 960, "y": 0, "breite": 2400, "hoehe": 1800 }, "moebel": { "x": 1405, "y": 630, "breite": 2915, "hoehe": 1170 }, "angeschnitten": true }
+        { "bild": "Object_04/bilder/Still_Cam1.jpg", "format": "breit", "breite": 4320, "hoehe": 1800, "kachel": { "x": 960, "y": 0, "breite": 2400, "hoehe": 1800 }, "moebel": { "x": 1572, "y": 793, "breite": 1176, "hoehe": 276 }, "angeschnitten": false, "brennweite": null, "kachel_breit": { "x": 960, "y": 0, "breite": 2400, "hoehe": 1800 } },
+        { "bild": "Object_04/bilder/Still_Cam2.jpg", "format": "breit", "breite": 4320, "hoehe": 1800, "kachel": { "x": 960, "y": 0, "breite": 2400, "hoehe": 1800 }, "moebel": { "x": 1399, "y": 605, "breite": 1555, "hoehe": 538 }, "angeschnitten": false, "brennweite": null, "kachel_breit": { "x": 960, "y": 0, "breite": 2400, "hoehe": 1800 } },
+        { "bild": "Object_04/bilder/Still_Cam3.jpg", "format": "breit", "breite": 4320, "hoehe": 1800, "kachel": { "x": 960, "y": 0, "breite": 2400, "hoehe": 1800 }, "moebel": { "x": 1405, "y": 630, "breite": 2915, "hoehe": 1170 }, "angeschnitten": true, "brennweite": null, "kachel_breit": { "x": 960, "y": 0, "breite": 2400, "hoehe": 1800 } },
+        { "bild": "Object_04/bilder/Still_Cam1_hoch.jpg", "format": "hoch", "breite": 2400, "hoehe": 4800, "kachel": { "x": 0, "y": 750, "breite": 2400, "hoehe": 1800 }, "moebel": { "x": 284, "y": 1484, "breite": 1832, "hoehe": 430 }, "angeschnitten": false, "brennweite": 78, "kachel_breit": { "x": -672, "y": 246, "breite": 3744, "hoehe": 2808 } },
+        { "bild": "Object_04/bilder/Still_Cam2_hoch.jpg", "format": "hoch", "breite": 2400, "hoehe": 4800, "kachel": { "x": 0, "y": 750, "breite": 2400, "hoehe": 1800 }, "moebel": { "x": 304, "y": 1399, "breite": 1709, "hoehe": 602 }, "angeschnitten": false, "brennweite": 50, "kachel_breit": null },
+        { "bild": "Object_04/bilder/Still_Cam3_hoch.jpg", "format": "hoch", "breite": 2400, "hoehe": 4800, "kachel": { "x": 0, "y": 750, "breite": 2400, "hoehe": 1800 }, "moebel": { "x": 445, "y": 1380, "breite": 1955, "hoehe": 1710 }, "angeschnitten": true, "brennweite": 85, "kachel_breit": { "x": 0, "y": 750, "breite": 2400, "hoehe": 1800 } }
       ],
       "handykameras": [2]
     },
@@ -105,14 +121,17 @@
       "typ": "Seating",
       "anzeigename": "OBJ_ST_M_05",
       "abendfahrten": [],
-      "bilder_hoch": [],
-      "format_hoch": null,
-      "fahrten_hoch": [],
+      "bilder_hoch": ["Object_05/bilder/Still_Cam1_hoch.jpg", "Object_05/bilder/Still_Cam2_hoch.jpg", "Object_05/bilder/Still_Cam3_hoch.jpg"],
+      "format_hoch": { "breite": 2400, "hoehe": 4800, "kachel": { "x": 0, "y": 750, "breite": 2400, "hoehe": 1800 }, "video": { "breite": 1440, "hoehe": 2880, "kachel": { "x": 0, "y": 450, "breite": 1440, "hoehe": 1080 } } },
+      "fahrten_hoch": ["Object_05/video/Move_Cam1_Cam2_hoch.mp4", "Object_05/video/Move_Cam1_Cam3_hoch.mp4", "Object_05/video/Move_Cam2_Cam1_hoch.mp4", "Object_05/video/Move_Cam2_Cam3_hoch.mp4", "Object_05/video/Move_Cam3_Cam1_hoch.mp4", "Object_05/video/Move_Cam3_Cam2_hoch.mp4"],
       "abendfahrten_hoch": [],
       "bildinfo": [
-        { "bild": "Object_05/bilder/Still_Cam1.jpg", "format": "breit", "breite": 4320, "hoehe": 1800, "kachel": { "x": 960, "y": 0, "breite": 2400, "hoehe": 1800 }, "moebel": { "x": 1774, "y": 1085, "breite": 788, "hoehe": 596 }, "angeschnitten": false },
-        { "bild": "Object_05/bilder/Still_Cam2.jpg", "format": "breit", "breite": 4320, "hoehe": 1800, "kachel": { "x": 960, "y": 0, "breite": 2400, "hoehe": 1800 }, "moebel": { "x": 1666, "y": 505, "breite": 1166, "hoehe": 1032 }, "angeschnitten": false },
-        { "bild": "Object_05/bilder/Still_Cam3.jpg", "format": "breit", "breite": 4320, "hoehe": 1800, "kachel": { "x": 960, "y": 0, "breite": 2400, "hoehe": 1800 }, "moebel": { "x": 1181, "y": 168, "breite": 1920, "hoehe": 1529 }, "angeschnitten": false }
+        { "bild": "Object_05/bilder/Still_Cam1.jpg", "format": "breit", "breite": 4320, "hoehe": 1800, "kachel": { "x": 960, "y": 0, "breite": 2400, "hoehe": 1800 }, "moebel": { "x": 1774, "y": 1085, "breite": 788, "hoehe": 596 }, "angeschnitten": false, "brennweite": null, "kachel_breit": { "x": 960, "y": 0, "breite": 2400, "hoehe": 1800 } },
+        { "bild": "Object_05/bilder/Still_Cam2.jpg", "format": "breit", "breite": 4320, "hoehe": 1800, "kachel": { "x": 960, "y": 0, "breite": 2400, "hoehe": 1800 }, "moebel": { "x": 1666, "y": 505, "breite": 1166, "hoehe": 1032 }, "angeschnitten": false, "brennweite": null, "kachel_breit": { "x": 960, "y": 0, "breite": 2400, "hoehe": 1800 } },
+        { "bild": "Object_05/bilder/Still_Cam3.jpg", "format": "breit", "breite": 4320, "hoehe": 1800, "kachel": { "x": 960, "y": 0, "breite": 2400, "hoehe": 1800 }, "moebel": { "x": 1181, "y": 168, "breite": 1920, "hoehe": 1529 }, "angeschnitten": false, "brennweite": null, "kachel_breit": { "x": 960, "y": 0, "breite": 2400, "hoehe": 1800 } },
+        { "bild": "Object_05/bilder/Still_Cam1_hoch.jpg", "format": "hoch", "breite": 2400, "hoehe": 4800, "kachel": { "x": 0, "y": 750, "breite": 2400, "hoehe": 1800 }, "moebel": { "x": 599, "y": 1938, "breite": 1228, "hoehe": 930 }, "angeschnitten": false, "brennweite": 78, "kachel_breit": { "x": -672, "y": 246, "breite": 3744, "hoehe": 2808 } },
+        { "bild": "Object_05/bilder/Still_Cam2_hoch.jpg", "format": "hoch", "breite": 2400, "hoehe": 4800, "kachel": { "x": 0, "y": 750, "breite": 2400, "hoehe": 1800 }, "moebel": { "x": 455, "y": 1706, "breite": 1546, "hoehe": 1406 }, "angeschnitten": false, "brennweite": 50, "kachel_breit": null },
+        { "bild": "Object_05/bilder/Still_Cam3_hoch.jpg", "format": "hoch", "breite": 2400, "hoehe": 4800, "kachel": { "x": 0, "y": 750, "breite": 2400, "hoehe": 1800 }, "moebel": { "x": 0, "y": 949, "breite": 1907, "hoehe": 1891 }, "angeschnitten": true, "brennweite": 85, "kachel_breit": null }
       ],
       "handykameras": [2, 3]
     }
