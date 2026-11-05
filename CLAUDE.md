@@ -78,9 +78,11 @@ README.md                   ausführliche Beschreibung für den Nutzer (deutsch)
   öffnet sich seitlich zum vollen Bild; zurück: die Fahrt zu Cam1 läuft in der schrumpfenden Kachel weiter.
 - **Handy senkrecht: Hochformat** – IMMER bildfüllend (volle Breite, oben bündig, kein Rand, kein weicher Auslauf, nie
   verkleinert). Die Kameras des Nutzers sind maßgeblich; liegt ein Möbel unter den Leisten, nur melden, nicht ausgleichen.
-  Zoom Kachel ↔ Hochformat über `kachel_breit` als EINE Bewegung (`hochFlug` in app.js): Kachelbild zoomt hinein und blendet
-  ins Hochformat über, darunter immer das vergrößerte Kachelbild – nie Weiß im Fenster. Nur transform/opacity animieren
-  (kein animiertes clip-path: lief am iPhone nicht synchron → weiße Streifen).
+  Zoom Kachel ↔ Hochformat über `kachel_breit` (`hochFlug` in app.js): ERST zoomt das breite Kachelbild bis genau in seine
+  Endlage im Hochformat, DANN (Standbild geladen + dekodiert) kurz überblenden (`seite.hochBlende`); zurück umgekehrt.
+  Unter/um das Kachelbild immer Bild (gespiegelte Ränder, kleine Hochformat-Kopie) mit großer Reserve – nie Weiß im
+  Fenster, auch wenn Fenster und Ebenen am iPhone aus dem Takt laufen. Nur transform/opacity animieren, Rundung auf eigenem
+  Element (kein animiertes clip-path / border-radius im selben Effekt wie transform: lief am iPhone nicht synchron).
   Handy quer: breites Format. Desktop darf sich durch Hochformat-Änderungen nicht verändern (A/B gegen alten Stand prüfen).
 - Anzeigenamen sind Codes (`OBJ_LT_M_03`), Ordner/Adressen bleiben `Object_NN`.
 - Baum-Modus (`navigation: 'baum'` in config.js) muss umschaltbar und funktionsfähig bleiben.

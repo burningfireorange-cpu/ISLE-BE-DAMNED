@@ -55,29 +55,36 @@
     return o.auf ? [K, Gr] : [Gr, K];
   }
 
-  /* ---------- phone upright: tile ↔ portrait picture in ONE movement ----------
+  /* ---------- phone upright: tile ↔ portrait picture ----------
      Cam1 has a longer focal length upright, so the tile (a crop of the WIDE picture) reaches out beyond the sides of
-     the portrait picture (kachel_breit). The window grows from the tile to the whole portrait picture (way back: shrinks
-     into the tile); the portrait picture zooms along from its tile crop and fades in over the first part of the way
-     (config seite.hochUeberblenden; way back: fades out over the last part). Under it, always, lies the WIDE tile image:
-     at the tile exactly the tile, on the way enlarged just as far as needed to cover the whole window with a margin
-     (sideways it stays on its crop as far as possible, upwards/downwards it is stretched – wall above, floor below) –
-     so the window never shows page background, not even if a frame comes late. Above that the same tile image lies
-     exactly on its crop (soft upper and lower edge), so the furniture never shows double while the pictures blend.
-     Only transforms and opacity are animated (the window: translate + scale x/y with overflow hidden, the layers inside:
-     counter-scaled), all with the same timing, so the browser keeps them in step on the compositor. (Before: an animated
-     clip-path – on the iPhone it ran apart from the zoom, white stripes at the sides.)
+     the portrait picture (kachel_breit). Opening, in two steps that follow each other:
+       1. zoom – the WIDE tile image zooms from the tile until its tile crop lies exactly where it lies in the portrait
+          picture (kachel_breit); the window grows from the tile to the whole viewer at the same time. Nothing else
+          changes during the zoom.
+       2. blend – only then (and once the portrait still has loaded and is decoded) the whole flight fades out over the
+          real viewer (config seite.hochBlende). Both lie on top of each other pixel for pixel.
+     Way back: the same backwards – first the real viewer fades into the tile composition, then it zooms out.
+     The wide tile image covers only a band of the portrait picture (12:5 in 1:2) – what lies around it, all the way:
+       · above and below the band, as wide as the wide tile image: its upper and lower edge (wall / floor, HOCH_KANTE)
+         mirrored outwards – seamless at the edge, and so tall that it reaches far beyond the window (HOCH_RESERVE);
+       · on that, within the portrait picture: the small copy of the portrait picture on its final place (it matches the
+         tile image in the band pixel for pixel, so above and below the band the real wall and floor continue it).
+     So inside the window there is picture everywhere – and with a big reserve, so a frame that comes late on the
+     iPhone (window and layers running apart) only shifts the picture a little, it never uncovers anything.
+     Only transforms and opacity are animated, the window's corner radius on its own element (fensterRadius).
      o: auf, T (tile rect), V (viewer rect), ka (tile crop in shares of the viewer), kb (whole tile image, kachelBox),
         skala (tile hover zoom), radiusKlein, radiusGross, dauer,
         unter: [{ el, kachel, voll }] wide tile images (cloned; opacity at the tile / at the full picture),
-        bild: [{ el, selbst }] portrait layers (cloned, or selbst: the real viewer element) */
+        hoch: [{ url, kachel, voll }] small copies of the portrait picture (day / evening),
+        selbst: the real viewer (way back: lies on top and fades out first) */
   var HOCH_SCHRITTE = 40;     // keyframes (the counter-scale is not linear – enough steps keep it sub-pixel exact)
-  var HOCH_RAND = 10;         // px – the tile image reaches this far beyond the window on all sides (safety margin)
+  var HOCH_KANTE = 0.06;      // share of the wide tile image at its upper / lower edge that is mirrored outwards
+  var HOCH_RESERVE = 0.3;     // the picture reaches beyond the window by this share of the window height (+ 24 px)
+  var HOCH_UEBERLAPP = 3;     // image rows by which a mirrored edge reaches in under the band
   function hochFlug(o) {
     if (!document.body.animate) return null;
     var T = o.T, V = o.V, ka = o.ka, kb = o.kb, N = HOCH_SCHRITTE, i;
     var f0 = fensterWerte(T, V, ka);
-    var ueb = G.klemmen(C.seite.hochUeberblenden == null ? 0.45 : C.seite.hochUeberblenden, 0.05, 1);
     var mx = ka.x + ka.w / 2, my = ka.y + ka.h / 2, skala = o.skala || 1;
     var rK = o.radiusKlein || 0, rG = o.radiusGross || 0;
     var stand = [];
@@ -86,80 +93,126 @@
       var P = { l: V.left + f0.tx * (1 - z), t: V.top + f0.ty * (1 - z), w: s * V.width, h: s * V.height };
       var Wn = { l: T.left + (V.left - T.left) * z, t: T.top + (V.top - T.top) * z,
         w: T.width + (V.width - T.width) * z, h: T.height + (V.height - T.height) * z };
-      var cx = P.l + mx * P.w, cy = P.t + my * P.h;                    // tile centre: the tile image grows around it
-      var A = { l: P.l + kb.x * P.w, t: P.t + kb.y * P.h, w: kb.w * P.w, h: kb.h * P.h };   // tile image on its crop
-      // enlarged just as far as each direction needs: sideways it mostly stays on its crop (the sides of the wide picture
-      // are wall and floor, they match the portrait picture), upwards and downwards it is stretched (wall above, floor below)
-      var m = HOCH_RAND * Math.min(1, z * 8), f1 = skala + (1 - skala) * z;
-      var fx = Math.max(f1, (cx - Wn.l + m) / (cx - A.l), (Wn.l + Wn.w + m - cx) / (A.l + A.w - cx));
-      var fy = Math.max(f1, (cy - Wn.t + m) / (cy - A.t), (Wn.t + Wn.h + m - cy) / (A.t + A.h - cy));
-      stand.push({ z: z, P: P, Wn: Wn, cx: cx, cy: cy, A: A, fx: fx, fy: fy, f1: f1 });
+      // the tile's hover zoom (if any) goes back to 1 around the tile centre on the way
+      var cx = P.l + mx * P.w, cy = P.t + my * P.h, f1 = skala + (1 - skala) * z;
+      var um = function (R) { return { l: cx + f1 * (R.l - cx), t: cy + f1 * (R.t - cy), w: f1 * R.w, h: f1 * R.h }; };
+      var A = um({ l: P.l + kb.x * P.w, t: P.t + kb.y * P.h, w: kb.w * P.w, h: kb.h * P.h });   // tile image on its crop
+      var res = 24 + HOCH_RESERVE * Wn.h;
+      var fo = Math.max(1, (A.t - Wn.t + res) / (HOCH_KANTE * A.h)), fu = Math.max(1, (Wn.t + Wn.h + res - A.t - A.h) / (HOCH_KANTE * A.h));
+      stand.push({ z: z, P: um(P), Wn: Wn, A: A, fo: fo, fu: fu });
     }
-    // the tile image only grows on the way to the full picture (and only shrinks on the way back)
-    for (i = 1; i <= N; i++) { stand[i].fx = Math.max(stand[i].fx, stand[i - 1].fx); stand[i].fy = Math.max(stand[i].fy, stand[i - 1].fy); }
+    /** The mirrored edges (R.h < 0). Their axis lies HOCH_UEBERLAPP image rows inside the band: the outermost row of a
+        strongly magnified image is rasterised half transparent over several px – that stays hidden under the band. */
+    function spiegel(st, seite, zeilen) {
+      var A = st.A, F = seite === 'oben' ? st.fo : st.fu, ov = HOCH_UEBERLAPP * Math.max(1, F) * A.h / zeilen;
+      return seite === 'oben' ? { l: A.l, t: A.t + ov, w: A.w, h: -F * A.h }
+        : { l: A.l, t: A.t + A.h - ov + F * A.h, w: A.w, h: -F * A.h };
+    }
     function reihe(fn) {
       var fr = stand.map(function (st) { var x = fn(st); x.offset = o.auf ? st.z : 1 - st.z; return x; });
       return o.auf ? fr : fr.reverse();
     }
     function zahl(v) { return Math.round(v * 10000) / 10000; }
-    /** transform of a layer laid out at B (px inside the window box) so that it lies at R on screen */
+    /** transform of a layer laid out at B (px inside the window box) so that it lies at R on screen (R.h < 0: mirrored) */
     function lage(R, B, st) {
       var Sx = st.Wn.w / V.width, Sy = st.Wn.h / V.height;
       return 'translate(' + zahl((R.l - st.Wn.l) / Sx - B.l) + 'px,' + zahl((R.t - st.Wn.t) / Sy - B.t) + 'px) scale(' +
         zahl(R.w / (B.w * Sx)) + ',' + zahl(R.h / (B.h * Sy)) + ')';
     }
-    var k = G.el('div', 'flug flug-hoch');
+    // k: the window (translate + scale, keeps the layers in its own coordinates); f: inside it, the clip with the
+    // corner radius (its radius changes on its own element, so k's animation is a pure transform)
+    var k = G.el('div', 'flug flug-hoch'), f = G.el('div', 'flug-fenster');
     k.style.left = V.left + 'px'; k.style.top = V.top + 'px';
     k.style.width = V.width + 'px'; k.style.height = V.height + 'px';
+    k.appendChild(f);
     var schichten = [];
     var BU = { l: kb.x * V.width, t: kb.y * V.height, w: kb.w * V.width, h: kb.h * V.height }, B0 = { l: 0, t: 0, w: V.width, h: V.height };
     function legen(c, B) {
       c.style.transition = 'none';
+      c.style.position = 'absolute';
       c.style.inset = 'auto';
       c.style.left = B.l + 'px'; c.style.top = B.t + 'px'; c.style.width = B.w + 'px'; c.style.height = B.h + 'px';
       c.style.transformOrigin = '0 0';
-      k.appendChild(c);
+      f.appendChild(c);
     }
     function klon(el) {
       var c = el.cloneNode(true);
       c.classList.remove('sichtbar', 'raus', 'rein', 'vor-fahrt', 'vor-aufstieg', 'nachglimmen', 'ausglimmen');
+      c.style.backgroundColor = 'transparent';      // (never a grey of its own – a layer below shows instead)
       return c;
     }
-    // the wide tile image twice: enlarged (covers the whole window) and above it on its crop, matching the portrait
-    // picture (the furniture lies in this band – it never shows double; its upper and lower edge fade out softly)
-    [true, false].forEach(function (gross) {
-      (o.unter || []).forEach(function (u) {
-        if (!u.el) return;
+    function deck(u, st) { return u.kachel + (u.voll - u.kachel) * st.z; }
+    // 1. the mirrored edges of the wide tile image (day, evening)
+    (o.unter || []).forEach(function (u) {
+      if (!u.el) return;
+      var im = u.el.querySelector('img'), zeilen = (im && im.naturalHeight) || 600;
+      ['oben', 'unten'].forEach(function (seite) {
         var c = klon(u.el);
-        if (!gross) c.classList.add('flug-band');
         legen(c, BU);
-        schichten.push({ el: c, frames: reihe(function (st) {
-          var fx = gross ? st.fx : st.f1, fy = gross ? st.fy : st.f1;
-          var U = { l: st.cx + fx * (st.A.l - st.cx), t: st.cy + fy * (st.A.t - st.cy), w: fx * st.A.w, h: fy * st.A.h };
-          return { transform: lage(U, BU, st), opacity: u.kachel + (u.voll - u.kachel) * st.z };
-        }) });
+        schichten.push({ el: c, frames: reihe(function (st) { return { transform: lage(spiegel(st, seite, zeilen), BU, st), opacity: deck(u, st) }; }) });
       });
     });
-    (o.bild || []).forEach(function (b) {
-      if (!b.el) return;
-      var c = b.selbst ? b.el : klon(b.el);
-      if (!b.selbst) c.style.backgroundColor = 'transparent';     // (a small copy still decoding: the tile image shows)
+    // 2. the small copy of the portrait picture on its place (day, evening)
+    (o.hoch || []).forEach(function (h) {
+      if (!h.url) return;
+      var c = new Image();
+      c.alt = ''; c.decoding = 'sync'; c.src = h.url;
+      c.className = 'flug-hochbild';
       legen(c, B0);
-      schichten.push({ el: c, frames: reihe(function (st) {
-        return { transform: lage(st.P, B0, st), opacity: Math.min(1, st.z / ueb) };
-      }) });
+      schichten.push({ el: c, frames: reihe(function (st) { return { transform: lage(st.P, B0, st), opacity: deck(h, st) }; }) });
     });
+    // 3. the wide tile image exactly on its crop (day, evening)
+    (o.unter || []).forEach(function (u) {
+      if (!u.el) return;
+      var c = klon(u.el);
+      legen(c, BU);
+      schichten.push({ el: c, frames: reihe(function (st) { return { transform: lage(st.A, BU, st), opacity: deck(u, st) }; }) });
+    });
+    // 4. way back: the real viewer on top (a running video keeps playing) – it fades out before the zoom starts
+    if (o.selbst) legen(o.selbst, B0);
     var fenster = reihe(function (st) {
+      return { transform: 'translate(' + zahl(st.Wn.l - V.left) + 'px,' + zahl(st.Wn.t - V.top) + 'px) scale(' +
+        zahl(st.Wn.w / V.width) + ',' + zahl(st.Wn.h / V.height) + ')' };
+    });
+    var fensterRadius = reihe(function (st) {
       var Sx = st.Wn.w / V.width, Sy = st.Wn.h / V.height, r = rK + (rG - rK) * st.z;
-      return { transform: 'translate(' + zahl(st.Wn.l - V.left) + 'px,' + zahl(st.Wn.t - V.top) + 'px) scale(' + zahl(Sx) + ',' + zahl(Sy) + ')',
-        borderRadius: zahl(r / Sx) + 'px / ' + zahl(r / Sy) + 'px' };
+      return { borderRadius: zahl(r / Sx) + 'px / ' + zahl(r / Sy) + 'px' };
     });
     document.body.appendChild(k);
-    var opts = { duration: o.dauer, easing: C.kurve, fill: 'forwards' };
+    var blende = G.blende(C.seite.hochBlende == null ? 200 : C.seite.hochBlende);
+    var vorher = o.auf ? 0 : blende;      // way back: the zoom waits for the viewer's fade
+    var opts = { duration: o.dauer, delay: vorher, easing: C.kurve, fill: 'both' };
     // all in the same task: they start on the same frame
-    var anims = [k.animate(fenster, opts)].concat(schichten.map(function (s) { return s.el.animate(s.frames, opts); }));
+    var anims = [k.animate(fenster, opts), f.animate(fensterRadius, opts)]
+      .concat(schichten.map(function (s) { return s.el.animate(s.frames, opts); }));
+    if (o.selbst) anims.push(o.selbst.animate([{ opacity: 1 }, { opacity: 0 }], { duration: blende, easing: C.kurve, fill: 'forwards' }));
     var fertig = new Promise(function (ok) { anims[0].onfinish = ok; anims[0].oncancel = ok; });
-    return { k: k, anims: anims, fertig: fertig };
+    /** Opening, step 2: the flight fades out over the real viewer (which must be visible under it by then). */
+    function ausblenden() {
+      if (!k.parentNode) return Promise.resolve();
+      var a = k.animate([{ opacity: 1 }, { opacity: 0 }], { duration: blende, easing: C.kurve, fill: 'forwards' });
+      anims.push(a);
+      return new Promise(function (ok) { a.onfinish = ok; a.oncancel = ok; });
+    }
+    return { k: k, anims: anims, fertig: fertig, ausblenden: ausblenden };
+  }
+  /** Resolves once the still of a placeholder shows: loaded, decoded and faded in inside the viewer (or right away if
+      no real image is coming). (The caller limits the wait – config seite.hochWarten.) */
+  function dekodiert(ph) {
+    return geladen(ph).then(function () {
+      if (!ph || !ph.classList.contains('ph-folgt')) return null;
+      return new Promise(function (ok) {
+        var img = ph.querySelector('.ph-bild'), n = 0;
+        (function pruefe() {
+          if (ph.classList.contains('echt') && img && parseFloat(getComputedStyle(img).opacity) >= 0.99) {
+            if (img.decode) img.decode().then(ok, ok); else ok();
+            return;
+          }
+          if (++n > 200) { ok(); return; }      // (~6 s – the caller has given up long before)
+          setTimeout(pruefe, 30);
+        })();
+      });
+    });
   }
   function radiusVon(el) { return el ? parseFloat(getComputedStyle(el).borderTopLeftRadius) || 0 : 0; }
   function setzeBox(el, k) {
@@ -167,17 +220,34 @@
     el.style.left = k.x * 100 + '%'; el.style.top = k.y * 100 + '%';
     el.style.width = k.w * 100 + '%'; el.style.height = k.h * 100 + '%';
   }
+  /** Takes a flight away at once (and shows what it hid again). */
+  function flugWeg() {
+    var k = flugEl;
+    if (!k) return;
+    flugEl = null;
+    if (k._zeigen) k._zeigen();
+    if (k.parentNode) k.parentNode.removeChild(k);
+  }
   function flug(o) {
     if (flugEl && flugEl.parentNode) flugEl.parentNode.removeChild(flugEl);
     var r1 = o.gross;
     var anims = [], k;
     var opts = { duration: o.dauer, easing: C.kurve, fill: 'forwards' };
     var weiter;
-    if (o.hoch) {        // phone upright, tile reaching out beyond the portrait picture: one movement (hochFlug)
+    if (o.hoch) {        // phone upright, tile reaching out beyond the portrait picture (hochFlug)
       var hf = hochFlug(o.hoch);
       if (!hf) return Promise.resolve();
       k = hf.k;
-      weiter = hf.fertig;
+      k._zeigen = function () { o.verstecken.forEach(function (e) { e.style.visibility = ''; }); };
+      // the zoom has reached the portrait picture: as soon as its still is decoded (the tile image stays until then),
+      // the real viewer comes under the flight and the flight fades out over it
+      weiter = hf.fertig.then(function () {
+        return Promise.race([o.hoch.bereit || null, G.warte(C.seite.hochWarten || 2500)]);
+      }).then(function () {
+        if (flugEl !== k) return null;
+        o.verstecken.forEach(function (e) { e.style.visibility = ''; });
+        return hf.ausblenden();
+      });
     } else {
       k = G.el('div', 'flug');
       k.style.left = r1.left + 'px';
@@ -247,7 +317,7 @@
     clearTimeout(ab._aus);
     ab._aus = setTimeout(function () { ab.classList.remove('ausglimmen'); }, G.blende(C.viewer.lampe) + 60);
   }
-  function boxWeg(el) { ['inset', 'left', 'top', 'width', 'height', 'transformOrigin'].forEach(function (k) { el.style[k] = ''; }); }
+  function boxWeg(el) { ['position', 'inset', 'left', 'top', 'width', 'height', 'transformOrigin'].forEach(function (k) { el.style[k] = ''; }); }
   function heimAbbrechen() {
     if (!heim) return;
     var h = heim;
@@ -276,6 +346,9 @@
          the tile crop and the tile's own image comes in at the sides (zurueckziehen). */
   function heimfahren(v, gross, kachel) {
     heimAbbrechen();
+    // (phone upright: the opening may still wait for the portrait still – the way back takes over at once; it starts
+    // from the same picture)
+    if (flugEl && flugEl.classList.contains('flug-hoch')) flugWeg();
     var el = v.el, h = heim = { v: v, kachel: kachel };
     var radiusGross = radiusVon(el);
     v.heim();
@@ -287,11 +360,16 @@
       h.deckend = false;
       v.kachelLegen(false);
       var unter = [{ el: kachel.querySelector('.k-tag'), kachel: 1, voll: 1 }];
+      var hochKopien = [{ url: G.pfade.kachel(v.p, 'hoch'), kachel: 1, voll: 1 }];
       var ka2 = abendZeigt && kachel.querySelector('.k-abend');
-      if (ka2 && ka2.classList.contains('echt')) unter.push({ el: ka2, kachel: 1, voll: 1 });
+      if (ka2 && ka2.classList.contains('echt')) {
+        unter.push({ el: ka2, kachel: 1, voll: 1 });
+        hochKopien.push({ url: G.pfade.kachelAbend(v.p, 'hoch'), kachel: 1, voll: 1 });
+      }
+      // first the real viewer fades into the tile composition, then it zooms out into the tile
       var hf = hochFlug({ auf: false, T: kachel.getBoundingClientRect(), V: gross, ka: ka, kb: kb,
         radiusKlein: radiusVon(kachel), radiusGross: radiusGross, dauer: C.seite.kachelZumViewer * 0.85,
-        unter: unter, bild: [{ el: el, selbst: true }] });     // the real viewer – a running video keeps playing
+        unter: unter, hoch: C.echteDateienVerwenden ? hochKopien : [], selbst: el });
       h.k = hf.k; h.anims = hf.anims;
       hf.fertig.then(function () {
         if (heim !== h) return;
@@ -463,12 +541,17 @@
         // and fades into the portrait picture, always lying under it (hochFlug)
         var hoch = null;
         if (ragt && vw.format === 'hoch') {
-          var lit = kz.abend > 0.5, da = function (e) { return !!e && (e.classList.contains('echt') || e.classList.contains('mit-vorschau')); };
+          var lit = kz.abend > 0.5;
           var unter = [{ el: q.querySelector('.k-tag'), kachel: 1, voll: 1 }];
-          if (ab && kz.abend > 0.01) unter.push({ el: ab, kachel: kz.abend, voll: lit ? 1 : 0 });
+          var hochKopien = [{ url: G.pfade.kachel(p, 'hoch'), kachel: 1, voll: 1 }];
+          if (ab && kz.abend > 0.01) {
+            unter.push({ el: ab, kachel: kz.abend, voll: lit ? 1 : 0 });
+            hochKopien.push({ url: G.pfade.kachelAbend(p, 'hoch'), kachel: kz.abend, voll: lit ? 1 : 0 });
+          }
           hoch = { auf: true, T: r0, V: vw.el.getBoundingClientRect(), ka: ka, kb: kb, skala: kz.skala,
             radiusKlein: radiusVon(q), radiusGross: radiusVon(vw.el), dauer: C.seite.kachelZumViewer, unter: unter,
-            bild: lit && da(ga) ? [{ el: ga }] : da(gs) ? [{ el: gs }] : [] };
+            hoch: C.echteDateienVerwenden ? hochKopien : [],
+            bereit: Promise.all([dekodiert(gs), lit ? dekodiert(ga) : null]) };
         }
         flug({ auf: true, klein: r0, gross: vw.el.getBoundingClientRect(), radiusKlein: radiusVon(q), radiusGross: radiusVon(vw.el), aus: ka, maske: vw.maskeWerte,
           hoch: hoch, schichten: schichten, verstecken: [vw.el, q], dauer: C.seite.kachelZumViewer,

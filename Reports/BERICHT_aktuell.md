@@ -1,7 +1,7 @@
 # Bericht – Runde 9: Hochformat fürs Handy, nahtloser Zoom mit `kachel_breit`, Veröffentlichung (2026-11-05)
 
-> **Nachtrag Runde 10 (zwei Fehler am iPhone) steht am Ende dieses Berichts.** Teile von Kapitel 1–4 zum Zoom
-> („Zwei-Stufen-Fenster“) und zur Möbel-Regel gelten nicht mehr.
+> **Nachträge Runde 10 und Runde 11 (Zoom am iPhone) stehen am Ende dieses Berichts.** Teile von Kapitel 1–4 zum Zoom
+> („Zwei-Stufen-Fenster“) und zur Möbel-Regel gelten nicht mehr, ebenso der Zoom-Teil von Runde 10.
 
 **Online-Adresse (nach dem Hochladen):** https://burningfireorange-cpu.github.io/gauge/
 Noch **nicht online geprüft**: Du lädst selbst über GitHub Desktop hoch (Schritte siehe Kapitel 3). Sag mir Bescheid, dann prüfe ich die Seite online.
@@ -222,3 +222,107 @@ Das Repository ist online noch nicht vorhanden (github.com/burningfireorange-cpu
 Falls du schon veröffentlicht hast (z. B. privat oder aus einer anderen Kopie): in GitHub Desktop `C:\websites\gauge` öffnen und oben **Push origin** drücken.
 
 Upload-Größe: 505 MB, unverändert, Grenze ca. 1 GB.
+
+---
+
+## Nachtrag – Runde 11: Zoom am iPhone ohne weißen Rand rechts (2026-11-05)
+
+### Ergebnis in Kürze
+
+- **Der Zoom läuft jetzt in zwei Schritten, die nacheinander kommen:**
+  1. Das breite Kachelbild zoomt, bis sein Kachelausschnitt genau dort liegt, wo er im Hochformat liegt (`kachel_breit`). Das Fenster wächst dabei von der Kachel zum ganzen Bildschirm.
+  2. Erst dann blendet es in 200 ms ins Hochformat über. Voraussetzung: Das Hochformat-Standbild ist geladen, im Viewer eingeblendet und dekodiert (`img.decode()`). Bis dahin bleibt das Kachelbild stehen, höchstens 2,5 s.
+- **Zurück genauso, nur umgekehrt:** erst 200 ms ins Kachelbild überblenden, dann herauszoomen.
+- **Rund um das Kachelbild liegt immer Bild, mit großer Reserve.** Läuft das Fenster am iPhone kurz aus dem Takt, verschiebt sich das Bild nur ein wenig, es wird nichts frei.
+- **Test: 0 Lücken** in 3210 eingefrorenen Zwischenbildern und in 1581 Bildern in Echtzeit (CPU gedrosselt bzw. Standbild verspätet).
+- **Desktop ist unverändert.**
+
+| Commit | Punkt | Inhalt |
+|---|---|---|
+| `8459bab` | 1–4 | Neuer Ablauf in `hochFlug` (app.js): Zoom bis zur Endlage, dann überblenden. Neue Einstellungen `seite.hochBlende` (200 ms) und `seite.hochWarten` (2500 ms), `hochUeberblenden` entfällt. README und CLAUDE.md angepasst. |
+| `2e5cc73` | Test | Übersichten in `Reports/hochformat/runde11/` |
+| (dieser) | – | dieser Nachtrag |
+
+### Ursache: warum der Schnitt gerade rechts entstand
+
+1. **Fenster und Bilder liefen getrennt.**
+   - Das Fenster war ein eigenes Element, das per `transform` von der Kachel auf den Bildschirm wuchs.
+   - Die Bilder darin wurden mit eigenen Animationen gegenskaliert. Das stimmt nur, solange beide exakt im selben Takt laufen.
+   - In derselben Fenster-Animation steckte auch der Eckradius (`border-radius`). Den kann Safari nicht auf der Grafikkarte animieren. Damit war nicht gesichert, dass Fenster und Bilder am iPhone im selben Takt bleiben. Im Desktop-Browser laufen sie synchron, deshalb zeigte mein Test damals 0 Fehler.
+2. **Ursprung oben links (`transform-origin: 0 0`).**
+   - Läuft das Fenster dem Bild um einen Bruchteil voraus, ist der Fehler am linken Rand null und wächst nach rechts.
+   - Am rechten Rand ist er also am größten. Unten wächst er genauso, dort liegt aber der gleichfarbige Boden unter den Leisten.
+3. **Kaum Reserve.** Das Unterlagebild lag seitlich passgenau bis an den Fensterrand, mit nur 10 px Reserve.
+4. **Zu früher Bildwechsel.**
+   - Das Hochformat blendete schon im ersten Drittel ein.
+   - Es ist aber bis zum Ende schmaler als das Fenster, denn die Kachel ragt links und rechts je 28 % über das Hochformat hinaus.
+   - Seine Seitenkanten standen also mitten im Bild. Das war das „zu frühe Umschalten“.
+- **Die Breite des Containers war nicht falsch.** Rechnerisch stimmte der Ausschnitt, deshalb fiel der Fehler nur am Gerät auf.
+- **Einschränkung:** Am iPhone selbst kann ich das nicht messen. Punkt 1 und 2 sind die schlüssigste Erklärung für „nur rechts“.
+
+### Lösung
+
+- **Nur noch `transform` und `opacity`.** Das Fenster bewegt sich nur noch. Der Ausschnitt mit dem Eckradius ist ein eigenes Element darin (`.flug-fenster`).
+- **Ebenen im Fenster, von unten nach oben:**
+  1. Die gespiegelten Ränder des breiten Kachelbilds: oben die Wand, unten der Boden. Sie schließen an der Kante nahtlos an und reichen 30 % der Fensterhöhe + 24 px über das Fenster hinaus.
+     - Nötig sind sie, weil das breite Bild (12:5) im Hochformat nur ein Band von 5–64 % der Höhe deckt.
+  2. Die kleine Kopie des Hochformats an ihrer Endlage. Im Band passt sie pixelgenau zum Kachelbild, darüber und darunter zeigt sie die echte Wand und den echten Boden.
+  3. Das breite Kachelbild genau auf seinem Ausschnitt. Seitlich reicht es immer mindestens 40 % der Fensterbreite über das Fenster hinaus.
+- **Zurück aus der Wartezeit:** Wer zurücktippt, während das Kachelbild noch auf das Standbild wartet, bekommt sofort den Rückweg. Vorher lag das Bild bis zu 2,5 s über der Produktwand. Das fiel erst in diesem Test auf.
+
+### Test
+
+Aufbau:
+- Edge headless mit Touch-Emulation, über einen lokalen Server.
+- Seitenhintergrund magenta, das Innere des Fensters grün.
+- Jede grüne oder magenta Stelle im Fenster zählt als Fehler.
+
+| Test | Bilder | Fehler |
+|---|---|---|
+| Eingefroren: 390 × 780, 390 × 664, 430 × 932, 360 × 640 × alle 5 Produkte + Lampe abends. Je 31 Zeitpunkte hin und zurück, dazu Fenster und Bilder absichtlich ±12 % aus dem Takt, Überblenden und Endseite | 2568 | **0** |
+| Dasselbe noch einmal mit dem Endstand, 390 × 664 | 642 | **0** |
+| Echtzeit, CPU 6-fach gedrosselt: 390 × 780 und 360 × 640, alle Produkte hin und zurück | 873 | **0** |
+| Echtzeit, Server liefert das Standbild verspätet (2,5–4,5 s), auch mit CPU 6-fach, 390 × 664 und 430 × 932 | 638 | **0** |
+| Echtzeit ohne Drosselung, 390 × 664, Tisch | 70 | **0** Lücken (1 Bild mit zu runder Ecke, siehe unten) |
+| Gegenprobe ohne Spiegelränder und Hochformat-Kopie | 107 | bis 338 000 Lückenpixel je Bild: Der Test findet Lücken |
+
+- **Zeiten mit spätem Standbild** (Regal OBJ_SH_M_04):
+  - Zoom fertig nach 751 ms, das Standbild ist bei 1965 ms da, Überblenden ab 2035 ms.
+  - Kommt das Standbild gar nicht, wird nach 2,5 s übergeblendet (bei 3268 ms).
+  - Das Kachelbild hat dabei immer gestanden.
+- **Ohne Drosselung:** Überblenden 40–100 ms nach dem Zoom.
+- **Desktop alt gegen neu** (1536 × 730, 1920 × 1080, 2560 × 1080, 1366 × 625, Handy quer 780 × 390 und 844 × 390):
+  - Alle 60 Keyframe-Sätze sind identisch.
+  - Produktwand und Produktseiten sind pixelgleich.
+  - Die Zoom-Zwischenbilder unterscheiden sich nur in der Seitenüberblendung im Hintergrund, die der Test nicht anhält.
+- **Außerdem geprüft, alles ohne JS-Fehler und ohne Reste:**
+  - Lampe zurück im Abendmodus: Licht geht weich aus, größter Sprung 0,17 je 50 ms.
+  - Lampe mit View 2 und Sessel aus View 3: die Fahrt läuft in der Kachel weiter.
+  - Mittendrin abgebrochen.
+  - Drehen.
+  - „Bewegung reduzieren“.
+- **Übersichten:** `Reports/hochformat/runde11/390x780_<Produkt>_auf.jpg` und `…_zu.jpg`, je 6 Zwischenbilder.
+- **Am Rand des Tests:**
+  - Nicht gezählt wurde jeweils der äußerste Pixel der Fensterkante und die 3-px-Rundung der Kachel. Die Kante selbst ist geglättet und zeigt dort Seite und Bild gemischt.
+  - In einem Echtzeitbild war die Ecke kurz rund 6 statt 3 px rund. Der Eckradius läuft mit Absicht getrennt vom Zoom und kann einen Takt nachhinken. Das ist eine Ecke, keine Lücke im Bild.
+
+### Was auffällig ist
+
+- **Während des Zooms:** Seitlich neben dem Hochformat (nur wenige px breit, oben und unten neben dem Kachelbild-Band) ist die gespiegelte Wand bzw. der gespiegelte Boden zu sehen statt der echten. Die Struktur ist etwas anders, in der Bewegung kaum sichtbar. Am Ende ist dieser Streifen weg.
+- **Nicht getestet:** auf dem echten iPhone. Bitte dort ansehen, vor allem den rechten Rand.
+
+### Hochladen (GitHub Desktop)
+
+- github.com/burningfireorange-cpu/gauge meldet weiterhin **404**. Entweder ist das Repo noch nicht veröffentlicht, oder es ist privat. In git ist kein Remote eingetragen.
+- Upload-Größe: 506 MB (Grenze ca. 1 GB).
+- **Noch nicht veröffentlicht:**
+  1. GitHub Desktop: *File → Add local repository…* → `C:\websites\gauge`.
+  2. **Publish repository:** Name `gauge`, „Keep this code private“ **abwählen**.
+     - Nur `main` veröffentlichen, **nicht** den Zweig `historie-bis-runde-9`.
+  3. Auf github.com: *Settings → Pages → Deploy from a branch → `main` / `(root)` → Save*.
+- **Schon veröffentlicht** (privat oder aus einer anderen Kopie): in GitHub Desktop `C:\websites\gauge` öffnen und **Push origin** drücken.
+  - Ist das Repo privat: unter *Settings → General → Danger Zone → Change visibility* auf *Public* stellen. Pages ist bei kostenlosen Konten nur für öffentliche Repos möglich.
+
+### Offene Frage
+
+- Passt die Überblendzeit von 200 ms (`seite.hochBlende`)? Kürzer wirkt härter, länger lässt das Kachelbild länger stehen.
