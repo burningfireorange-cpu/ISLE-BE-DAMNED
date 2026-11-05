@@ -128,6 +128,10 @@ window.GAUGE_CONFIG = {
   seite: {
     wechsel: 320,                  // crossfade between pages
     kachelZumViewer: 560,          // tile zooms seamlessly into the viewer (shared element)
+    hochUeberblenden: 0.3,         // phone upright: share of the zoom (0–1) over which the wide tile image fades into the
+                                   //   portrait picture (way back: the last part). Under the picture the wide tile image
+                                   //   grows along, so the window never shows anything else (larger = softer, but the
+                                   //   stretched tile image shows through longer above and below the furniture)
     kachelZurueckziehen: 480,      // phone upright, back to the wall after a move: the portrait picture draws back inside
                                    //   the tile onto the tile crop, the sides of the tile come in (Cam1 upright has a
                                    //   longer focal length – the tile reaches beyond the portrait picture)
@@ -172,6 +176,7 @@ window.GAUGE_CONFIG = {
        (field bildinfo of produkte.json) is never cropped; in very wide windows (21:9, 32:9) the picture keeps the full
        height and its sides fade softly into the background colour */
     moebelRand: 20,                // px – the furniture keeps at least this distance from the left screen edge and from the bar
+                                   //   (wide picture only – upright on the phone the portrait picture always fills the screen)
     auslaufen: 0.1,                // share of the picture width (sides) / height (top, bottom) over which a visible picture edge fades out
     auslaufenWechsel: 420,         // ms – the fade at the edges grows / shrinks softly (window resized, way back into the tile)
     hochformat: true               // phone held upright: use the portrait pictures (bilder_hoch …) once they exist for a product

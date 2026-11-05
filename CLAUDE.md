@@ -76,8 +76,11 @@ README.md                   ausführliche Beschreibung für den Nutzer (deutsch)
 - **Produktseite**: Leiste rechts mit Views (nur vorhandene), Lampe (nur Leuchten), Pfeilen. Das Bild füllt den ganzen
   Bildschirm (auch hinter der Leiste), seine Mitte liegt in der Mitte des freien Bereichs. Kachel → Produkt: der 4:3-Ausschnitt
   öffnet sich seitlich zum vollen Bild; zurück: die Fahrt zu Cam1 läuft in der schrumpfenden Kachel weiter.
-- **Handy senkrecht: Hochformat** (volle Breite, oben bündig, Möbel nie unter den Leisten). Zoom Kachel ↔ Hochformat über
-  `kachel_breit` (Rahmen größer als das Hochformat, breites Kachelbild füllt die Seiten, Fenster nie mit leerer Ecke).
+- **Handy senkrecht: Hochformat** – IMMER bildfüllend (volle Breite, oben bündig, kein Rand, kein weicher Auslauf, nie
+  verkleinert). Die Kameras des Nutzers sind maßgeblich; liegt ein Möbel unter den Leisten, nur melden, nicht ausgleichen.
+  Zoom Kachel ↔ Hochformat über `kachel_breit` als EINE Bewegung (`hochFlug` in app.js): Kachelbild zoomt hinein und blendet
+  ins Hochformat über, darunter immer das vergrößerte Kachelbild – nie Weiß im Fenster. Nur transform/opacity animieren
+  (kein animiertes clip-path: lief am iPhone nicht synchron → weiße Streifen).
   Handy quer: breites Format. Desktop darf sich durch Hochformat-Änderungen nicht verändern (A/B gegen alten Stand prüfen).
 - Anzeigenamen sind Codes (`OBJ_LT_M_03`), Ordner/Adressen bleiben `Object_NN`.
 - Baum-Modus (`navigation: 'baum'` in config.js) muss umschaltbar und funktionsfähig bleiben.

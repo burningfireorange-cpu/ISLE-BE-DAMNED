@@ -450,43 +450,21 @@
         area with config viewer.moebelRand – if needed the picture gets smaller (the same for all views of the product,
         so nothing jumps between views), its edges then fade out above / below as well.
       Phone upright without portrait pictures (art 'decken'): the wide picture covers the screen as before.
-      Portrait picture (art 'hoch', phone upright): full width, top aligned, the bars lie over the floor; on phones
-        slimmer than its aspect ratio it is enlarged towards the full height and cropped evenly at the sides (tile
-        centre). The furniture box of every view (bildinfo of the _hoch stills, not for close-ups) is never covered by
-        the bars (free area above them, viewer.moebelRand) and never cropped at the sides – if needed the picture gets
-        smaller (the same for all views), still top aligned; edges inside the window fade out softly. */
+      Portrait picture (art 'hoch', phone upright): ALWAYS the full screen – full width, top aligned, the bars lie over
+        the floor; on phones slimmer than its aspect ratio it is enlarged to the full height and cropped evenly at the
+        sides (tile centre). Never smaller, no soft edges: the cameras are set up in the phone preview so that the
+        furniture stays above the bars. */
   function rand(innen, voll) { return innen > 0.5 ? Math.min(voll, innen * 3) : 0; }
   G.buehne = function (p, format, W, H, fr, fu) {
     var V = C.viewer, h, w, left, top, F = V.auslaufen || 0;
     if (format === 'hoch' && p.hoch) {
+      // always the full screen: full width, top aligned, no edge, no soft fade – the cameras are set up for the phone
+      // (the furniture stays above the bars by the camera, not by a rule here). A phone slimmer than the picture gets it
+      // enlarged to the full height, cropped evenly at the sides around the tile centre.
       var aH = p.hoch.verhaeltnis, k = p.hoch.kachelAusschnitt, kc = k ? k.x + k.w / 2 : 0.5;
-      var mr = V.moebelRand || 0, freiH = H - fu;
-      var boxen = p.hoch.moebel.concat(p.hoch.moebelAbend).filter(function (b) { return b && !b.cut; });
-      var lage = function (w) { return w > W ? Math.min(0, Math.max(W - w, W / 2 - kc * w)) : (W - w) / 2; };
-      var passt = function (w) {
-        var hh = w / aH, l = lage(w);
-        for (var i = 0; i < boxen.length; i++) {
-          var b = boxen[i];
-          if ((b.y + b.h) * hh > freiH - mr + 0.5) return false;                       // under the bars
-          if (w > W + 0.5 && (l + b.x * w < mr - 0.5 || l + (b.x + b.w) * w > W - mr + 0.5)) return false;   // cropped sides
-        }
-        return true;
-      };
-      var groesste = function (a, z) {      // the largest width in [a, z] that fits (a fits)
-        for (var n = 0; n < 24; n++) { var mi = (a + z) / 2; if (passt(mi)) a = mi; else z = mi; }
-        return a;
-      };
-      var wVoll = Math.max(W, H * aH);       // full width – or enlarged to the full height (phone slimmer than the picture)
-      if (passt(wVoll)) w = wVoll;
-      else if (passt(W)) w = groesste(W, wVoll);
-      else {                                  // even full width puts furniture under the bars: smaller
-        w = W;
-        boxen.forEach(function (b) { if (b.y + b.h > 0) w = Math.min(w, (freiH - mr) * aH / (b.y + b.h)); });
-        w = Math.max(w, 40);
-      }
-      h = w / aH; left = lage(w);
-      return { left: left, top: 0, width: w, height: h, art: 'hoch',
-        maske: { l: rand(left, F * w), r: rand(W - left - w, F * w), t: 0, b: rand(H - h, F * h) } };
+      w = Math.max(W, H * aH); h = w / aH;
+      left = w > W ? Math.min(0, Math.max(W - w, W / 2 - kc * w)) : 0;
+      return { left: left, top: 0, width: w, height: h, art: 'hoch', maske: { l: 0, r: 0, t: 0, b: 0 } };
     }
     var a = p.verhaeltnis, freiW = W - fr, freiH = H - fu, cx = freiW / 2, cy = freiH / 2, art = 'voll';
     h = H + fu; w = h * a;
