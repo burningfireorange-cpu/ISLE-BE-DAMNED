@@ -202,6 +202,15 @@
       });
     });
   }
+  /** Has a placeholder its real image already (no loading needed)? */
+  function schonDa(ph) { return !!ph && ph.classList.contains('echt'); }
+  /** Resolves once a picture file (already loaded – the small copy) is decoded, so that it can be painted at once. */
+  function kopieDekodiert(url) {
+    if (!url || !C.echteDateienVerwenden) return null;
+    var i = new Image();
+    i.src = url;
+    return i.decode ? i.decode().then(null, function () {}) : null;
+  }
   function radiusVon(el) { return el ? parseFloat(getComputedStyle(el).borderTopLeftRadius) || 0 : 0; }
   function setzeBox(el, k) {
     el.style.inset = 'auto';
@@ -309,6 +318,8 @@
     clearTimeout(ab._aus);
     ab._aus = setTimeout(function () { ab.classList.remove('ausglimmen'); }, G.blende(C.viewer.lampe) + 60);
   }
+  /** The tools of the bar (Products: the code filter) were held back for the way home – now they fade in. */
+  function werkzeugeFreigeben() { if (G.nav && G.nav.werkzeugeFreigeben) G.nav.werkzeugeFreigeben(); }
   function boxWeg(el) { ['position', 'inset', 'left', 'top', 'width', 'height', 'transformOrigin'].forEach(function (k) { el.style[k] = ''; }); }
   function heimAbbrechen() {
     if (!heim) return;
@@ -329,58 +340,44 @@
     G.seiteProdukt.viewerHolen(h.v);            // back onto the stage (or out of the page, if another product is shown)
     if (h.k && h.k.parentNode) h.k.parentNode.removeChild(h.k);
   }
-  /* Phone upright (the tile shows the phone tile, a crop of the portrait picture): the real viewer itself closes into
-     the tile – the opening backwards (handyFlug, nothing swapped). From another view than 1, first the move back to
-     view 1 plays in the full portrait picture (the viewer stays on the whole screen, above the wall), THEN the same
-     closing. In the tile the viewer fades into the tile's identical image (evening: the tile holds its evening image,
-     then the light goes out softly). */
+  /* ONE way back for PC and phone (only picture and crop differ): the real viewer shrinks into its tile AT ONCE, and the
+     move back to view 1 (started by v.heim) plays at the same time – in the shrinking picture and on inside the tile once
+     it has arrived – until it stands on Cam1. Then the viewer fades into the tile's identical image (evening: the tile
+     holds its evening image, then the light goes out softly). The tools of Products (code filter) appear only once the
+     picture has arrived in the tile (G.nav.werkzeugeFreigeben).
+     Wide picture: the window closes onto the 4:3 tile crop (fensterFrames). Phone upright (the tile shows the phone tile,
+     a full-width crop of the portrait picture): the same window, with the frames of the opening backwards (handyFlug –
+     side insets always 0, nothing swapped). */
   function heimfahren(v, gross, kachel) {
     heimAbbrechen();
-    // (phone upright: the opening may still wait for the portrait still – the way back takes over at once)
-    if (flugEl && flugEl.classList.contains('flug-handy')) flugWeg();
+    // (an opening flight may still be on the screen, e.g. waiting for the full still – the way back takes over at once)
+    if (flugEl) flugWeg();
     var el = v.el, h = heim = { v: v, kachel: kachel };
     var radiusGross = radiusVon(el);
     v.heim();
     v.maske(null);       // soft edges (ultrawide) grow back to the hard picture edge while it shrinks into the tile
     var ka = v.kachelAnteil;
-    var fahrt = v.belegt || v.aktuell !== 1;
     v.kachelLegen();
     var dauer = C.seite.kachelZumViewer * 0.85;
+    var T = kachel.getBoundingClientRect(), rK = radiusVon(kachel);
     if (v.format === 'hoch' && kachel.dataset.format === 'hoch' && document.body.animate) {
-      h.handy = true;
-      var zusammenziehen = function () {
-        if (heim !== h) return;
-        var halter = h.k;
-        var hf = handyFlug({ auf: false, T: kachel.getBoundingClientRect(), V: gross, ka: ka,
-          radiusKlein: radiusVon(kachel), radiusGross: radiusGross, dauer: dauer, selbst: el });
-        if (halter && halter.parentNode) halter.parentNode.removeChild(halter);
-        h.k = hf.k; h.anims = hf.anims;
-        hf.fertig.then(function () { if (heim === h && h.k === hf.k) inKachel(); });
-      };
-      if (!fahrt) { zusammenziehen(); return; }
-      // the move back to view 1 first: the viewer holds the whole screen meanwhile (over the wall, under the bar)
-      var halter = h.k = G.el('div', 'flug flug-handy');
-      halter.style.left = gross.left + 'px'; halter.style.top = gross.top + 'px';
-      halter.style.width = gross.width + 'px'; halter.style.height = gross.height + 'px';
-      var innen = G.el('div', 'flug-inhalt');
-      halter.appendChild(innen);
-      innen.appendChild(el);                       // moved synchronously – the move keeps playing
-      document.body.appendChild(halter);
-      v.wennRuhig(zusammenziehen);
-      return;
+      var hf = handyFlug({ auf: false, T: T, V: gross, ka: ka, radiusKlein: rK, radiusGross: radiusGross, dauer: dauer, selbst: el });
+      h.k = hf.k; h.anims = hf.anims;
+      hf.fertig.then(function () { if (heim === h && h.k === hf.k) inKachel(); });
+    } else {
+      var k = h.k = G.el('div', 'flug flug-echt');
+      k.style.left = gross.left + 'px';
+      k.style.top = gross.top + 'px';
+      k.style.width = gross.width + 'px';
+      k.style.height = gross.height + 'px';
+      var frames = fensterFrames({ auf: false, klein: T, gross: gross,
+        aus: ka, radiusKlein: rK, radiusGross: radiusGross });    // ends on the 4:3 tile crop
+      var opts = { duration: dauer, easing: C.kurve, fill: 'forwards' };
+      k.appendChild(el);                           // moved synchronously – a running video keeps playing
+      document.body.appendChild(k);
+      h.anim = k.animate(frames, opts);
+      h.anim.onfinish = inKachel;
     }
-    var k = h.k = G.el('div', 'flug flug-echt');
-    k.style.left = gross.left + 'px';
-    k.style.top = gross.top + 'px';
-    k.style.width = gross.width + 'px';
-    k.style.height = gross.height + 'px';
-    var frames = fensterFrames({ auf: false, klein: kachel.getBoundingClientRect(), gross: gross,
-      aus: ka, radiusKlein: radiusVon(kachel), radiusGross: radiusGross });    // ends on the 4:3 tile crop
-    var opts = { duration: dauer, easing: C.kurve, fill: 'forwards' };
-    k.appendChild(el);                           // moved synchronously – a running video keeps playing
-    document.body.appendChild(k);
-    h.anim = k.animate(frames, opts);
-    h.anim.onfinish = inKachel;
     /** The flight has reached the tile: the viewer goes into the tile (a move plays on there), then fades out. */
     function inKachel() {
       if (heim !== h) return;
@@ -390,6 +387,7 @@
       h.anim = null; h.anims = null;
       if (h.k && h.k.parentNode) h.k.parentNode.removeChild(h.k);
       h.k = null;
+      werkzeugeFreigeben();                      // the overview stands: now the code filter fades in
       v.wennRuhig(weiter);
     }
     function weiter() {
@@ -459,7 +457,8 @@
     body.classList.toggle('ist-start', istStart);
     if (G.LEISTE) {
       // coming from the start screen the tools fold out once the fields have arrived in the bar
-      G.leiste.render(r, { sofort: !!info.erstesMal && !istStart, erst: !!info.erstesMal && istStart });
+      // (way back into a tile: the code filter appears only once the picture has arrived there – werkzeugeFreigeben)
+      G.leiste.render(r, { sofort: !!info.erstesMal && !istStart, erst: !!info.erstesMal && istStart, halten: !!zurueckFlug });
     } else {
       body.classList.toggle('baum-an', !istStart);
       body.classList.toggle('baum-schmal', r.seite === 'gallery' || r.seite === 'customize');
@@ -480,8 +479,6 @@
     if (ziel) ziel.zeigen(r, info);
     // the product is opened again while its viewer is still on its way home in the tile: take it back at once
     if (heim && r.produkt && heim.v.p === r.produkt) heimAbbrechen();
-    // (phone upright: the viewer may still hold the whole screen for its move back – any other page takes over at once)
-    if (heim && heim.handy && r.seite !== 'products') heimAbbrechen();
     G.nav.extrasAktualisieren();   // views / lamp need the page's viewer
 
     // tile → viewer: the tile zooms seamlessly up into the centred product image (same image, no jump)
@@ -522,8 +519,11 @@
           hoch = { auf: true, T: r0, V: vw.el.getBoundingClientRect(), ka: ka, skala: kz.skala,
             radiusKlein: radiusVon(q), radiusGross: radiusVon(vw.el), dauer: C.seite.kachelZumViewer, schichten: hs,
             bereit: Promise.all(dekoder), zurueckgeben: leihe.zurueck,
-            // (flug: the full still decoded in the viewer, then the flight fades out over it)
-            fertigBereit: Promise.all([dekodiert(gs), lit ? dekodiert(ga) : null]) };
+            // (flug: then the flight fades out over the viewer – over its full still if that is there already, else over
+            // its small copy, decoded; the still is not fetched first: like on the PC the moves of the product load
+            // before it, and it fades in over the copy once it comes – see Viewer.vorladen)
+            fertigBereit: Promise.all([schonDa(gs) ? dekodiert(gs) : kopieDekodiert(G.pfade.kachel(p, 'hoch')),
+              lit ? (schonDa(ga) ? dekodiert(ga) : kopieDekodiert(G.pfade.kachelAbend(p, 'hoch'))) : null]) };
         }
         flug({ auf: true, klein: r0, gross: vw.el.getBoundingClientRect(), radiusKlein: radiusVon(q), radiusGross: radiusVon(vw.el), aus: ka, maske: vw.maskeWerte,
           hoch: hoch, schichten: schichten, verstecken: [vw.el, q], dauer: C.seite.kachelZumViewer,
@@ -533,12 +533,13 @@
     }
     // viewer → tile (going back to the wall): the real viewer shrinks into the tile, a move back to view 1 plays on
     if (zurueckFlug) {
-      var kachel = G.seiteProdukte.kachelFuer(zurueckFlug.produkt.id);
+      var kachel = G.seiteProdukte.kachelFuer(zurueckFlug.produkt.id), los = false;
       if (kachel) {
         var kr = kachel.getBoundingClientRect();
         if (!sichtbar(kr) && kachel.scrollIntoView) { kachel.scrollIntoView({ block: 'center' }); kr = kachel.getBoundingClientRect(); }
-        if (sichtbar(kr)) heimfahren(zurueckFlug.v || G.viewerFuer(zurueckFlug.produkt), zurueckFlug.r, kachel);
+        if (sichtbar(kr)) { heimfahren(zurueckFlug.v || G.viewerFuer(zurueckFlug.produkt), zurueckFlug.r, kachel); los = true; }
       }
+      if (!los) werkzeugeFreigeben();      // (no flight into a tile: the tools need not wait)
     }
     document.title = titel(r);
   }

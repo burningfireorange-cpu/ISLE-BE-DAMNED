@@ -1,0 +1,71 @@
+Runde 14 – Messungen (2026-11-06)
+=================================
+Edge headless über CDP. Drosselserver (skripte/drossel.js): eine gemeinsame Bandbreite + Latenz je Anfrage, Range.
+Fast 4G = 9 Mbit/s / 165 ms, Slow 4G = 1,6 Mbit/s / 560 ms. Kalter Cache. IOS=1 = iPhone-Simulation
+(Videos laden vor play() höchstens Metadaten, kein webm/AV1 -> MP4).
+Wichtig: Der Drosselserver lieferte bis Runde 13 nur ca. 60 % der eingestellten Rate (Windows-Takt ~31 statt 20 ms).
+In Runde 14 korrigiert (Budget aus der echten Zeit, gemessen 8,7 von 9 Mbit/s). Zahlen aus Runde 13 sind darum
+nicht 1:1 vergleichbar (sie wurden mit langsamerem Netz gemessen).
+
+1. Öffnen -> alle Fahrten bereit (ergebnisse/r14_vorlad.txt)
+   Handy 390x664, iPhone-Sim., Fast 4G:  Object_05 6,3 s (5,6 MB) | _04 7,7 s | _03 7,2 s | _02 7,5 s | _01 14,5 s (12 Fahrten, 13,3 MB)
+                                         Fahrten ab View 1 bereit nach 2,3–2,4 s (Object_01: 3,7 s)
+   PC 1536x730, Fast 4G:                 Object_05 6,9 s | _04 5,8 s | _03 5,0 s | _02 6,7 s | _01 10,5 s (9,0 MB)
+   Lampe Object_03, Licht 1,5 s nach dem Öffnen an, Fast 4G: alle Abendfahrten bereit 9,1 s, danach die Tagfahrten (18,8 s)
+                                         Licht aus: 0 Anfragen für Abendfahrten
+   Slow 4G Handy:  Object_05 32,4 s (5,6 MB – Leitungsgrenze 28 s), Object_01 75,9 s (13,3 MB – Grenze 68 s)
+   Slow 4G PC:     Object_05 35,3 s (6,2 MB)
+   Vergleich alter Stand (vor Punkt 5 = Stand nach 3c4bfbb), gleicher korrigierter Server, iPhone-Sim. Fast 4G
+   (ergebnisse/erg_alt_vorlad_korrigiert.txt gegen erg_neu_vorlad_vergleich.txt):
+     Object_05 alt 7,7 s / neu 6,4 s, Object_01 alt 15,4 s / neu 14,6 s. Die Simulation ist für den alten Stand zu
+     freundlich (Edge lädt dort 3,7 MB vor; Safari lädt ohne play() nichts). Der Gewinn liegt beim Fahrtstart.
+   (ergebnisse/erg_alt_vorlad.txt = erster Lauf VOR der Server-Korrektur, 11,7 s – nicht vergleichbar, verworfen.)
+
+2. Tippen -> Fahrtstart (ergebnisse/r14_views_fast.txt, r14_views_slow.txt; Tippen 1,2 s nach dem Öffnen)
+   Fast 4G Handy (iPhone-Sim.): vorgeladen 30–35 ms; einzige frische Fahrt (Object_05 View 3, erstes Produkt) 400 ms
+   Fast 4G PC:                  vorgeladen 18–30 ms; frisch 818 ms (Object_05 View 3)
+   Fast 4G Lampe mit Licht:     497–548 ms (Abendfahrten laden erst ab Licht an)
+   Slow 4G Handy:  2,8–5,6 s, Median 3,6 s   (Datei ~1 MB = 5 s Leitung; Stream startet vorher)
+   Slow 4G PC:     1,3–4,3 s, Median 3,7 s
+   Slow 4G Lampe:  2,4–5,0 s
+   Vergleich alter Stand (ergebnisse/erg_views_alt_fast.txt): Fast 4G Handy 492–514 ms.
+   Markierung: immer 0–1 ms. Mehrfach-Tippen 2,3,2,3 -> Folge 1>2>3: die laufende Fahrt zu 2 spielt zu Ende,
+   dann direkt zur zuletzt getippten 3 (keine Warteschlange). Während der Fahrt zu 1 die 2 getippt -> Folge 3>1>2.
+   Alle Läufe: 0 Probleme, 0 JS-Fehler, 0 x 404, kein falsches Format, keine falsche Videogröße.
+
+3. Zurück zur Übersicht (ergebnisse/erg_heim14.txt; ungedrosselt; alle 5 Produkte, View 2 und 3; Lampe View 1 und 3)
+   Handy 390x664 und 360x640, PC 1536x730 – gleicher Ablauf:
+   Schrumpfen ab 25–64 ms, Kachel erreicht 475–511 ms, Fahrt läuft im Flug und in der Kachel weiter (Ende ~2,26 s),
+   Code-Filter ab 489–551 ms sichtbar, voll 644–696 ms. Werkzeuge der Produktseite weg: Handy ~100–120 ms, PC ~235–273 ms.
+   Lampe View 3: Abendfahrt Move_Cam3_Cam1_abend_hoch im Flug und in der Kachel, danach geht das Licht weich aus.
+
+4. Handy-Zoom hin/zurück Bild für Bild (ergebnisse/erg_zoom_*.txt)
+   390x664, 393x659, 430x932, 360x640; alle 5 Produkte; zurück von View 1, 2, 3; Lampe mit Licht (390x664, 430x932).
+   Fenster ragt nie über das Bild hinaus (rand 0 px), kein Bild ohne geladenes Bild, Anfang = Kachel und Ende =
+   Viewer auf <= 0,2 px, kein Sprung, Standbild beim Ausblenden des Rahmens geladen.
+   Hinweis: In erg_zoom_<Größe>.txt stehen bei View 1 „Sprünge“ – ein Fehler im Test (zwei Abtastschleifen liefen
+   gleichzeitig). Nach der Korrektur: erg_zoom_v1_<Größe>.txt, 0 Probleme.
+
+5. Kleines PC-Fenster (skripte/leiste.js; Bilder leiste_1280x*.jpg)
+   1920x1080 … 1280x600: Felder 44 px | 1280x560: 41 | 520: 37 | 480: 34 | <= 440 sowie 800x400, 770x340: unten waagerecht.
+   Alle Felder ganz im Fenster und treffbar, 0 Probleme.
+
+6. Ladering (skripte/ring.js)
+   Slow 4G: sichtbar ab ~217 ms, dreht, Bogen 18 -> 97 % gleichmäßig bis zum Start nach 5,2 s
+   Fast 4G: sichtbar ab ~245 ms, Start 0,68 s | ungedrosselt: kein Ring (Start 186 ms) | PC Fast 4G: 230 ms / 820 ms
+
+7. Rauchtests (skripte/rauch.js): Desktop, Handy, Bewegung reduzieren (0 Fahrten, nur Blenden), Baum-Modus
+   (eingeschleust per CDP, Projekt unverändert): je 5 Produkte, 0 Probleme, 0 JS-Fehler; auch über file://.
+
+8. Videogrößen je Format (alle 2 s, 30 fps; Durchschnitt / größte Datei)
+   klein breit   mp4 1008 / 1795 KB   webm  403 /  600 KB   (Handy quer)
+   klein hoch    mp4 1082 / 1560 KB   webm  500 /  740 KB   (Handy senkrecht; 720x1440, H.264 ~3,4 Mbit/s, AV1 ~1,9)
+   video breit   mp4 2442 / 3755 KB   webm  808 / 1103 KB   (PC; 2592x1080, H.264 ~14,4 Mbit/s)
+   video hoch    mp4 3631 / 5222 KB   webm 1427 / 2201 KB   – wird von der Seite NIE geladen (~207 MB im Repo)
+   iPhone kann kein AV1 -> lädt MP4 (gut doppelt so groß wie webm).
+
+9. Kompressionsprobe (ergebnisse/kompression_probe.txt; Neukodierung des vorhandenen MP4, SSIM gegen dieses MP4)
+   Move_Cam1_Cam2_hoch klein 825 KB:  x264 crf24 468 KB (0,967) | x265 crf24 435 KB (0,970) | x265 crf26 313 KB (0,961)
+   Move_Cam4_Cam1_hoch klein 1559 KB: x264 crf24 990 KB (0,974) | x265 crf24 741 KB (0,975) | x265 crf26 542 KB (0,967)
+   Move_Cam1_Cam2 groß 3508 KB:       x264 crf26 1228 KB (0,955) | x265 crf28 573 KB (0,950)
+   Zum Vergleich: vorhandenes AV1-webm gegen MP4 SSIM 0,925. Nicht umgesetzt (nur Vorschlag).

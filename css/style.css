@@ -471,6 +471,15 @@ input[type=range]::-moz-range-thumb { width: 11px; height: 11px; border-radius: 
 .glas.mit-kontext .g-trenner { display: block; }
 .glas.rechts .g-trenner { width: 22px; height: 1px; margin: 7px 0; }
 .g-kontext:empty { display: none; }
+/* small window (desktop, js/leiste.js einpassen): the fields are smaller (--feld down to leiste.feldMin) – symbols, text
+   and dividers shrink with them */
+.glas.eng .g-sym svg { width: calc(var(--feld) * .4773); height: calc(var(--feld) * .4773); }
+.glas.eng .g-text { font-size: calc(var(--feld) * .3068); }
+.glas.eng .g-trenner { margin: 0 calc(var(--feld) * .16); }
+.glas.eng.rechts .g-trenner { margin: calc(var(--feld) * .16) 0; }
+.glas.eng .w-trenner { margin: 0 calc(var(--feld) * .136); }
+.glas.eng.rechts .w-trenner { margin: calc(var(--feld) * .136) 0; }
+.glas.eng .g-reihe { padding: calc(var(--feld) * .1136); }
 /* product page: a fine divider between the views (+ lamp) and the arrows – also in the phone's small glass field */
 .w-trenner { flex: 0 0 auto; width: 1px; height: 20px; margin: 0 6px; background: rgba(0, 0, 0, .16); }
 .glas.rechts .w-trenner { width: 20px; height: 1px; margin: 6px 0; }
@@ -496,6 +505,10 @@ input[type=range]::-moz-range-thumb { width: 11px; height: 11px; border-radius: 
   clip-path: inset(0 100% 0 0);
 }
 .g-alt .schild, .g-alt .g-optionen, .g-alt .g-blase { display: none !important; }
+/* way back into the tile: the tools of the new page (code filter) wait invisibly until the picture has arrived */
+.glas.werkzeug-halt .g-kontext, .glas.werkzeug-halt .g-trenner { opacity: 0; pointer-events: none; }
+.glas-oben.werkzeug-halt { pointer-events: none; }
+.glas-oben.werkzeug-halt > .g-hg, .glas-oben.werkzeug-halt > .g-reihe { opacity: 0; transition: none; }
 
 /* the round fields: all symbols the same size, fine lines */
 .g-feld {
@@ -532,7 +545,11 @@ html.eigener-zeiger .g-feld:hover { background: transparent; }   /* the pointer 
   opacity: 0;
   transition: opacity .2s var(--kurve);
 }
-.g-feld.laedt .g-ring { opacity: 1; transition-delay: .08s; }
+/* it shows only if the loading takes longer than viewer.ringVerzoegerung (no flash on a fast net), and it turns all
+   the time while loading (reduced motion: it does not turn, its arc only grows) */
+.g-feld.laedt .g-ring { opacity: 1; transition-delay: var(--t-ring-verz, 150ms); }
+html.bewegung-voll .g-feld.laedt .g-ring { animation: g-ring-dreh 1.2s linear infinite; }
+@keyframes g-ring-dreh { from { transform: rotate(-90deg); } to { transform: rotate(270deg); } }
 .g-ring circle { fill: none; stroke-width: 1.4; vector-effect: non-scaling-stroke; }
 .g-ring-spur { stroke: rgba(0, 0, 0, .12); }
 .g-ring-wert { stroke: var(--text); stroke-dasharray: 100 100; stroke-dashoffset: 100; stroke-linecap: round; transition: stroke-dashoffset .2s linear; }

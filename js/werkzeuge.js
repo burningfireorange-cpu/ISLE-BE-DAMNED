@@ -177,8 +177,10 @@
     }
   }
 
-  /** A fine ring around a view field that fills clockwise (0..1) – shown while the move to this view loads. */
-  var SVG = 'http://www.w3.org/2000/svg';
+  /** A fine ring around a view field while the move to this view loads: it turns all the time (CSS), and where the real
+      progress is known (anteil 0..1: bytes, or how much of the stream is there) its arc grows with it – unknown (null):
+      a short arc that only turns. It shows only if the loading takes longer than viewer.ringVerzoegerung (CSS delay). */
+  var SVG = 'http://www.w3.org/2000/svg', BOGEN = 18;
   function ring(b, anteil) {
     if (!b.ring) {
       var s = document.createElementNS(SVG, 'svg');
@@ -195,7 +197,8 @@
       b.appendChild(s);
       b.ring = s.lastChild;
     }
-    b.ring.style.strokeDashoffset = String(100 - Math.max(0, Math.min(1, anteil)) * 100);
+    var a = anteil == null ? 0 : Math.max(0, Math.min(1, anteil));
+    b.ring.style.strokeDashoffset = String(100 - (BOGEN + (100 - BOGEN) * a));
   }
 
   /* ---------------- Product: View 1 · 2 · 3 … · bulb · → Customize · ← ---------------- */
@@ -209,6 +212,7 @@
       var views = [];
       for (var i = 1; i <= p.views; i++) (function (i) {
         var b = feld({ klasse: 'g-view', text: String(i), schild: 'View ' + i, label: 'View ' + i, klick: function () { vw().waehlen(i); } });
+        ring(b, null);          // (made at once, invisible – so that its delayed fade-in works when loading starts)
         views.push(b);
         el.appendChild(b);
       })(i);
@@ -228,7 +232,7 @@
           b.classList.toggle('aktiv', an);
           b.classList.toggle('vorgemerkt', !an && !laedt && info.wartend === k + 1);
           b.classList.toggle('laedt', laedt);
-          if (laedt || b.ring) ring(b, laedt ? info.laden.anteil : 1);
+          if (laedt) ring(b, info.laden.anteil);
           b.setAttribute('aria-pressed', String(an));
           b.setAttribute('aria-busy', String(laedt));
         });

@@ -335,6 +335,7 @@
       if (viewer.belegt) { var v0 = viewer; v0.wennRuhig(function () { if (viewer === v0) legen(); }); return; }
       var alt = viewer, neu = G.viewerFuer(produkt, f);
       alt.onwechsel = null;
+      alt.zurueckstufen(48);             // (the files of the other picture format are not needed now)
       buehne.removeChild(alt.el);
       neu.uebernehmen(alt.aktuell, alt.lampe);
       viewer = neu;
@@ -447,12 +448,15 @@
         else legen();
         s.dataset.modus = r.seite;
         werteFuellen();
+        // the open product loads first: what other viewers still load goes behind it
+        G.viewerAlle().forEach(function (v) { if (v !== viewer) v.zurueckstufen(48); });
         viewer.vorladen('aktiv');
         if (r.seite === 'customize') { var ph = axoHuelle.firstChild; if (ph && ph.laden) ph.laden(60); }
         if (r.seite === 'order') { var ob = ordBild.firstChild; if (ob && ob.laden) ob.laden(70); }
         s.classList.add('aktiv');
       },
-      verbergen: function () { aktiv = false; s.classList.remove('aktiv'); },
+      // (left: its remaining files go behind the next product – a hover on another tile already counts more)
+      verbergen: function () { if (aktiv && viewer) viewer.zurueckstufen(48); aktiv = false; s.classList.remove('aktiv'); },
       info: function () { return viewer && aktiv ? viewer.info() : null; },
       viewer: function () { return aktiv ? viewer : null; },
       /** The viewer on the stage (also when the page is hidden) – e.g. for the way back into the tile. */

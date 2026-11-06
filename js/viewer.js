@@ -11,9 +11,10 @@
    then all other moves. After every view change the moves of the new view move to the front.
    Slow net (online): a tapped view is marked at once. If its move has not loaded yet, the current still stays and a ring
    fills in the view symbol; the move loads alone on the line (G.lader.sofort) and starts once it can play through. The
-   target still is not waited for: the last video frame stands in for it until it has loaded. Another view tapped during
-   any phase takes over at once – no queue (while loading: from the still that stays; while the move plays: the picture
-   stops and the chosen view's still fades in over it). */
+   target still is not waited for: the last video frame stands in for it until it has loaded.
+   Another view tapped meanwhile is marked at once. While a move PLAYS, it plays to its end; then a move goes straight on
+   to the view tapped last (no queue – of several taps only the last counts). While a move only loads (nothing moves
+   yet) or the lamp fades before it, the new choice takes over at once, from the still that stays. */
 (function () {
   'use strict';
   var G = window.G, C = G.C, V = C.viewer;
@@ -176,46 +177,52 @@
     this.hinten.classList.toggle('fertig', f === this.jobs.length);
   };
 
-  /** Preload in steps: 'start' (first still), 'fahrten' (moves from view 1), 'hover', 'aktiv' (on the product page:
-      the moves from the current view first, then all others – above everything that other products preload). */
+  /** Preload in steps: 'start' (first still), 'fahrten' (moves from view 1), 'hover' (both, the still at once),
+      'aktiv' (the product is open, see below). Evening moves only while the light is on. */
   Viewer.prototype.vorladen = function (stufe, ab) {
     if (!this.p.hatBilder || !C.echteDateienVerwenden) return;
-    var basis = { start: 20, fahrten: 10, hover: 40, aktiv: 60 }[stufe] || 5;
-    var von = stufe === 'aktiv' ? (ab || this.aktuell) : 1;
-    var k = 0;
-    function prio() { return basis + 9 - (k++) * 0.01; }
-    if (stufe === 'aktiv') {
-      // on the product page the next tap counts most: first the moves from this view (small files – a view tapped
-      // right after arriving starts at once), then this view's still (until then its small copy or the last frame of
-      // the move stands in for it)
-      for (var b0 = 1; b0 <= this.n; b0++) if (b0 !== von) this.videoJob(von, b0, prio());
-      if (this.lampe) for (var d0 = 1; d0 <= this.n; d0++) if (d0 !== von && this.hatAbendFahrt(von, d0)) this.videoJob(von, d0, prio(), true);
+    var self = this, n = this.n;
+    if (stufe !== 'aktiv') {
+      // background (start screen, hover): the still of view 1, then the moves from view 1
+      var basis = { start: 20, fahrten: 10, hover: 40 }[stufe] || 5, k = 0;
+      var sj = this.bildJob(this.stills[1], basis + 9);
+      if (stufe === 'hover' && sj) G.lader.sofort(sj);      // hover over the tile: the big still loads right now
+      if (stufe === 'start') return;
+      for (var b1 = 2; b1 <= n; b1++) this.videoJob(1, b1, basis + 8 - (k++) * 0.01);
+      return;
     }
-    var sj = this.bildJob(this.stills[von], prio());
-    if (this.abende[von]) this.bildJob(this.abende[von], prio());
-    if (stufe === 'hover' && sj) G.lader.sofort(sj);      // hover over the tile: the big still loads right now
-    if (stufe === 'start') return;
-    for (var b = 1; b <= this.n; b++) {
-      if (b === von) continue;
-      this.videoJob(von, b, prio());
-      this.bildJob(this.stills[b], prio());
+    /* The product is open: at once ALL its moves in the format it shows (phone upright: the small portrait videos,
+       PC: the wide ones) – first the moves from the current view (what the next tap needs), then all other moves, then
+       the stills, this view's first (until a still is there, its small copy or the last frame of the move stands in). One file after the other, above everything the background loads (G.lader). Lamp on: the
+       evening moves take the place of the day moves (the day ones follow last); light off: no evening moves at all.
+       Called again after every view change and lamp switch – the order then starts from the new view. */
+    this.offen = true;
+    var von = ab || this.aktuell, lampe = this.lampe, p = 69;
+    function setze(j, pr) { if (j && j.zustand !== 'fertig' && j.prio < 100 && j.prio !== pr) G.lader.stufe(j, pr); }
+    function fahrt(a, b, abend) { setze(self.videoJob(a, b, p, abend), p); p -= 0.01; }
+    function zuerst(a, b) { if (lampe && self.hatAbendFahrt(a, b)) fahrt(a, b, true); else fahrt(a, b, false); }
+    function bild(ph, pr) { setze(self.bildJob(ph, pr), pr); }
+    for (var b = 1; b <= n; b++) if (b !== von) zuerst(von, b);
+    p = 65;
+    for (var a = 1; a <= n; a++) for (var d = 1; d <= n; d++) if (a !== d && a !== von) zuerst(a, d);
+    bild(lampe && this.abende[von] ? this.abende[von] : this.stills[von], 61.9);
+    for (var c = 1; c <= n; c++) {
+      if (c === von) continue;
+      bild(this.stills[c], 61.5 - c * 0.01);
+      if (lampe && this.abende[c]) bild(this.abende[c], 61.6 - c * 0.01);
     }
-    // evening moves (lamps): like the other videos, but only after the normal moves
-    var self = this;
-    function abendFahrten(nurVon, p0) {
-      for (var a = 1; a <= self.n; a++) for (var d = 1; d <= self.n; d++) {
-        if (a === d || (nurVon && a !== von) || (!nurVon && a === von) || !self.hatAbendFahrt(a, d)) continue;
-        self.videoJob(a, d, p0 - (k++) * 0.01, true);
-      }
+    // light off: evening moves that were queued while it was on wait behind everything of the open product
+    if (!lampe) this.jobs.forEach(function (j) { if (j.art === 'video' && /_abend/.test(j.url)) setze(j, 55); });
+    if (lampe) {               // (the day still and day moves as well – for after the light is switched off again)
+      bild(this.stills[von], 61.1);
+      p = 61;
+      for (var e = 1; e <= n; e++) for (var f = 1; f <= n; f++) if (e !== f && this.hatAbendFahrt(e, f)) fahrt(e, f, false);
     }
-    if (stufe !== 'aktiv') { abendFahrten(true, basis - 1); return; }
-    for (var c = 1; c <= this.n; c++) if (this.abende[c] && c !== von) this.bildJob(this.abende[c], 56);
-    for (var a = 1; a <= this.n; a++) for (var d = 1; d <= this.n; d++) {
-      if (a !== d && a !== von) this.videoJob(a, d, 55 - (k++) * 0.01);
-    }
-    // the lamp is on: the evening moves from here are what comes next (right after the normal moves from here)
-    abendFahrten(true, this.lampe ? 64 : 50);
-    abendFahrten(false, 45);
+  };
+  /** The product is left (or another one opened, or the phone turned): what it still loads goes behind the next one. */
+  Viewer.prototype.zurueckstufen = function (max) {
+    this.offen = false;
+    this.jobs.forEach(function (j) { if (j.zustand !== 'fertig' && j.prio > max) G.lader.stufe(j, max); });
   };
 
   Viewer.prototype.info = function () {
@@ -231,7 +238,7 @@
     var self = this;
     this.stills.forEach(function (s, v) { if (s) { s.classList.remove('raus', 'rein'); s.classList.toggle('sichtbar', v === 1); } });
     this.abende.forEach(function (a, v) { if (a) { a.classList.add('sofort'); a.classList.toggle('sichtbar', lampe && v === 1); } });
-    if (lampe) this.bildJob(this.abende[1], 100);
+    if (lampe) this.bildJob(this.abende[1], 66);      // (its small copy stands in – the moves load first, see vorladen)
     requestAnimationFrame(function () { self.abende.forEach(function (a) { if (a) a.classList.remove('sofort'); }); });
     this.aktuell = 1;
     this.lampe = lampe;
@@ -264,7 +271,7 @@
       if (this.lampe) this.bildJob(a, 100);
       a.classList.toggle('sichtbar', this.lampe);
     }
-    if (this.lampe) this.vorladen('aktiv');     // the evening moves from here move up in the queue
+    if (this.offen) this.vorladen('aktiv');     // light on: the evening moves (from here first) come to the front
     this.melden();
   };
   /** Lamp off at once (the viewer is back in its tile – next time it starts by day). */
@@ -306,7 +313,6 @@
       return nach === von ? false : self.bewegen(von, nach, abendFahrt);
     }).then(function (gefahren) {
       if (gefahren === false) nach = von;      // another view was chosen while the move was still loading
-      else if (typeof gefahren === 'number') nach = gefahren;   // the move gave way: it ended on that view
       self.aktuell = nach;
       self.ziel = null;
       self.belegt = false;
@@ -319,7 +325,7 @@
         // after an evening move the evening still is already there; the lamp may have been switched meanwhile
         an.classList.toggle('sichtbar', self.lampe);
       }
-      self.vorladen('aktiv');
+      if (self.offen) self.vorladen('aktiv');     // (not after the move home in the tile – the product was left)
       var w = self.wartend;
       self.wartend = null;
       if (w && w !== self.aktuell) self.fahren(self.aktuell, w);
@@ -356,10 +362,10 @@
     var tagVon = this.stills[von], tagNach = this.stills[nach];   // (evening: the day stills lie below and are switched at once)
     var v = G.modus === 'voll' ? this.video(von, nach, null, abend) : null;     // reduced motion: no camera move, only a fade
     return new Promise(function (fertig) {
-      // the target still is needed only at the end of the move: it loads right after the move (the move first –
-      // on a slow net it gets the whole line, see G.lader.sofort)
-      var stillJob = self.bildJob(img, 95);
-      if (abend) self.bildJob(tagNach, 90);
+      // the target still is needed only at the end of the move, and even then the last video frame stands in for it:
+      // it comes after the moves of the product (they decide the next tap), first among the stills
+      var stillJob = self.bildJob(img, 62);
+      if (abend) self.bildJob(tagNach, 61.95);
       function ueberblenden() {
         // no move: the target still is what is needed now. The current still stays until it is there; another view
         // chosen meanwhile is taken at once (from here). Once the fade runs, the new choice follows right after it.
@@ -395,20 +401,21 @@
       if (!v || !job || v.dataset.fehlt || (job.zustand === 'fertig' && !job.ok)) { ueberblenden(); return; }
       // the move gets the line alone: the stills of this viewer give way (the one shown now is there or shows its small
       // copy; the target's comes right after the move, and the move's last frame stands in for it until then)
-      self.stills.concat(self.abende).forEach(function (ph) { if (ph && ph.dataset.pfad) G.lader.zurueckstellen(ph.dataset.pfad, ph === img ? 95 : ph === tagNach ? 90 : 70); });
-      G.lader.sofort(job);
+      self.stills.concat(self.abende).forEach(function (ph) { if (ph && ph.dataset.pfad) G.lader.zurueckstellen(ph.dataset.pfad, ph === img ? 62 : ph === tagNach ? 61.95 : 61.5); });
+      // (still downloading: it may switch to a stream that starts before the file is complete – G.lader eilEntscheid)
+      G.lader.sofort(job, { dauer: isFinite(v.duration) && v.duration > 0 ? v.duration : 2 });
       if (job.zustand === 'fertig') { fahrtStarten(); return; }
 
       // the move is not loaded yet: the current still stays, a small ring fills in the view symbol of the bar
       // (info().laden); the move starts once the video is there. If it fails: a simple crossfade instead.
-      var aufgegeben = false;
-      self.laden = { ziel: nach, anteil: 0 };
+      var aufgegeben = false, ladenAb = Date.now();
+      self.laden = { ziel: nach, anteil: null };       // (null: progress not known yet – the ring only turns)
       self.ladenAbbrechen = function () {          // another view chosen meanwhile: nothing moves, the still stays
         if (aufgegeben) return;
         aufgegeben = true;
         clearInterval(messuhr);
         self.laden = null; self.ladenAbbrechen = null; self.umlenken = null;
-        G.lader.stufe(job, 65);                    // (no longer needed right now – it may go on as preloading)
+        G.lader.stufe(job, self.offen ? 65 : 48);  // (no longer needed right now – it may go on as preloading)
         fertig(false);
       };
       // another view tapped while this move loads: it goes there instead, from the still that stays (no queue)
@@ -417,17 +424,20 @@
         self.ladenAbbrechen();
       };
       self.melden();
+      // the real progress (bytes of the download, or how much of the stream is there), where it is known
       var messuhr = setInterval(function () {
-        var a = 0;
-        try { if (v.duration > 0 && v.buffered.length) a = v.buffered.end(v.buffered.length - 1) / v.duration; } catch (e) {}
+        var a = G.lader.anteil(job);
+        if (a == null) return;
         a = Math.min(0.98, a);
-        if (self.laden && a > self.laden.anteil + 0.01) { self.laden.anteil = a; self.melden(); }
-      }, 150);
+        if (self.laden && a > (self.laden.anteil || 0) + 0.005) { self.laden.anteil = a; self.melden(); }
+      }, 100);
       job.dann(function (ok) {
         if (aufgegeben) return;
         clearInterval(messuhr);
         self.laden.anteil = 1;
         self.melden();
+        // (the ring was visible: it stands full for a moment – else the move starts right away)
+        var gezeigt = Date.now() - ladenAb > (V.ringVerzoegerung != null ? V.ringVerzoegerung : 150);
         setTimeout(function () {
           if (aufgegeben) return;
           aufgegeben = true;
@@ -435,7 +445,7 @@
           self.melden();
           if (!ok && !(v.readyState >= 2)) ueberblenden();
           else fahrtStarten();
-        }, G.blende(V.ringVoll));
+        }, gezeigt ? G.blende(V.ringVoll) : 0);
       });
 
       function fahrtStarten() {
@@ -510,43 +520,9 @@
           setTimeout(zeigen, 4000);
         }
 
-        // another view tapped while the move plays: it gives way at once – the picture stops where it is, and the
-        // still of the chosen view fades in over it (as soon as that still is there; until then its ring fills)
-        var wz = 0;
-        function wechselZu(neu) {
-          var nr = ++wz;
-          var tag = self.stills[neu], ab = self.lampe && (abend || V.lampeNachFahrtWiederAn) ? self.abende[neu] : null;
-          var jt = self.bildJob(tag, 100), ja = ab ? self.bildJob(ab, 100) : null;
-          self.umlenken = function (n2) { wechselZu(n2); };
-          // (a still that is not loaded but shows the last frame of an earlier move counts as there – same picture)
-          function da(j, ph) { return !j || j.zustand === 'fertig' || !!(ph && ph.querySelector('.ph-ersatz')); }
-          function bereit() { return ab ? da(ja, ab) : da(jt, tag); }      // (lamp on: the evening still covers the day one)
-          function los() {
-            if (nr !== wz || !bereit()) return;
-            self.umlenken = null;
-            if (self.laden) { self.laden = null; self.melden(); }
-            [tag, ab].forEach(function (x) { if (x) { x.classList.remove('raus', 'rein', 'unter'); x.classList.add('wechsel'); } });
-            requestAnimationFrame(function () {
-              tag.classList.add('sichtbar');
-              if (ab) ab.classList.add('sichtbar');
-              setTimeout(function () {
-                for (var w = 1; w <= self.n; w++) {
-                  if (w !== neu) { if (self.stills[w]) { self.stills[w].classList.remove('raus', 'rein', 'unter'); sofort(self.stills[w], false); }
-                    if (self.abende[w]) { self.abende[w].classList.remove('raus', 'rein', 'unter'); sofort(self.abende[w], false); } }
-                }
-                [tag, ab].forEach(function (x) { if (x) x.classList.remove('wechsel'); });
-                sofort(v, false);
-                try { v.currentTime = 0; } catch (e) {}
-                delete v.dataset.spielt;
-                fertig(neu);
-              }, G.blende(V.ueberblenden) + 20);
-            });
-          }
-          if (bereit()) { los(); return; }
-          self.laden = { ziel: neu, anteil: 0 };
-          self.melden();
-          [jt, ja].forEach(function (j) { if (j) j.dann(function () { if (nr === wz && self.laden) { self.laden.anteil = bereit() ? 1 : 0.5; self.melden(); } los(); }); });
-        }
+        // another view tapped while the move plays: the move is NOT stopped and not faded – it plays to its end, then a
+        // move goes straight on to the view tapped LAST (no queue: of several taps only the last one counts; the bar
+        // marks it at once, info().ziel). Tapping the target of this move again: nothing follows.
         self.umlenken = function (neu) {
           if (!gestartet) {
             // nothing has moved yet (the still is about to fade): go from here to the new choice
@@ -560,12 +536,7 @@
             fertig(false);
             return;
           }
-          beendet = true;
-          clearTimeout(wachhund);
-          v.onended = null;
-          try { v.pause(); } catch (e) {}
-          if (unten) unterWeg(false);
-          wechselZu(neu);
+          self.wartend = neu === nach ? null : neu;
         };
         v.dataset.spielt = '1';
 
@@ -636,4 +607,6 @@
     if (!cache[k]) cache[k] = new Viewer(p, f);
     return cache[k];
   };
+  /** All viewers made so far. */
+  G.viewerAlle = function () { return Object.keys(cache).map(function (k) { return cache[k]; }); };
 })();

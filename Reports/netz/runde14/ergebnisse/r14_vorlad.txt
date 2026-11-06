@@ -1,0 +1,24 @@
+﻿### vorlad.js IDS=object_05,object_04,object_03,object_02,object_01 LAT=165 IOS=1 KBIT=9000 MAX=120000
+{"id":"object_05","gr":"390x664","ios":true,"kbit":"9000","ab1":2283,"alle":6308,"abend":null,"stand":{"a1":2,"n1":2,"alle":6,"na":6},"standAbend":null,"format":"hoch","klein":true,"videoAnfragen":6,"abendAnfragen":0,"kb":5643}
+{"id":"object_04","gr":"390x664","ios":true,"kbit":"9000","ab1":2282,"alle":7726,"abend":null,"stand":{"a1":2,"n1":2,"alle":6,"na":6},"standAbend":null,"format":"hoch","klein":true,"videoAnfragen":6,"abendAnfragen":0,"kb":7272}
+{"id":"object_03","gr":"390x664","ios":true,"kbit":"9000","ab1":2394,"alle":7179,"abend":null,"stand":{"a1":2,"n1":2,"alle":6,"na":6},"standAbend":{"a1":0,"n1":2,"alle":0,"na":6},"format":"hoch","klein":true,"videoAnfragen":6,"abendAnfragen":0,"kb":6616}
+{"id":"object_02","gr":"390x664","ios":true,"kbit":"9000","ab1":2396,"alle":7510,"abend":null,"stand":{"a1":2,"n1":2,"alle":6,"na":6},"standAbend":null,"format":"hoch","klein":true,"videoAnfragen":6,"abendAnfragen":0,"kb":7012}
+{"id":"object_01","gr":"390x664","ios":true,"kbit":"9000","ab1":3707,"alle":14469,"abend":null,"stand":{"a1":3,"n1":3,"alle":12,"na":12},"standAbend":null,"format":"hoch","klein":true,"videoAnfragen":12,"abendAnfragen":0,"kb":13336}
+JS-Fehler: []
+### vorlad.js IDS=object_05,object_04,object_03,object_02,object_01 DESK=1 LAT=165 KBIT=9000 MAX=120000
+{"id":"object_05","gr":"1536x730","ios":false,"kbit":"9000","ab1":2407,"alle":6853,"abend":null,"stand":{"a1":2,"n1":2,"alle":6,"na":6},"standAbend":null,"format":"breit","klein":false,"videoAnfragen":6,"abendAnfragen":0,"kb":6207}
+{"id":"object_04","gr":"1536x730","ios":false,"kbit":"9000","ab1":2088,"alle":5786,"abend":null,"stand":{"a1":2,"n1":2,"alle":6,"na":6},"standAbend":null,"format":"breit","klein":false,"videoAnfragen":6,"abendAnfragen":0,"kb":5058}
+{"id":"object_03","gr":"1536x730","ios":false,"kbit":"9000","ab1":1971,"alle":5026,"abend":null,"stand":{"a1":2,"n1":2,"alle":6,"na":6},"standAbend":{"a1":0,"n1":2,"alle":0,"na":6},"format":"breit","klein":false,"videoAnfragen":6,"abendAnfragen":0,"kb":4220}
+{"id":"object_02","gr":"1536x730","ios":false,"kbit":"9000","ab1":2285,"alle":6740,"abend":null,"stand":{"a1":2,"n1":2,"alle":6,"na":6},"standAbend":null,"format":"breit","klein":false,"videoAnfragen":6,"abendAnfragen":0,"kb":6084}
+{"id":"object_01","gr":"1536x730","ios":false,"kbit":"9000","ab1":3069,"alle":10464,"abend":null,"stand":{"a1":3,"n1":3,"alle":12,"na":12},"standAbend":null,"format":"breit","klein":false,"videoAnfragen":12,"abendAnfragen":0,"kb":8962}
+JS-Fehler: []
+### vorlad.js IOS=1 IDS=object_03 LAMPE=1 KBIT=9000 MAX=120000 LAT=165
+{"id":"object_03","gr":"390x664","ios":true,"kbit":"9000","ab1":14032,"alle":18835,"abend":9143,"stand":{"a1":2,"n1":2,"alle":6,"na":6},"standAbend":{"a1":2,"n1":2,"alle":6,"na":6},"format":"hoch","klein":true,"videoAnfragen":13,"abendAnfragen":6,"kb":11716}
+JS-Fehler: []
+### vorlad.js IDS=object_05,object_01 LAT=560 IOS=1 KBIT=1600 MAX=150000
+{"id":"object_05","gr":"390x664","ios":true,"kbit":"1600","ab1":11672,"alle":32418,"abend":null,"stand":{"a1":2,"n1":2,"alle":6,"na":6},"standAbend":null,"format":"hoch","klein":true,"videoAnfragen":6,"abendAnfragen":0,"kb":5643}
+{"id":"object_01","gr":"390x664","ios":true,"kbit":"1600","ab1":19589,"alle":75939,"abend":null,"stand":{"a1":3,"n1":3,"alle":12,"na":12},"standAbend":null,"format":"hoch","klein":true,"videoAnfragen":12,"abendAnfragen":0,"kb":13336}
+JS-Fehler: []
+### vorlad.js IDS=object_05 DESK=1 LAT=560 KBIT=1600 MAX=150000
+{"id":"object_05","gr":"1536x730","ios":false,"kbit":"1600","ab1":11887,"alle":35292,"abend":null,"stand":{"a1":2,"n1":2,"alle":6,"na":6},"standAbend":null,"format":"breit","klein":false,"videoAnfragen":6,"abendAnfragen":0,"kb":6207}
+JS-Fehler: []

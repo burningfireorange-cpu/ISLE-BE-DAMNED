@@ -92,8 +92,9 @@ README.md                   ausführliche Beschreibung für den Nutzer (deutsch)
   Hochformat-Kopie + das Kachelbild auf seinem Ausschnitt (zurück: den echten Viewer); `transform` + `clip-path: inset` öffnen
   den Ausschnitt in EINER Animation – kein Bildwechsel. Seitliche Insets immer 0, oben/unten schneidet der Clip nur das eigene
   Bild: laufen Clip und Transform am iPhone auseinander, wird nie Seite frei. Volles Standbild erst nach `img.decode()` (Rahmen
-  blendet darüber aus, `seite.hochBlende`). Zurück von einer anderen View: erst die Fahrt zu Cam1 im vollen Hochformat, dann
-  dasselbe Zusammenziehen.
+  blendet darüber aus, `seite.hochBlende`). **Zurück: EIN Ablauf für PC und Handy** (`heimfahren`): das Bild schrumpft sofort
+  zur Kachel, die Fahrt zu Cam1 läuft gleichzeitig (auch noch in der Kachel); Handy und PC unterscheiden sich nur in Bild und
+  Ausschnitt (Frames von `handyFlug` bzw. `fensterFrames`), nie in Reihenfolge, Timing, Leisten.
   Handy quer: breites Format. Desktop darf sich durch Hochformat-Änderungen nicht verändern (A/B gegen alten Stand prüfen).
 - Anzeigenamen sind Codes (`OBJ_LT_M_03`), Ordner/Adressen bleiben `Object_NN`.
 - Baum-Modus (`navigation: 'baum'` in config.js) muss umschaltbar und funktionsfähig bleiben.

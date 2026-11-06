@@ -1,6 +1,7 @@
 # Bericht – Runde 9: Hochformat fürs Handy, nahtloser Zoom mit `kachel_breit`, Veröffentlichung (2026-11-05)
 
-> **Neu: Nachtrag Runde 13 (View-Wechsel hängt online – Ursache, Lösung, Hochladen) ganz am Ende.** Davor die Nachträge Runde 10 und 11.
+> **Neu: Nachtrag Runde 14 (ein Ablauf für PC und Handy, Tippen während der Fahrt, Zurück, Leisten, kleines Fenster,
+> schneller View-Wechsel, Ladering) ganz am Ende.** Davor Runde 13 (View-Wechsel hängt online) und die Nachträge Runde 10 und 11.
 >
 > **Nachträge Runde 10 und Runde 11 (Zoom am iPhone) stehen am Ende dieses Berichts.** Teile von Kapitel 1–4 zum Zoom
 > („Zwei-Stufen-Fenster“) und zur Möbel-Regel gelten nicht mehr, ebenso der Zoom-Teil von Runde 10.
@@ -476,3 +477,157 @@ Außerdem bestanden:
 
   Sobald du gepusht hast, messe ich gern direkt gegen die Online-Adresse nach.
 - **Repo zu groß?** Soll ich vor dem nächsten Renderlauf vorschlagen, wie das Repo wieder kleiner wird? Das ginge z. B. mit frischer Historie wie in Runde 9. Das müsstest du in GitHub Desktop selbst auslösen.
+
+## Nachtrag – Runde 14: ein Ablauf für PC und Handy, schneller View-Wechsel (2026-11-06)
+
+### 1. Ergebnis in Kürze
+
+- **Grundregel umgesetzt:** Zurück, Leisten und Fahrten laufen am Handy genauso ab wie am PC, mit gleicher Reihenfolge, gleichem Timing und gleichen Leisten. Nur Bild und Ausschnitt unterscheiden sich (Hochformat bzw. breit). Was vorher getrennt war, steht in Kapitel 2.
+- **Tippen während einer Fahrt wie früher:** Die laufende Fahrt spielt zu Ende, dann geht es per Fahrt direkt zur **zuletzt** getippten View. Es gibt keine Warteschlange, und die Markierung springt sofort (0–1 ms) auf die zuletzt getippte Nummer.
+- **Zurück am Handy wie am PC:** Das Bild schrumpft **sofort** zur Kachel (ab 25–64 ms), die Fahrt zu Cam1 läuft dabei weiter, auch noch in der Kachel. Weißer Rand und Sprung: keine. Bei der Lampe läuft die Abendfahrt mit, am Ende geht das Licht weich aus.
+- **Leisten beim Zurück:** Der Code-Filter erscheint erst, wenn das Bild in der Kachel angekommen ist (nach ca. 0,5 s), und blendet dann weich ein. Das gilt für PC und Handy gleich.
+- **Kleines PC-Fenster:** Die senkrechte Leiste wird zuerst kleiner (Felder bis 34 px). Reicht das nicht, steht sie unten waagerecht. Sie wird nie abgeschnitten und passt sich beim Ändern der Fenstergröße sofort an.
+- **View-Wechsel:** Beim Öffnen eines Produkts werden **alle** Fahrten im nötigen Format vorgeladen.
+  - Danach startet eine Fahrt nach dem Tippen in **18–35 ms**, also deutlich unter den geforderten 0,5 s.
+  - Bei Fast 4G sind alle Fahrten nach 5–8 s bereit, bei Object_01 mit 12 Fahrten nach 10–15 s. Im WLAN geht es entsprechend schneller.
+  - Wer früher tippt, wartet bei Fast 4G ca. 0,4 s.
+- **Ladering:** Er dreht sofort, sobald Laden nötig ist, füllt sich mit dem echten Fortschritt und erscheint erst nach 150 ms.
+- **Tests:** 4 Handygrößen und PC, alle Produkte, alle Views, Lampe, Fast 4G und Slow 4G mit kaltem Cache. Ergebnis: **0 Probleme, 0 JS-Fehler, 0 × 404.**
+- **Du kannst hochladen** (siehe 3). Diese Runde ändert nur Code und Berichte (ca. 0,3 MB) und bringt keine neuen Medien.
+
+### 2. Was gemacht wurde (mit Commits)
+
+**Was vorher zwischen Handy und PC getrennt war (Grundregel):**
+
+1. **Zurück:** Das Handy hatte einen eigenen Ablauf:
+   - Erst fuhr die ganze Fahrt zu Cam1 im Vollbild (in einem „Halter“).
+   - Erst danach zog sich das Bild zur Kachel zusammen (`heim.handy`, eigener Abbruch in `anzeigen`).
+   - Der PC schrumpfte dagegen sofort, und die Fahrt lief im Flug mit.
+   - **Jetzt** gibt es nur noch einen Ablauf, `heimfahren`. Der einzige Unterschied ist das Bild: Am Handy rechnet `handyFlug` die Frames (Hochformat, Ausschnitt mit `clip-path`), am PC `fensterFrames` (breit).
+2. **Leisten beim Zurück:** Am Handy erschien das Glasfeld mit dem Code-Filter sofort (nach 119–133 ms), am PC nach 55–65 ms. In beiden Fällen kam es also, bevor das Bild in der Kachel war. Jetzt warten beide auf die Ankunft.
+3. **Öffnen am Handy:** Der Zoom wartete auf das große Standbild (Priorität 100), und das blockierte die Fahrten. Jetzt blendet der Rahmen über die dekodierte kleine Kopie aus. Das große Standbild kommt nach den Fahrten. Beide Geräte nutzen dieselbe Dauer (`seite.kachelZumViewer`).
+4. **Bleibt bewusst verschieden** (laut CLAUDE.md): Am Handy steht die Leiste immer unten und die Werkzeuge im Glasfeld darüber; am PC steht sie auf der Produktseite rechts.
+
+**Commits:**
+
+| Commit | Punkt | Inhalt |
+|---|---|---|
+| `0c8e455` | 1 Tippen während Fahrt | Die laufende Fahrt wird nicht mehr abgebrochen oder übergeblendet (`wechselZu` entfernt). Danach geht es direkt zur zuletzt getippten View (`umlenken` merkt nur das letzte Ziel). Tippt man das Ziel der laufenden Fahrt an, folgt nichts. Lädt die Fahrt noch oder blendet die Lampe gerade ab, übernimmt eine neue Wahl wie bisher sofort. |
+| `9df5e08` | Grundregel + 2 Zurück | Ein Rückweg für beide Geräte (siehe oben). Ein noch laufender Öffnungs-Flug wird sofort übernommen. CLAUDE.md und README angepasst. |
+| `3e6b1b6` | 3 Leisten | `leiste.js`: `halten`/`freigeben`. Beim Rückflug zeigt die Leiste keine Werkzeuge; die der Produktseite blenden aus. In der Kachel wird der Code-Filter freigegeben und blendet weich ein. Eine Sicherung gibt ihn nach `kachelZumViewer` + 900 ms frei, falls etwas hängt. |
+| `3c4bfbb` | 4 Kleines Fenster | Stufe 1: Klasse `eng` und `--feld`, Felder, Symbole, Abstände und Trennstriche werden kleiner bis `leiste.feldMin` (34 px), bis oben und unten je `leiste.randSenkrecht` (24 px) frei bleiben. Stufe 2: Die Leiste steht unten waagerecht, und das Bild rückt in die freie Fläche. Neu berechnet bei jedem `resize`. |
+| `cf7ca35` | 5 Schneller View-Wechsel | Siehe unten. |
+| `5ef6ddc` | 6 Ladering | Der Ring dreht als durchgehende CSS-Animation (bei „Bewegung reduzieren“ ohne Drehung). Er erscheint erst nach `viewer.ringVerzoegerung` (150 ms). Wo der Fortschritt bekannt ist (Bytes bzw. Puffer bis zum Startpunkt), wächst der Bogen von 18 auf 100 %; sonst dreht der kurze Bogen weiter. |
+| `0e91b2a` | 7 Tests | `Reports/netz/runde14/` mit Übersicht, Ergebnissen und Testskripten |
+| (dieser) | Bericht | dieser Nachtrag |
+
+**Punkt 5 im Detail – warum das iPhone 4–5 s brauchte und was jetzt anders ist:**
+
+- **Wahrscheinliche Ursache** (am echten iPhone nicht nachgemessen):
+  - Safari lädt von einem Video vor dem ersten `play()` keine Bilddaten, sondern höchstens die Metadaten. Das „Vorladen“ der Seite griff dort also nicht, und jedes Tippen startete einen frischen Download.
+  - Dazu kommt: Das iPhone kann kein AV1 und lädt deshalb die MP4. Die ist gut doppelt so groß wie die webm (Hochformat klein: im Schnitt 1082 KB statt 500 KB).
+  - Außerdem wartete die Seite auf `canplaythrough`, und das meldet Safari spät.
+- **Lösung:**
+  - Online (http/https) holt die Seite jede Fahrt per `fetch` ganz in den Speicher (Blob, `viewer.fahrtenAlsDatei`). Das hängt nicht davon ab, ob Safari vorlädt.
+  - Ein angehaltener Download macht per Range weiter; ein Fehlversuch wird einmal wiederholt.
+- **Reihenfolge beim Öffnen:**
+  1. die Fahrten ab der aktuellen View,
+  2. die übrigen Fahrten,
+  3. erst dann die großen Standbilder; bis dahin stehen die kleine Kopie bzw. das letzte Videobild ein.
+  - Abendfahrten laden nur bei eingeschaltetem Licht; bei Licht aus wird keine einzige angefragt.
+  - Beim Verlassen, bei einem anderen Produkt oder beim Drehen des Handys wird das Vorladen zurückgestuft.
+- **Getippt, aber noch nicht geladen:**
+  - Ist noch wenig da, spielt die Fahrt als Stream. Sie startet, sobald der Rest rechtzeitig ankommt (gemessen am Pufferzuwachs, `viewer.fruehStart` 0,8), also ohne auf `canplaythrough` zu warten.
+  - Wächst der Puffer 300 ms lang nicht (Browser, die vor `play()` nichts laden), startet sie trotzdem.
+- **Warteschlange:**
+  - Die Dateien des offenen Produkts laden eine nach der anderen, der Hintergrund wartet.
+  - Nach einem View-Wechsel weicht ein unwichtig gewordener Download der wichtigeren Fahrt.
+
+**Messungen** (Drosselserver, kalter Cache, iPhone-Simulation; Einzelheiten in `Reports/netz/runde14/uebersicht.txt`):
+
+| | alter Stand | neu |
+|---|---|---|
+| Öffnen → alle Fahrten bereit, Handy, Fast 4G, Object_05 | 7,7 s* | 6,3–6,4 s (5,6 MB) |
+| dasselbe, Object_01 (12 Fahrten, 13,3 MB) | 15,4 s* | 14,5–14,6 s (Leitungsgrenze 12,3 s) |
+| dasselbe, PC, Fast 4G | – | 5,0–6,9 s, Object_01 10,5 s |
+| Lampe mit Licht: alle Abendfahrten bereit | – | 9,1 s |
+| Tippen → Fahrtstart, Fast 4G, vorgeladen | 492–514 ms | 18–35 ms |
+| Tippen → Fahrtstart, Fast 4G, noch nicht geladen | – | 0,4 s Handy, 0,8 s PC |
+| Tippen → Fahrtstart, Slow 4G (1,2 s nach dem Öffnen) | ca. 2,9–4,3 s | Handy Median 3,6 s, PC 3,7 s (2,8–5,6 s) |
+
+Bei Slow 4G begrenzt die Dateigröße: Eine kleine Hochformat-MP4 mit ca. 1 MB braucht bei 1,6 Mbit/s rund 5 s.
+
+\* **Ehrlich dazu:** Beim reinen Vorladen ist der Gewinn in der Simulation klein, weil die Leitung begrenzt.
+- Die Simulation ist für den alten Stand zu freundlich: Edge lädt die Videos dort trotzdem (3,7 MB für Object_05), Safari am echten iPhone dagegen gar nicht.
+- Der neue Weg (`fetch`) hängt nicht davon ab. Darum liegt der eigentliche Gewinn beim Fahrtstart nach dem Tippen (500 ms → 30 ms) und darin, dass am iPhone überhaupt vorgeladen wird.
+
+**Videogrößen je Format** (alle 2 s lang, 30 fps):
+
+| Format | wer lädt es | MP4 Schnitt / max | webm Schnitt / max |
+|---|---|---|---|
+| klein hoch (720 × 1440) | Handy senkrecht | 1082 / 1560 KB | 500 / 740 KB |
+| klein breit | Handy quer | 1008 / 1795 KB | 403 / 600 KB |
+| groß breit (2592 × 1080) | PC | 2442 / 3755 KB | 808 / 1103 KB |
+| groß hoch | **niemand** | 3631 / 5222 KB | 1427 / 2201 KB |
+
+**Vorschlag Kompression (nicht umgesetzt):**
+
+- Die Größe der MP4 ist am iPhone der Hauptgrund für lange Ladezeiten.
+- Probe (Neukodierung der vorhandenen MP4; SSIM 1,0 = gleich): Eine kleine Hochformat-Fahrt mit 825 KB wird
+  - mit **HEVC (`hvc1`) crf 24** zu 435 KB (SSIM 0,970),
+  - mit crf 26 zu 313 KB (0,961),
+  - mit H.264 crf 24 zu 468 KB (0,967).
+
+  Die vorhandene AV1-webm hat zum Vergleich nur SSIM 0,925 gegen die MP4, sieht also schon heute etwas weicher aus.
+- **Empfehlung:**
+  - für Safari HEVC `hvc1` crf 24–26, Rückfall H.264 crf 24;
+  - Keyframe alle 60 Bilder, `+faststart`.
+  - Das macht die Dateien ca. 45–65 % kleiner.
+  - **Am besten direkt aus der Unity-Quelle** (verlustfrei) kodieren und nicht die MP4 ein zweites Mal.
+- Der Kodiervorgang gehört in den Renderlauf, nicht in die Seite.
+
+### 3. Was du zuerst ausprobieren sollst
+
+1. **Hochladen wie gewohnt:**
+   1. In `C:\websites\gauge` alles kopieren.
+   2. Im GitHub-Ordner alles löschen und einfügen (versteckte Elemente ausgeblendet lassen).
+   3. `C:\websites\gauge\bau\hochladen-pruefen.cmd` doppelklicken.
+      - Vor dem Kopieren meldet es gerade nur die Dateien dieser Runde als „fehlt“ bzw. „anderer Inhalt“. Das ist richtig so.
+      - Nach dem Kopieren muss „ERGEBNIS: alles in Ordnung“ stehen.
+   4. Dann in GitHub Desktop committen und „Push origin“.
+2. **iPhone im WLAN:**
+   - Ein Produkt öffnen und 2–3 s warten. Dann die Views antippen: Die Fahrt sollte sofort losgehen.
+   - Gleich nach dem Öffnen tippen: Der Ring dreht und füllt sich, dann startet die Fahrt.
+3. **Während einer Fahrt** eine andere Nummer tippen: Die Fahrt fährt zu Ende, dann geht es direkt zur zuletzt getippten Nummer.
+4. **Zurück von View 3** (Handy und PC): Das Bild schrumpft sofort, die Fahrt läuft in der Kachel zu Ende, erst dann kommt der Code-Filter. Bei der Lampe mit Licht: Am Ende geht das Licht weich aus.
+5. **Am PC das Fenster flach ziehen:** Die Leiste wird kleiner und springt unter ca. 440 px Höhe nach unten.
+
+### 4. Was auffällig ist
+
+- **Tippen während der Fahrt fühlt sich träger an als in Runde 13.**
+  - Das ist die gewünschte alte Regel: Die nächste Fahrt startet erst, wenn die laufende zu Ende ist. Bei 2 s langen Fahrten sind das bis zu ca. 1,7 s nach dem Tippen.
+  - Runde 13 hatte stattdessen sofort übergeblendet.
+- **Lampe:** Die Abendfahrten laden erst, wenn das Licht an ist. Wer direkt danach tippt, wartet bei Fast 4G ca. 0,5 s, bis die Abendfahrt startet.
+- **Kleines Fenster, Stufe 2:**
+  - Steht die Leiste unten, wird das Bild kleiner, weil das Möbel über der Leiste liegen muss. Beispiel 1280 × 440: Das Bild misst 789 × 329.
+  - Die Bilder dazu liegen unter `Reports/netz/runde14/ergebnisse/leiste_1280x*.jpg`.
+- **Unbenutzte Dateien:** Die großen Hochformat-Videos (`video/…_hoch`) lädt die Seite nie, denn das Handy senkrecht nimmt immer die kleinen. Sie belegen ca. 207 MB im Repo. Ich habe nichts gelöscht.
+- **Speicher:**
+  - Vorgeladene Fahrten bleiben bis zum Neuladen der Seite im Speicher. Bei 5 Produkten sind das am Handy höchstens ca. 50 MB, was unkritisch ist.
+  - Bei deutlich mehr Produkten sollte die Seite beim Verlassen eines Produkts freigeben. Das ist leicht nachzurüsten.
+- **Mein Drosselserver war bis Runde 13 zu langsam.**
+  - Er lieferte nur ca. 60 % der eingestellten Rate, weil der Windows-Takt bei ca. 31 statt 20 ms liegt. Behoben: Jetzt sind es 8,7 von 9 Mbit/s.
+  - Die Zahlen aus Runde 13 sind deshalb nicht direkt mit dieser Runde vergleichbar.
+  - Alle Werte „alter Stand“ in der Tabelle oben sind mit dem korrigierten Server gemessen. Einen ersten Vergleichslauf von vorher (11,7 s) habe ich verworfen.
+- **Fehler in meinem Zoom-Test:**
+  - Der Test meldete zuerst „Sprünge“ beim Zurück von View 1. Ursache: Zwei Abtastschleifen liefen gleichzeitig.
+  - Nach der Korrektur: 0 Probleme. Beide Fassungen liegen in den Ergebnissen.
+- **Repo-Größe:** unverändert ca. 768 MB plus ca. 0,3 MB aus dieser Runde. Die Seite selbst hat 508 MB, die größte Datei 5,1 MB.
+
+### 5. Offene Fragen
+
+- **Kompression:** Sollen die Fahrten neu kodiert werden (Vorschlag oben)?
+  - Das müsste im Renderlauf passieren. Danach würde ich die Seite auf HEVC mit H.264-Rückfall umstellen.
+  - Achtung Repo-Größe: Neue Videodateien kommen zu den alten in der Historie hinzu, und wir liegen bei 768 MB von ca. 1 GB. Vorher wäre also eine frische Historie sinnvoll.
+- **Große Hochformat-Videos (207 MB):** Soll das Bau-Skript sie künftig nicht mehr übernehmen? Sie aus der Historie zu entfernen, ginge nur mit einer frischen Historie.
+- **Nicht getestet:** ein echtes iPhone, also Safari mit Blob-Videos, HEVC und Speicher. Alle Zahlen stammen aus der Simulation in Edge. Sobald du hochgeladen hast, messe ich gern gegen die Online-Adresse nach. Noch besser wäre ein kurzer Test von dir am iPhone im WLAN.

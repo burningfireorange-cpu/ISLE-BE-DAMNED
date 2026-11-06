@@ -1,0 +1,44 @@
+﻿{"id":"object_05","gr":"390x664","view":2,"lampe":false,"flugAb":4,"schrumpftAb":25,"inKachel":479,"fahrtImFlug":true,"fahrtInKachel":true,"fahrtEnde":2288,"codeAb":507,"codeVoll":662,"viewsBis":117,"aufBuehne":2553,"lampeAm":false}
+{"id":"object_04","gr":"390x664","view":2,"lampe":false,"flugAb":8,"schrumpftAb":57,"inKachel":479,"fahrtImFlug":true,"fahrtInKachel":true,"fahrtEnde":2275,"codeAb":505,"codeVoll":660,"viewsBis":103,"aufBuehne":2539,"lampeAm":false}
+{"id":"object_03","gr":"390x664","view":2,"lampe":false,"flugAb":5,"schrumpftAb":25,"inKachel":489,"fahrtImFlug":true,"fahrtInKachel":true,"fahrtEnde":2258,"codeAb":489,"codeVoll":644,"viewsBis":118,"aufBuehne":2523,"lampeAm":false}
+{"id":"object_02","gr":"390x664","view":2,"lampe":false,"flugAb":7,"schrumpftAb":39,"inKachel":491,"fahrtImFlug":true,"fahrtInKachel":true,"fahrtEnde":2261,"codeAb":521,"codeVoll":675,"viewsBis":101,"aufBuehne":2556,"lampeAm":false}
+{"id":"object_01","gr":"390x664","view":2,"lampe":false,"flugAb":7,"schrumpftAb":55,"inKachel":505,"fahrtImFlug":true,"fahrtInKachel":true,"fahrtEnde":2250,"codeAb":536,"codeVoll":693,"viewsBis":117,"aufBuehne":2532,"lampeAm":false}
+JS-Fehler: []
+{"id":"object_05","gr":"390x664","view":3,"lampe":false,"flugAb":7,"schrumpftAb":42,"inKachel":507,"fahrtImFlug":true,"fahrtInKachel":true,"fahrtEnde":2287,"codeAb":538,"codeVoll":677,"viewsBis":104,"aufBuehne":2568,"lampeAm":false}
+{"id":"object_04","gr":"390x664","view":3,"lampe":false,"flugAb":7,"schrumpftAb":56,"inKachel":491,"fahrtImFlug":true,"fahrtInKachel":true,"fahrtEnde":2270,"codeAb":510,"codeVoll":649,"viewsBis":117,"aufBuehne":2534,"lampeAm":false}
+{"id":"object_03","gr":"390x664","view":3,"lampe":false,"flugAb":6,"schrumpftAb":57,"inKachel":491,"fahrtImFlug":true,"fahrtInKachel":true,"fahrtEnde":2267,"codeAb":522,"codeVoll":677,"viewsBis":119,"aufBuehne":2546,"lampeAm":false}
+{"id":"object_02","gr":"390x664","view":3,"lampe":false,"flugAb":7,"schrumpftAb":59,"inKachel":511,"fahrtImFlug":true,"fahrtInKachel":true,"fahrtEnde":2263,"codeAb":541,"codeVoll":696,"viewsBis":121,"aufBuehne":2542,"lampeAm":false}
+{"id":"object_01","gr":"390x664","view":3,"lampe":false,"flugAb":11,"schrumpftAb":38,"inKachel":492,"fahrtImFlug":true,"fahrtInKachel":true,"fahrtEnde":2277,"codeAb":526,"codeVoll":650,"viewsBis":101,"aufBuehne":2555,"lampeAm":false}
+JS-Fehler: []
+{"id":"object_05","gr":"360x640","view":2,"lampe":false,"flugAb":5,"schrumpftAb":57,"inKachel":477,"fahrtImFlug":true,"fahrtInKachel":true,"fahrtEnde":2260,"codeAb":509,"codeVoll":664,"viewsBis":120,"aufBuehne":2525,"lampeAm":false}
+{"id":"object_04","gr":"360x640","view":2,"lampe":false,"flugAb":4,"schrumpftAb":42,"inKachel":476,"fahrtImFlug":true,"fahrtInKachel":true,"fahrtEnde":2263,"codeAb":506,"codeVoll":646,"viewsBis":104,"aufBuehne":2543,"lampeAm":false}
+{"id":"object_03","gr":"360x640","view":2,"lampe":false,"flugAb":7,"schrumpftAb":56,"inKachel":495,"fahrtImFlug":true,"fahrtInKachel":true,"fahrtEnde":2263,"codeAb":524,"codeVoll":678,"viewsBis":117,"aufBuehne":2542,"lampeAm":false}
+{"id":"object_02","gr":"360x640","view":2,"lampe":false,"flugAb":13,"schrumpftAb":64,"inKachel":504,"fahrtImFlug":true,"fahrtInKachel":true,"fahrtEnde":2274,"codeAb":504,"codeVoll":668,"viewsBis":118,"aufBuehne":2535,"lampeAm":false}
+{"id":"object_01","gr":"360x640","view":2,"lampe":false,"flugAb":4,"schrumpftAb":57,"inKachel":480,"fahrtImFlug":true,"fahrtInKachel":true,"fahrtEnde":2280,"codeAb":510,"codeVoll":665,"viewsBis":120,"aufBuehne":2529,"lampeAm":false}
+JS-Fehler: []
+{"id":"object_05","gr":"360x640","view":3,"lampe":false,"flugAb":5,"schrumpftAb":58,"inKachel":497,"fahrtImFlug":true,"fahrtInKachel":true,"fahrtEnde":2266,"codeAb":528,"codeVoll":684,"viewsBis":106,"aufBuehne":2529,"lampeAm":false}
+{"id":"object_04","gr":"360x640","view":3,"lampe":false,"flugAb":6,"schrumpftAb":56,"inKachel":509,"fahrtImFlug":true,"fahrtInKachel":true,"fahrtEnde":2266,"codeAb":540,"codeVoll":664,"viewsBis":117,"aufBuehne":2531,"lampeAm":false}
+{"id":"object_03","gr":"360x640","view":3,"lampe":false,"flugAb":4,"schrumpftAb":57,"inKachel":490,"fahrtImFlug":true,"fahrtInKachel":true,"fahrtEnde":2262,"codeAb":521,"codeVoll":676,"viewsBis":118,"aufBuehne":2542,"lampeAm":false}
+{"id":"object_02","gr":"360x640","view":3,"lampe":false,"flugAb":4,"schrumpftAb":57,"inKachel":475,"fahrtImFlug":true,"fahrtInKachel":true,"fahrtEnde":2272,"codeAb":506,"codeVoll":660,"viewsBis":119,"aufBuehne":2538,"lampeAm":false}
+{"id":"object_01","gr":"360x640","view":3,"lampe":false,"flugAb":6,"schrumpftAb":55,"inKachel":502,"fahrtImFlug":true,"fahrtInKachel":true,"fahrtEnde":2258,"codeAb":502,"codeVoll":658,"viewsBis":116,"aufBuehne":2538,"lampeAm":false}
+JS-Fehler: []
+{"id":"object_05","gr":"1536x730","view":2,"lampe":false,"flugAb":4,"schrumpftAb":32,"inKachel":485,"fahrtImFlug":true,"fahrtInKachel":true,"fahrtEnde":2252,"codeAb":543,"codeVoll":667,"viewsBis":235,"aufBuehne":2531,"lampeAm":false}
+{"id":"object_04","gr":"1536x730","view":2,"lampe":false,"flugAb":3,"schrumpftAb":30,"inKachel":493,"fahrtImFlug":true,"fahrtInKachel":true,"fahrtEnde":2283,"codeAb":525,"codeVoll":679,"viewsBis":246,"aufBuehne":2562,"lampeAm":false}
+{"id":"object_03","gr":"1536x730","view":2,"lampe":false,"flugAb":3,"schrumpftAb":31,"inKachel":496,"fahrtImFlug":true,"fahrtInKachel":true,"fahrtEnde":2263,"codeAb":528,"codeVoll":682,"viewsBis":248,"aufBuehne":2512,"lampeAm":false}
+{"id":"object_02","gr":"1536x730","view":2,"lampe":false,"flugAb":3,"schrumpftAb":31,"inKachel":484,"fahrtImFlug":true,"fahrtInKachel":true,"fahrtEnde":2280,"codeAb":546,"codeVoll":654,"viewsBis":268,"aufBuehne":2531,"lampeAm":false}
+{"id":"object_01","gr":"1536x730","view":2,"lampe":false,"flugAb":3,"schrumpftAb":26,"inKachel":491,"fahrtImFlug":true,"fahrtInKachel":true,"fahrtEnde":2275,"codeAb":522,"codeVoll":678,"viewsBis":243,"aufBuehne":2524,"lampeAm":false}
+JS-Fehler: []
+{"id":"object_05","gr":"1536x730","view":3,"lampe":false,"flugAb":4,"schrumpftAb":35,"inKachel":503,"fahrtImFlug":true,"fahrtInKachel":true,"fahrtEnde":2260,"codeAb":534,"codeVoll":660,"viewsBis":252,"aufBuehne":2538,"lampeAm":false}
+{"id":"object_04","gr":"1536x730","view":3,"lampe":false,"flugAb":5,"schrumpftAb":31,"inKachel":497,"fahrtImFlug":true,"fahrtInKachel":true,"fahrtEnde":2276,"codeAb":527,"codeVoll":652,"viewsBis":247,"aufBuehne":2539,"lampeAm":false}
+{"id":"object_03","gr":"1536x730","view":3,"lampe":false,"flugAb":4,"schrumpftAb":29,"inKachel":493,"fahrtImFlug":true,"fahrtInKachel":true,"fahrtEnde":2265,"codeAb":524,"codeVoll":678,"viewsBis":245,"aufBuehne":2531,"lampeAm":false}
+{"id":"object_02","gr":"1536x730","view":3,"lampe":false,"flugAb":3,"schrumpftAb":32,"inKachel":484,"fahrtImFlug":true,"fahrtInKachel":true,"fahrtEnde":2255,"codeAb":546,"codeVoll":669,"viewsBis":252,"aufBuehne":2522,"lampeAm":false}
+{"id":"object_01","gr":"1536x730","view":3,"lampe":false,"flugAb":4,"schrumpftAb":27,"inKachel":479,"fahrtImFlug":true,"fahrtInKachel":true,"fahrtEnde":2277,"codeAb":543,"codeVoll":666,"viewsBis":244,"aufBuehne":2526,"lampeAm":false}
+JS-Fehler: []
+{"id":"object_03","gr":"390x664","view":1,"lampe":true,"flugAb":3,"schrumpftAb":52,"inKachel":485,"fahrtImFlug":false,"fahrtInKachel":false,"fahrtEnde":null,"codeAb":515,"codeVoll":669,"viewsBis":115,"aufBuehne":731,"lampeAm":false}
+JS-Fehler: []
+{"id":"object_03","gr":"390x664","view":3,"lampe":true,"flugAb":7,"schrumpftAb":26,"inKachel":492,"fahrtImFlug":true,"fahrtInKachel":true,"fahrtEnde":2280,"codeAb":492,"codeVoll":648,"viewsBis":118,"aufBuehne":2530,"lampeAm":false}
+JS-Fehler: []
+{"id":"object_03","gr":"1536x730","view":1,"lampe":true,"flugAb":7,"schrumpftAb":34,"inKachel":500,"fahrtImFlug":false,"fahrtInKachel":false,"fahrtEnde":null,"codeAb":531,"codeVoll":672,"viewsBis":251,"aufBuehne":764,"lampeAm":false}
+JS-Fehler: []
+{"id":"object_03","gr":"1536x730","view":3,"lampe":true,"flugAb":4,"schrumpftAb":25,"inKachel":489,"fahrtImFlug":true,"fahrtInKachel":true,"fahrtEnde":2286,"codeAb":551,"codeVoll":675,"viewsBis":273,"aufBuehne":2565,"lampeAm":false}
+JS-Fehler: []

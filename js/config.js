@@ -80,6 +80,9 @@ window.GAUGE_CONFIG = {
     radius: 999,                   // px – rounding of the bar's ends (999 = fully round pill; e.g. 14 = only softly rounded)
     feld: 44,                      // px – the round fields (all symbols the same size)
     feldHandy: 40,
+    feldMin: 34,                   // px – small window (desktop): the fields shrink down to this before the bar … (stage 1)
+    randSenkrecht: 24,             // px – … the vertical bar keeps at least this distance from the top and bottom screen edge;
+                                   //   if even the smallest fields do not fit, the bar goes to the bottom, horizontal (stage 2)
     icon: 21,                      // px – symbol size inside a field
     strich: 1.25,                  // line width of the symbols
     blur: 18,                      // px – how strongly the background behind the glass is blurred
@@ -167,11 +170,20 @@ window.GAUGE_CONFIG = {
     lampeNachFahrtWiederAn: true,  // after a view change with the lamp on: fade back into the evening image
     gleichzeitig: 2,               // files loading at the same time
     wartenJeDateiMs: 15000,        // give up waiting for one file after this time and continue with the next
-    ringVoll: 160,                 // a view clicked before its move has loaded: the ring in the view symbol fills; once full, it stays this long, then the move starts
+    ringVerzoegerung: 150,         // ms – a view tapped before its move has loaded: the loading ring in its symbol appears only if
+                                   //   the loading takes longer than this (no flash on a fast net); it turns all the time and fills
+                                   //   with the real progress where that is known
+    ringVoll: 160,                 // … once full, it stays this long, then the move starts (not if it never showed)
                                    //   (the tapped view is marked at once; its move loads alone on the line, the other files wait)
     nachlaufen: 8000,              // ms – a tapped move starts once it can play through; the rest of its file keeps the line
                                    //   alone this long at most (so it never stalls on a slow net), then other files load again.
                                    //   (preloaded moves: their rest keeps its line this long at most, so downloads never pile up)
+    fahrtenAlsDatei: true,         // online (http/https): moves are downloaded whole into memory (fetch) – they then play at
+                                   //   once, also on an iPhone (which does not preload video by itself); the ring shows real bytes.
+                                   //   Opening a product loads ALL its moves at once, from the current view first (lamp: evening
+                                   //   moves only while the light is on). Locally (file://) the browser loads them as before.
+    fruehStart: 0.8,               // a tapped move that is not loaded yet streams and starts as soon as the rest of the file will
+                                   //   come in within this share of its playing time (0.8 = 20 % reserve) – not waiting for the end
     handyBreite: 760,              // below this window width small videos from video/klein/ are used
     /* picture of the product page (glass bar): it covers the window as long as it is wide enough. The furniture
        (field bildinfo of produkte.json) is never cropped; in very wide windows (21:9, 32:9) the picture keeps the full

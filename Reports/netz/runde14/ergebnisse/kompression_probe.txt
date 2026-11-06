@@ -1,0 +1,23 @@
+﻿Move_Cam1_Cam2_hoch_klein: Original 825 KB
+   x264_crf26     344 KB  SSIM zum Original 0.955747
+   x264_crf28     256 KB  SSIM zum Original 0.943288
+   x265_crf28     223 KB  SSIM zum Original 0.949488
+Move_Cam4_Cam1_hoch_klein: Original 1,559 KB
+   x264_crf26     738 KB  SSIM zum Original 0.964371
+   x264_crf28     542 KB  SSIM zum Original 0.952252
+   x265_crf28     394 KB  SSIM zum Original 0.957962
+Move_Cam1_Cam2_video: Original 3,508 KB
+   x264_crf26   1,228 KB  SSIM zum Original 0.955250
+   x264_crf28     847 KB  SSIM zum Original 0.942655
+   x265_crf28     573 KB  SSIM zum Original 0.949618
+Move_Cam1_Cam2_hoch_klein
+   x264_crf22     634 KB  SSIM 0.976095
+   x264_crf24     468 KB  SSIM 0.966901
+   x265_crf24     435 KB  SSIM 0.969990
+   x265_crf26     313 KB  SSIM 0.960605
+Move_Cam4_Cam1_hoch_klein
+   x264_crf22   1,289 KB  SSIM 0.982222
+   x264_crf24     990 KB  SSIM 0.974467
+   x265_crf24     741 KB  SSIM 0.974803
+   x265_crf26     542 KB  SSIM 0.967183
+Vergleich: vorhandene AV1-webm (462 KB) gegen MP4: SSIM 0.925212

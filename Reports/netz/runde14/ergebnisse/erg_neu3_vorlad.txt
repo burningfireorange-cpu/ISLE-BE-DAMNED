@@ -1,0 +1,2 @@
+{"id":"object_05","gr":"390x664","ios":true,"kbit":"9000","ab1":2315,"alle":6335,"abend":null,"stand":{"a1":2,"n1":2,"alle":6,"na":6},"standAbend":null,"format":"hoch","klein":true,"videoAnfragen":6,"abendAnfragen":0,"kb":5643}
+{"id":"object_01","gr":"390x664","ios":true,"kbit":"9000","ab1":3722,"alle":14505,"abend":null,"stand":{"a1":3,"n1":3,"alle":12,"na":12},"standAbend":null,"format":"hoch","klein":true,"videoAnfragen":12,"abendAnfragen":0,"kb":13336}

@@ -75,7 +75,47 @@
   /* ---------------- where is the bar ---------------- */
   function modusFuer(r) {
     if (handy || !r) return 'unten';
-    return PRODUKTSEITEN[r.seite] ? 'rechts' : 'unten';
+    if (!PRODUKTSEITEN[r.seite]) return 'unten';
+    // stage 2: the vertical bar does not fit the window even at its smallest – it goes to the bottom, horizontal
+    return feldFuer(true) == null ? 'unten' : 'rechts';
+  }
+
+  /* ---------------- fitting into small windows (desktop) ----------------
+     Stage 1: the fields – and with them the symbols, gaps and dividers – get smaller, down to leiste.feldMin (still easy
+     to hit), until the bar fits: the vertical bar between the top and bottom screen edge (leiste.randSenkrecht each),
+     the horizontal one between the side edges (leiste.inhaltRand). Stage 2 (vertical only): see modusFuer. Never cut off;
+     on every resize anew. The phone keeps its own sizes (CSS). */
+  function laenge(senkrecht, f) {
+    var st = nav.style, war = { rechts: nav.classList.contains('rechts'), eng: nav.classList.contains('eng'), feld: st.getPropertyValue('--feld') };
+    nav.classList.toggle('rechts', senkrecht);
+    nav.classList.toggle('eng', f < L.feld);
+    st.setProperty('--feld', f + 'px');
+    var l = senkrecht ? nav.offsetHeight : nav.offsetWidth;      // (layout size – a running transform does not count)
+    nav.classList.toggle('rechts', war.rechts);
+    nav.classList.toggle('eng', war.eng);
+    if (war.feld) st.setProperty('--feld', war.feld); else st.removeProperty('--feld');
+    return l;
+  }
+  function platz(senkrecht) {
+    return senkrecht ? window.innerHeight - 2 * (L.randSenkrecht != null ? L.randSenkrecht : 24)
+      : window.innerWidth - 2 * (L.inhaltRand != null ? L.inhaltRand : 20);
+  }
+  /** The largest field size (px, ≤ leiste.feld) at which the bar fits – null if not even leiste.feldMin does. */
+  function feldFuer(senkrecht) {
+    var F = L.feld, Fm = Math.min(F, L.feldMin || 34), P = platz(senkrecht);
+    var lF = laenge(senkrecht, F);
+    if (lF <= P) return F;
+    var lm = laenge(senkrecht, Fm);
+    if (lm > P) return null;
+    var f = Math.floor(Fm + (F - Fm) * (P - lm) / Math.max(1, lF - lm));      // (the length grows ~linearly with the field)
+    while (f > Fm && laenge(senkrecht, f) > P) f--;
+    return Math.max(Fm, f);
+  }
+  function einpassen() {
+    var f = handy ? null : feldFuer(modus === 'rechts');
+    if (!handy && f == null) f = Math.min(L.feld, L.feldMin || 34);       // (horizontal and still too long: the smallest)
+    if (f == null || f >= L.feld) { nav.style.removeProperty('--feld'); nav.classList.remove('eng'); }
+    else { nav.style.setProperty('--feld', f + 'px'); nav.classList.add('eng'); }
   }
   /** The tools sit in the bar (desktop) or in their own small glass field above it (phone). */
   function platzieren() {
@@ -259,6 +299,7 @@
     }
     if (neuerInhalt) {
       if (handy && vorher.obenKlon) klonAusblenden(vorher.obenKlon, t * 0.4);
+      if (gehalten) return;          // (the new tools fade in later, see freigeben)
       if (handy && oben.classList.contains('da')) {
         if (!vorher.obenKlon) flipAnims.push(oben.animate([{ transform: 'translate(-50%, 10px)' }, { transform: 'translate(-50%, 0)' }], { duration: t, easing: C.kurve }));
         flipAnims.push(oben.firstChild.animate([{ opacity: 0 }, { opacity: 1 }], { duration: t * 0.6, easing: C.kurveRein, fill: 'backwards' }));
@@ -282,6 +323,36 @@
   }
 
   function bereitsAktiv(id) { return route && route.pfad === id; }
+
+  /* ---------------- tools held back (way back from a product into its tile) ----------------
+     The bar takes its new place at once (as always), but the tools of the new page (Products: the code filter) stay
+     invisible until the picture has arrived in its tile and the overview stands (app.js → werkzeugeFreigeben); then they
+     fade in. Same on PC (behind the divider) and phone (the small glass field above the bar, its glass included). */
+  var gehalten = false, halteUhr = null;
+  function halten(an) {
+    clearTimeout(halteUhr);
+    gehalten = !!an;
+    nav.classList.toggle('werkzeug-halt', gehalten);
+    oben.classList.toggle('werkzeug-halt', gehalten);
+    // (in case the arrival is never reported: at the latest after the flight's time)
+    if (gehalten) halteUhr = setTimeout(freigeben, C.seite.kachelZumViewer + 900);
+  }
+  function freigeben() {
+    if (!gehalten) return;
+    halten(false);
+    var t = G.blende(L.umformen * 0.65);
+    if (!t) return;
+    var ein = { duration: t, easing: C.kurveRein, fill: 'backwards' };
+    if (handy) {
+      if (!oben.classList.contains('da')) return;
+      if (G.modus === 'voll') flipAnims.push(oben.animate([{ transform: 'translate(-50%, 10px)' }, { transform: 'translate(-50%, 0)' }], { duration: L.umformen, easing: C.kurve }));
+      flipAnims.push(oben.firstChild.animate([{ opacity: 0 }, { opacity: 1 }], ein));
+      flipAnims.push(obenReihe.animate([{ opacity: 0 }, { opacity: 1 }], ein));
+    } else if (nav.classList.contains('mit-kontext')) {
+      flipAnims.push(kontext.animate([{ opacity: 0 }, { opacity: 1 }], ein));
+      flipAnims.push(trenner.animate([{ opacity: 0 }, { opacity: 1 }], ein));
+    }
+  }
 
   /* ---------------- loading (first visit of the start screen) ----------------
      Only the empty glass outline stands at the bar's place (no symbols, not clickable); a fill grows from left to
@@ -375,6 +446,7 @@
         }
         var m = modusFuer(route);
         if (m !== modus) { flugStoppen(); landen(); modus = m; nav.classList.toggle('rechts', m === 'rechts'); }
+        einpassen();
         messen();
       });
       nav.classList.toggle('handy', handy);
@@ -402,8 +474,10 @@
       G.leiste.feldZu();
       werkzeugeSetzen(r);
       platzieren();
+      halten(!!opts.halten && !!gezeigt.obj);
       modus = modusFuer(r);
       nav.classList.toggle('rechts', modus === 'rechts');
+      einpassen();
       messen();
       if (opts.erst) {
         landen();
@@ -421,6 +495,8 @@
       if (gezeigt.obj && gezeigt.obj.aktualisieren) gezeigt.obj.aktualisieren(route);
     },
     neuZeichnen: function () { G.leiste.extrasAktualisieren(); },
+    /** The picture has arrived in its tile: the held-back tools of the page fade in (see halten). */
+    werkzeugeFreigeben: function () { if (nav) freigeben(); },
     /** Close open option bars (code filter). */
     feldZu: function () {
       Array.prototype.forEach.call(document.querySelectorAll('.g-optionen.offen'), function (k) { if (k.zu) k.zu(); });

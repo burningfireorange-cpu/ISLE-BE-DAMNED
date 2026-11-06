@@ -53,6 +53,7 @@
     r.setProperty('--t-still-rein', ms(f(V.standbildRein)));
     r.setProperty('--t-still-raus', ms(f(V.standbildRaus)));
     r.setProperty('--t-lampe', ms(f(V.lampe)));
+    r.setProperty('--t-ring-verz', ms(V.ringVerzoegerung != null ? V.ringVerzoegerung : 150));
     r.setProperty('--t-lampe-vor', ms(f(V.lampeVorFahrt)));
     r.setProperty('--t-auslaufen', ms(f(V.auslaufenWechsel || 0)));
     r.setProperty('--t-foto', ms(f(Ga.einblenden)));
@@ -191,18 +192,35 @@
     HALT_EV.forEach(function (x) { v.addEventListener(x, los); });
     uhr = setTimeout(los, NACHLAUF_MS + 20);
   }
+  /* The open product loads ONE file after the other (each gets the whole line: the first move is ready as early as
+     possible, instead of all of them late), and nothing of the background shares the line with it. */
+  function produktDatei(j) { return j.prio >= VORRANG && j.prio < SOFORT; }
   function weiter() {
     vorrang();
     for (;;) {
-      var best = null;
+      var lauf = laufendeJobs();
+      var produktLaeuft = lauf.some(produktDatei), produktWartet = false;
+      var best = null, bestProdukt = null;
       for (var i = 0; i < liste.length; i++) {
         var j = liste[i];
         if (j.zustand !== 'offen') continue;
+        if (produktDatei(j)) {
+          produktWartet = true;
+          if (!bestProdukt || j.prio > bestProdukt.prio || (j.prio === bestProdukt.prio && j.nr < bestProdukt.nr)) bestProdukt = j;
+          if (produktLaeuft) continue;          // (one file of the open product at a time)
+        }
         if (!best || j.prio > best.prio || (j.prio === best.prio && j.nr < best.nr)) best = j;
       }
+      // the order has changed (another view reached): a move download that is clearly less urgent now makes way – it
+      // continues later where it stopped
+      if (produktLaeuft && bestProdukt) {
+        var weichen = lauf.filter(function (x) { return produktDatei(x) && x.art === 'video' && x.teile && x.stoppen && x.prio + 2 <= bestProdukt.prio; });
+        if (weichen.length && weichen.length === lauf.filter(produktDatei).length) { weichen.forEach(function (x) { x.stoppen(); }); continue; }
+      }
       if (!best) break;
-      var lauf = laufendeJobs();
       if (best.prio < SOFORT && (lauf.some(function (x) { return x.prio >= SOFORT; }) || nachlaufAktiv())) break;
+      // (the background waits while the open product still has files to load)
+      if (best.prio < HINTERGRUND && (produktLaeuft || produktWartet)) break;
       // (a file needed right now starts at once, past the queue – the others then make way, see vorrang)
       if (laufend < C.viewer.gleichzeitig || best.prio >= SOFORT) { starten(best); vorrang(); continue; }
       if (best.prio < VORRANG) break;
@@ -212,11 +230,15 @@
       if (!opfer || !opfer.stoppen()) break;
     }
   }
-  /** A file needed right now loads: everything of lower priority that is loading goes back into the queue. */
+  /** A file needed right now loads: everything of lower priority that is loading goes back into the queue. A file of the
+      open product loads: the background goes back into the queue. (Videos continue later where they stopped.) */
   function vorrang() {
-    if (!laufendeJobs().some(function (x) { return x.prio >= SOFORT; })) return;
+    var lauf = laufendeJobs();
+    var grenze = lauf.some(function (x) { return x.prio >= SOFORT; }) ? SOFORT
+      : liste.some(function (x) { return x.zustand !== 'fertig' && produktDatei(x); }) ? HINTERGRUND : 0;
+    if (!grenze) return;
     // (also slow images that gave their line free – they would keep sharing it)
-    liste.forEach(function (x) { if (x.zustand === 'laedt' && x.prio < SOFORT && x.stoppen) x.stoppen(); });
+    liste.forEach(function (x) { if (x.zustand === 'laedt' && x.prio < grenze && x.stoppen) x.stoppen(); });
   }
 
   function starten(j) {
@@ -229,34 +251,39 @@
     }
     function hoere(art, fn) { v.addEventListener(art, fn); hoerer.push([art, fn]); }
     var frei = false;        // the line was given free already (slow file, see below)
+    var abbruch = null, pruefUhr = null;     // (download as a file: stop it; stream: the check "enough there?")
+    function aufraeumen() {
+      clearTimeout(uhr);
+      clearInterval(pruefUhr);
+      if (abbruch) { abbruch(); abbruch = null; }
+      if (v) weg();
+    }
     function fertig(ok) {
       if (erledigt) return;
       erledigt = true;
-      clearTimeout(uhr);
-      if (v) weg();
+      aufraeumen();
       j.zustand = 'fertig';
       j.ok = !!ok;
       j.stoppen = null;
-      if (v && ok && !ganzDa(v)) halten(v, j.prio >= SOFORT, frei);    // (keeps its line until its rest is there)
+      j.eilig = null;
+      if (v && ok && !v.dataset.blob && !ganzDa(v)) halten(v, j.prio >= SOFORT, frei);    // (keeps its line until its rest is there)
       else if (!frei) laufend--;
       liste.splice(liste.indexOf(j), 1);
       var cbs = j.cbs; j.cbs = [];
       cbs.forEach(function (fn) { try { fn(j.ok); } catch (e) { console.error(e); } });
       weiter();
     }
-    /** Back into the queue (a more urgent file needs the line) – it loads again later (the browser cache keeps what came). */
+    /** Back into the queue (a more urgent file needs the line) – it loads again later: a video downloaded as a file
+        continues where it stopped (range request), an image / stream from the start (the browser cache keeps what came). */
     j.stoppen = function () {
       if (erledigt) return false;
       erledigt = true;
-      clearTimeout(uhr);
+      aufraeumen();
       if (!frei) laufend--;
       j.zustand = 'offen';
       j.stoppen = null;
       if (img) { img.onload = img.onerror = null; img.removeAttribute('src'); }
-      if (v) {
-        weg();
-        if (!v.dataset.spielt) { v.preload = 'none'; v.removeAttribute('src'); try { v.load(); } catch (e) {} }
-      }
+      if (v && !v.dataset.spielt && !v.dataset.blob && v.getAttribute('src')) { v.preload = 'none'; v.removeAttribute('src'); try { v.load(); } catch (e) {} }
       return true;
     };
     // A file that takes long: a video gives up only when NOTHING has arrived for wartenJeDateiMs (on a slow net it may
@@ -276,10 +303,14 @@
       img.onerror = function () { fertig(false); };
       img.src = j.url;
       if (img.complete && img.naturalWidth) fertig(true);
+    } else if (ALS_DATEI && !j.strom && !(j.el && j.el.getAttribute('src'))) {
+      v = j.el;
+      holen();
     } else {
       v = j.el;
-      // playable: the browser says it can play through, or the whole file is there (some browsers never say so)
-      var ganz = function () { if (ganzDa(v)) fertig(true); else wecker(); };   // (data arrives: wait on)
+      // playable: the browser says it can play through, or the whole file is there (some browsers never say so) –
+      // a tapped move streaming (j.strom) starts earlier, as soon as the rest will come in time (genug)
+      var ganz = function () { if (ganzDa(v)) fertig(true); else { wecker(); genug(); } };   // (data arrives: wait on)
       hoere('canplaythrough', function () { fertig(true); });
       hoere('progress', ganz);
       hoere('error', function () { v.dataset.fehlt = '1'; fertig(false); });
@@ -287,7 +318,114 @@
       if (!v.getAttribute('src')) { v.src = j.url; v.load(); }
       else if (v.readyState >= 4) fertig(true);
       else if (!v.dataset.spielt) { try { v.load(); } catch (e) {} }
+      if (j.strom && !erledigt) { j.stromAb = Date.now(); pruefUhr = setInterval(genug, 100); }
     }
+
+    /* Stream (the move just tapped, see eilEntscheid): enough is there once the rest of the file – at the rate measured –
+       comes in before the playing move gets there (reserve viewer.fruehStart). The ring fills up to that point.
+       A browser that loads nothing before play() (iPhone: only the metadata) – after a short wait it starts anyway,
+       play() then fetches the data. */
+    var letzt = { f: -1, t: Date.now() }, proben = [];
+    function genug() {
+      if (erledigt || !j.strom) return;
+      var f = puffer(v), jetzt = Date.now();
+      if (f > letzt.f + 0.001) { letzt = { f: f, t: jetzt }; proben.push(letzt); }
+      if (f >= 0.999) { fertig(true); return; }
+      var D = isFinite(v.duration) && v.duration > 0 ? v.duration : (j.eilig && j.eilig.dauer) || 2;
+      var reserve = FRUEH * D;
+      // how fast the file comes in (share of the file per second): from what the browser has buffered over the last
+      // ~0.3 s or more – or from the rate of the download before (if there was one)
+      var rho = 0;
+      while (proben.length > 2 && jetzt - proben[1].t >= 300) proben.shift();
+      if (proben.length >= 2 && jetzt - proben[0].t >= 250) rho = (f - proben[0].f) / ((jetzt - proben[0].t) / 1000);
+      else if (j.rate && j.gesamt) rho = j.rate / j.gesamt;
+      var noetig = rho > 0 ? Math.max(0.02, 1 - reserve * rho) : 1;     // from this share on the rest comes in time
+      j.anteil = Math.min(0.99, f / noetig);
+      if (v.readyState >= 3 && rho > 0 && f >= noetig) { fertig(true); return; }
+      // (nothing more comes in before play() – iPhone: only the metadata – waiting does not help): start, play() fetches it
+      if (v.readyState >= 1 && jetzt - Math.max(letzt.t, j.stromAb) > 300) fertig(true);
+    }
+
+    /* Download as a file (http/https): the whole move comes into memory (fetch → Blob), the video plays from there at once
+       and needs nothing more from the net – also on an iPhone, which does not preload video otherwise. The real bytes
+       are known (ring), and a download put back into the queue continues where it stopped (range request). */
+    function holen() {
+      var ac = new AbortController(), kopf = {};
+      abbruch = function () { try { ac.abort(); } catch (e) {} };
+      if (!j.teile) { j.teile = []; j.bytes = 0; }
+      if (j.bytes > 0) kopf.Range = 'bytes=' + j.bytes + '-';
+      j.tLauf = Date.now(); j.t0 = 0;
+      fetch(j.url, { signal: ac.signal, headers: kopf }).then(function (res) {
+        if (erledigt) return;
+        if (res.status !== 200 && res.status !== 206) { if (res.status === 404 || res.status === 410) v.dataset.fehlt = '1'; fertig(false); return; }
+        if (res.status === 200 && j.bytes) { j.teile = []; j.bytes = 0; }       // (the server ignored the range: from the start)
+        var cr = res.headers.get('Content-Range'), cl = +res.headers.get('Content-Length') || 0, m = cr && /\/(\d+)\s*$/.exec(cr);
+        j.gesamt = m ? +m[1] : res.status === 200 && cl ? cl : j.gesamt || 0;
+        j.typ = (res.headers.get('Content-Type') || '').split(';')[0];
+        if (!res.body || !res.body.getReader) {
+          return res.blob().then(function (b) { if (erledigt) return; j.teile = [b]; j.bytes = b.size; alsBlob(); }, fehler);
+        }
+        var leser = res.body.getReader();
+        (function lies() {
+          leser.read().then(function (x) {
+            if (erledigt) { try { leser.cancel(); } catch (e) {} return; }
+            if (x.done) { alsBlob(); return; }
+            var jetzt = Date.now();
+            if (!j.t0) { j.t0 = jetzt; j.b0 = j.bytes; }
+            j.teile.push(x.value);
+            j.bytes += x.value.byteLength;
+            if (jetzt - j.t0 >= 150) j.rate = (j.bytes - j.b0) / ((jetzt - j.t0) / 1000);      // bytes/s
+            wecker();
+            if (j.eilig) eilEntscheid(j);
+            lies();
+          }, fehler);
+        })();
+      }, fehler);
+      function fehler() {
+        if (erledigt) return;
+        if (!j.nochmal) {               // (one more try – a dropped connection; it continues where it stopped)
+          j.nochmal = true;
+          j.stoppen();
+          setTimeout(weiter, 300);
+          return;
+        }
+        fertig(false);
+      }
+      function alsBlob() {
+        if (erledigt) return;
+        var blob = new Blob(j.teile, { type: j.typ && /^video\//.test(j.typ) ? j.typ : /\.webm(\?|$)/.test(j.url) ? 'video/webm' : 'video/mp4' });
+        if (j.gesamt && blob.size < j.gesamt) { fehler(); return; }      // (cut short)
+        j.teile = null;
+        abbruch = null;
+        v.dataset.blob = '1';
+        v.preload = 'auto';
+        v.src = URL.createObjectURL(blob);
+        try { v.load(); } catch (e) {}
+        fertig(true);
+      }
+    }
+  }
+  /** A file between 0 and 1: how much of the video the browser has (buffered up to …). */
+  function puffer(v) {
+    try { return v.duration > 0 && v.buffered.length ? Math.min(1, v.buffered.end(v.buffered.length - 1) / v.duration) : 0; } catch (e) { return 0; }
+  }
+  var ALS_DATEI = /^https?:$/.test(location.protocol) && !!(window.fetch && window.AbortController && window.Blob && window.URL && URL.createObjectURL)
+    && C.viewer.fahrtenAlsDatei !== false;
+  var FRUEH = C.viewer.fruehStart != null ? C.viewer.fruehStart : 0.8;
+  /* The move just tapped is still downloading as a file: would it start earlier as a stream? The stream fetches the
+     file again from the start, but may begin to play before it is complete (once the rest comes in time). It is taken
+     when that is clearly sooner than the end of the download – i.e. when little has arrived yet. */
+  function eilEntscheid(j) {
+    if (!j.eilig || j.strom || j.zustand !== 'laedt' || !j.rate || !j.gesamt || !j.t0) return;
+    var D = j.eilig.dauer || 2, r = j.rate, latenz = Math.max(0, (j.t0 - j.tLauf) / 1000);
+    var restDatei = (j.gesamt - j.bytes) / r;
+    var strom = latenz + Math.max(0.15, j.gesamt / r - FRUEH * D);
+    if (strom + 0.25 >= restDatei) return;
+    j.strom = true;
+    if (j.stoppen) j.stoppen();
+    j.teile = null; j.bytes = 0;
+    starten(j);
+    weiter();
   }
 
   G.lader = {
@@ -295,17 +433,35 @@
     video: function (url, el, prio) { return job(url, 'video', el, prio); },
     hochstufen: hochstufen,
     /** Set the priority (also lower – e.g. a move that was tapped but is no longer wanted). */
-    stufe: function (j, prio) { if (j && j.zustand !== 'fertig') { j.prio = prio; weiter(); } },
+    stufe: function (j, prio) { if (j && j.zustand !== 'fertig') { j.prio = prio; if (prio < SOFORT) j.eilig = null; weiter(); } },
+    /** How far a file has come, 0…1 (real bytes; stream: up to the point where it may start) – null if not known. */
+    anteil: function (j) {
+      if (!j) return null;
+      if (j.zustand === 'fertig') return 1;
+      if (j.strom) return j.anteil != null ? j.anteil : null;
+      if (j.gesamt) return Math.min(1, (j.bytes || 0) / j.gesamt);
+      if (j.art === 'video' && j.el && j.zustand === 'laedt' && j.el.getAttribute('src')) { var f = puffer(j.el); return f > 0 ? f : null; }
+      return null;
+    },
     /** A file (by its url) is no longer needed right now: at most this priority (nothing happens if it is not queued). */
     zurueckstellen: function (url, prio) {
       var j = url && auftraege[url];
       if (j && j.zustand !== 'fertig' && j.prio > prio) { j.prio = prio; weiter(); }
     },
-    /** Load right now, past the queue – alone on the line until it is there. */
-    sofort: function (j) {
+    /** Load right now, past the queue – alone on the line until it is there. eil (a tapped move): { dauer } – it may
+        switch to a stream that starts before the file is complete (eilEntscheid). */
+    sofort: function (j, eil) {
       j.prio = Math.max(j.prio, SOFORT);
+      if (eil && j.art === 'video') j.eilig = eil;
+      // nothing of the file is here yet: streaming is never later than a download from the start – it may begin to play
+      // before the file is complete
+      if (j.eilig && ALS_DATEI && !j.strom && j.zustand !== 'fertig' && !(j.bytes > 0) && !(j.el && j.el.dataset.blob)) {
+        if (j.zustand === 'laedt' && j.stoppen) j.stoppen();
+        j.strom = true; j.teile = null; j.bytes = 0;
+      }
       if (j.zustand === 'offen') starten(j);
       weiter();
+      if (j.eilig) eilEntscheid(j);
     }
   };
 
